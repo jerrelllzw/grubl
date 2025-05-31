@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Input, Layout, Text } from '@ui-kitten/components';
+import { Button, Input, Layout } from '@ui-kitten/components';
 import React, { useState } from 'react';
 
 type RootStackParamList = {
@@ -20,18 +20,9 @@ export default function HomeScreen() {
 				justifyContent: 'center',
 			}}
 		>
-			<Text
-				category='h5'
-				style={{
-					marginBottom: 16,
-					textAlign: 'center',
-				}}
-			>
-				Enter your location
-			</Text>
 			<Input
 				style={{ marginBottom: 16 }}
-				placeholder='Enter your location'
+				placeholder='Enter a location'
 				value={location}
 				onChangeText={setLocation}
 			/>
