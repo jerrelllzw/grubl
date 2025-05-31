@@ -77,7 +77,9 @@ async function fetchPlaces(lat: number, lng: number): Promise<Place[]> {
 	return (res.data.places || []).map((place: any) => ({
 		name: place.displayName?.text,
 		rating: place.rating,
-		photoUri: '', //place.photos?.[0]?.uri,
+		photoUri: place.photos?.[0]?.name
+			? `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxWidthPx=800&key=${GOOGLE_API_KEY}`
+			: undefined,
 		lat: place.location.latitude,
 		lng: place.location.longitude,
 		ratingCount: place.userRatingCount,

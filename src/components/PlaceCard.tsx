@@ -51,7 +51,7 @@ export default function PlaceCard({
 			<Image
 				source={photoUri ? { uri: photoUri } : undefined}
 				style={{
-					width: '100%',
+					maxWidth: 500,
 					height: 200,
 					borderRadius: 10,
 					marginBottom: 12,
