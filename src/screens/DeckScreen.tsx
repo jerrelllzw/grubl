@@ -53,7 +53,7 @@ async function fetchPlaces(lat: number, lng: number): Promise<Place[]> {
 			locationRestriction: {
 				circle: {
 					center: { latitude: lat, longitude: lng },
-					radius: 400,
+					radius: 100,
 				},
 			},
 		},
