@@ -1,15 +1,19 @@
+import * as eva from '@eva-design/eva';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { ApplicationProvider } from '@ui-kitten/components';
 import React from 'react';
+import DeckScreen from '../src/screens/DeckScreen';
 import HomeScreen from '../src/screens/HomeScreen';
-import PlaceScreen from '../src/screens/PlaceScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function index() {
 	return (
-		<Stack.Navigator initialRouteName='Home'>
-			<Stack.Screen name='Home' component={HomeScreen} />
-			<Stack.Screen name='Place' component={PlaceScreen} />
-		</Stack.Navigator>
+		<ApplicationProvider {...eva} theme={eva.dark}>
+			<Stack.Navigator initialRouteName='Home'>
+				<Stack.Screen name='Home' component={HomeScreen} />
+				<Stack.Screen name='Deck' component={DeckScreen} />
+			</Stack.Navigator>
+		</ApplicationProvider>
 	);
 }

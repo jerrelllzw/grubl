@@ -23,7 +23,7 @@ type Place = {
 	lng: number;
 };
 
-export default function PlaceScreen() {
+export default function DeckScreen() {
 	const route = useRoute();
 	const { location } = route.params as { location: string };
 
