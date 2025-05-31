@@ -1,22 +1,18 @@
 import { Card, Text } from '@ui-kitten/components';
 import React from 'react';
-import { Image } from 'react-native';
+import { Image, ImageErrorEventData, NativeSyntheticEvent } from 'react-native';
 
-type PlaceCardProps = {
-	name: string;
-	rating: number;
-	price_level: string;
-	description: string;
-	photoUrl?: string;
-};
+interface PlaceCardProps {
+	name?: string;
+	rating?: number;
+	photoUri?: string;
+}
 
-export default function PlaceCard({
-	name,
-	rating,
-	price_level,
-	description,
-	photoUrl,
-}: PlaceCardProps) {
+export default function PlaceCard({ name, rating, photoUri }: PlaceCardProps) {
+	const handleImageError = (e: NativeSyntheticEvent<ImageErrorEventData>) => {
+		console.warn('Image failed to load:', e.nativeEvent.error);
+	};
+
 	return (
 		<Card
 			style={{
@@ -28,7 +24,7 @@ export default function PlaceCard({
 			disabled={true}
 		>
 			<Image
-				source={photoUrl ? { uri: photoUrl } : require('../assets/placeholder.png')}
+				source={photoUri ? { uri: photoUri } : undefined}
 				style={{
 					width: '100%',
 					height: 200,
@@ -36,15 +32,13 @@ export default function PlaceCard({
 					marginBottom: 12,
 				}}
 				resizeMode='cover'
+				onError={handleImageError}
 			/>
 			<Text category='h6' style={{ marginBottom: 4, textAlign: 'center' }}>
-				{name}
+				{name || 'No name provided'}
 			</Text>
 			<Text appearance='hint' style={{ marginBottom: 4 }}>
-				{rating} ⭐ | {price_level}
-			</Text>
-			<Text appearance='hint' style={{ textAlign: 'center' }}>
-				{description}
+				{rating !== undefined ? `${rating} ⭐` : 'No rating'}
 			</Text>
 		</Card>
 	);
