@@ -1,26 +1,17 @@
 import { useRoute } from '@react-navigation/native';
+import { Button, Layout, Spinner, Text } from '@ui-kitten/components';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import {
-	ActivityIndicator,
-	Image,
-	Linking,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
-} from 'react-native';
+import { Image, Linking } from 'react-native';
 
-const GOOGLE_API_KEY = ''; // Or just use GOOGLE_API_KEY directly in URLs
 
 type Place = {
 	name: string;
 	rating: number;
 	price_level?: number;
-	place_id: string;
-	photo_reference?: string;
-	lat: number;
-	lng: number;
+	photo?: string;
+	lat?: number;
+	lng?: number;
 };
 
 export default function DeckScreen() {
@@ -34,7 +25,6 @@ export default function DeckScreen() {
 	useEffect(() => {
 		const fetchCoordinatesAndPlaces = async () => {
 			try {
-				// Step 1: Geocode address to lat/lng
 				const geoRes = await axios.get(
 					`https://maps.googleapis.com/maps/api/geocode/json`,
 					{
@@ -44,7 +34,6 @@ export default function DeckScreen() {
 						},
 					}
 				);
-				console.log('Geocode response:', geoRes.data);
 
 				if (
 					!geoRes.data.results ||
@@ -58,38 +47,61 @@ export default function DeckScreen() {
 
 				const { lat, lng } = geoRes.data.results[0].geometry.location;
 
-				// Step 2: Get nearby restaurants
-				const placesRes = await axios.get(
-					`https://maps.googleapis.com/maps/api/place/nearbysearch/json`,
+				const placesRes = await axios.post(
+					'https://places.googleapis.com/v1/places:searchNearby',
 					{
-						params: {
-							location: `${lat},${lng}`,
-							radius: 3000,
-							type: 'restaurant',
-							key: GOOGLE_API_KEY,
+						includedTypes: [
+							'restaurant',
+							'cafe',
+							'bakery',
+							'bar',
+							'meal_takeaway',
+							'meal_delivery',
+						],
+						maxResultCount: 10,
+						locationRestriction: {
+							circle: {
+								center: {
+									latitude: lat,
+									longitude: lng,
+								},
+								radius: 1000,
+							},
+						},
+					},
+					{
+						headers: {
+							'Content-Type': 'application/json',
+							'X-Goog-Api-Key': GOOGLE_API_KEY,
+							'X-Goog-FieldMask': [
+								'places.displayName',
+								'places.rating',
+								'places.priceLevel',
+								'places.id',
+								'places.location',
+								'places.photos',
+							].join(','),
 						},
 					}
 				);
-				console.log('Places response:', placesRes.data);
 
 				if (
-					!placesRes.data.results ||
-					!Array.isArray(placesRes.data.results) ||
-					placesRes.data.results.length === 0
+					!placesRes.data.places ||
+					!Array.isArray(placesRes.data.places) ||
+					placesRes.data.places.length === 0
 				) {
 					setPlaces([]);
 					setLoading(false);
 					return;
 				}
 
-				const allPlaces = placesRes.data.results.map((place: any) => ({
-					name: place.name,
+				const allPlaces = placesRes.data.places.map((place: any) => ({
+					name: place.displayName?.text,
 					rating: place.rating,
-					price_level: place.price_level,
-					place_id: place.place_id,
-					lat: place.geometry.location.lat,
-					lng: place.geometry.location.lng,
-					photo_reference: place.photos?.[0]?.photo_reference,
+					price_level: place.priceLevel,
+					photo: place.photos?.[0]?.name,
+					lat: place.location?.latitude,
+					lng: place.location?.longitude,
 				}));
 
 				setPlaces(allPlaces);
@@ -118,97 +130,92 @@ export default function DeckScreen() {
 
 	if (loading) {
 		return (
-			<View style={styles.center}>
-				<ActivityIndicator size='large' />
-				<Text>Loading places near &quot;{location}&quot;...</Text>
-			</View>
+			<Layout
+				style={{
+					flex: 1,
+					justifyContent: 'center',
+					alignItems: 'center',
+				}}
+			>
+				<Spinner size='giant' />
+				<Text style={{ marginTop: 16 }}>
+					Loading places near &quot;{location}&quot;...
+				</Text>
+			</Layout>
 		);
 	}
 
 	if (places.length === 0) {
 		return (
-			<View style={styles.center}>
+			<Layout
+				style={{
+					flex: 1,
+					justifyContent: 'center',
+					alignItems: 'center',
+				}}
+			>
 				<Text>No places found near &quot;{location}&quot;.</Text>
-			</View>
+			</Layout>
 		);
 	}
 
 	const current = places[currentIndex];
+	const photoUrl = current.photo
+		? `https://places.googleapis.com/v1/${current.photo}/media?maxWidthPx=400&key=${GOOGLE_API_KEY}`
+		: undefined;
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.name}>{current.name}</Text>
-			{current.photo_reference && (
+		<Layout
+			style={{
+				flex: 1,
+				padding: 20,
+				justifyContent: 'center',
+			}}
+		>
+			<Text category='h5' style={{ textAlign: 'center', marginBottom: 12 }}>
+				{current.name}
+			</Text>
+			{current.photo && (
 				<Image
-					style={styles.image}
-					source={{
-						uri: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${current.photo_reference}&key=${GOOGLE_API_KEY}`,
+					style={{
+						height: 200,
+						borderRadius: 12,
+						marginBottom: 12,
+						width: '100%',
 					}}
+					source={{ uri: photoUrl }}
 				/>
 			)}
-			<Text style={styles.text}>Rating: {current.rating ?? 'N/A'}</Text>
-			<Text style={styles.text}>
+			<Text style={{ fontSize: 16, marginBottom: 6, textAlign: 'center' }}>
+				Rating: {current.rating ?? 'N/A'}
+			</Text>
+			<Text style={{ fontSize: 16, marginBottom: 6, textAlign: 'center' }}>
 				Price: {'$'.repeat(current.price_level ?? 1)}
 			</Text>
-
-			<View style={styles.buttonRow}>
-				<TouchableOpacity style={styles.button} onPress={handleNext}>
-					<Text style={styles.buttonText}>❌</Text>
-				</TouchableOpacity>
-				<TouchableOpacity
-					style={[styles.button, styles.accept]}
+			<Layout
+				style={{
+					flexDirection: 'row',
+					justifyContent: 'space-around',
+					marginTop: 24,
+					backgroundColor: 'transparent',
+				}}
+			>
+				<Button
+					appearance='outline'
+					status='danger'
+					style={{ flex: 1, marginRight: 8 }}
+					onPress={handleNext}
+				>
+					❌
+				</Button>
+				<Button
+					status='success'
+					style={{ flex: 1, marginLeft: 8 }}
 					onPress={handleAccept}
 				>
-					<Text style={styles.buttonText}>✅</Text>
-				</TouchableOpacity>
-			</View>
-		</View>
+					✅
+				</Button>
+			</Layout>
+		</Layout>
 	);
 }
-
-const styles = StyleSheet.create({
-	center: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	container: {
-		flex: 1,
-		padding: 20,
-		justifyContent: 'center',
-	},
-	name: {
-		fontSize: 24,
-		fontWeight: '600',
-		marginBottom: 12,
-		textAlign: 'center',
-	},
-	image: {
-		height: 200,
-		borderRadius: 12,
-		marginBottom: 12,
-	},
-	text: {
-		fontSize: 16,
-		marginBottom: 6,
-		textAlign: 'center',
-	},
-	buttonRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-around',
-		marginTop: 24,
-	},
-	button: {
-		backgroundColor: '#ddd',
-		padding: 20,
-		borderRadius: 50,
-		width: 80,
-		alignItems: 'center',
-	},
-	accept: {
-		backgroundColor: '#4CAF50',
-	},
-	buttonText: {
-		fontSize: 24,
-	},
-});

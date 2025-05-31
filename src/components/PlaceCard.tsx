@@ -7,7 +7,7 @@ type PlaceCardProps = {
 	rating: number;
 	price_level: string;
 	description: string;
-	photo: string;
+	photoUrl?: string;
 };
 
 export default function PlaceCard({
@@ -15,7 +15,7 @@ export default function PlaceCard({
 	rating,
 	price_level,
 	description,
-	photo,
+	photoUrl,
 }: PlaceCardProps) {
 	return (
 		<Card
@@ -28,7 +28,7 @@ export default function PlaceCard({
 			disabled={true}
 		>
 			<Image
-				source={{ uri: photo }}
+				source={photoUrl ? { uri: photoUrl } : require('../assets/placeholder.png')}
 				style={{
 					width: '100%',
 					height: 200,
