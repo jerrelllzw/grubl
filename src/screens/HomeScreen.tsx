@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Input, Layout } from '@ui-kitten/components';
+import { Button, Input, Layout, Text } from '@ui-kitten/components';
 import React, { useState } from 'react';
+import { View } from 'react-native';
 
 type RootStackParamList = {
 	Deck: { location: string };
@@ -20,14 +21,23 @@ export default function HomeScreen() {
 				justifyContent: 'center',
 			}}
 		>
-			<Input
-				style={{ marginBottom: 16 }}
-				placeholder='Enter a location'
-				value={location}
-				onChangeText={setLocation}
-			/>
+			<View style={{ marginBottom: 16, width: '80%', alignSelf: 'center' }}>
+				<Text
+					category='h6'
+					style={{
+						marginBottom: 8,
+					}}
+				>
+					Enter a location:
+				</Text>
+				<Input
+					placeholder='e.g. Lot 1'
+					value={location}
+					onChangeText={setLocation}
+				/>
+			</View>
 			<Button
-				style={{ marginTop: 8 }}
+				style={{ width: '80%', alignSelf: 'center' }}
 				onPress={() => {
 					if (location.trim()) {
 						navigation.navigate('Deck', { location });
