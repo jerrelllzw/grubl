@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 import PlaceCard from '../components/PlaceCard';
 
-
 interface Coordinates {
 	lat: number;
 	lng: number;
@@ -54,7 +53,7 @@ async function fetchPlaces(lat: number, lng: number): Promise<Place[]> {
 			locationRestriction: {
 				circle: {
 					center: { latitude: lat, longitude: lng },
-					radius: 200,
+					radius: 400,
 				},
 			},
 		},
@@ -97,7 +96,7 @@ export default function DeckScreen() {
 	useEffect(() => {
 		const load = async () => {
 			try {
-				const { lat, lng } = await fetchCoordinates(location);
+				const { lat, lng } = await fetchCoordinates(`${location}, Singapore`);
 				const placesList = await fetchPlaces(lat, lng);
 				setPlaces(placesList);
 			} catch (err) {
