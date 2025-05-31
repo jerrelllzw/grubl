@@ -6,9 +6,34 @@ interface PlaceCardProps {
 	name?: string;
 	rating?: number;
 	photoUri?: string;
+	ratingCount?: number;
+	priceLevel?: string;
 }
 
-export default function PlaceCard({ name, rating, photoUri }: PlaceCardProps) {
+function priceLevelToDollarSigns(level?: string) {
+	switch (level) {
+		case 'PRICE_LEVEL_FREE':
+			return 'Free';
+		case 'PRICE_LEVEL_INEXPENSIVE':
+			return '$';
+		case 'PRICE_LEVEL_MODERATE':
+			return '$$';
+		case 'PRICE_LEVEL_EXPENSIVE':
+			return '$$$';
+		case 'PRICE_LEVEL_VERY_EXPENSIVE':
+			return '$$$$';
+		default:
+			return '';
+	}
+}
+
+export default function PlaceCard({
+	name,
+	rating,
+	photoUri,
+	ratingCount,
+	priceLevel,
+}: PlaceCardProps) {
 	const handleImageError = (e: NativeSyntheticEvent<ImageErrorEventData>) => {
 		console.warn('Image failed to load:', e.nativeEvent.error);
 	};
@@ -39,6 +64,10 @@ export default function PlaceCard({ name, rating, photoUri }: PlaceCardProps) {
 			</Text>
 			<Text appearance='hint' style={{ marginBottom: 4 }}>
 				{rating !== undefined ? `${rating} ⭐` : 'No rating'}
+				{ratingCount !== undefined ? ` (${ratingCount})` : ''}
+			</Text>
+			<Text appearance='hint' style={{ marginBottom: 4 }}>
+				{priceLevelToDollarSigns(priceLevel)}
 			</Text>
 		</Card>
 	);

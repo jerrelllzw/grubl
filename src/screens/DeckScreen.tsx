@@ -17,6 +17,8 @@ interface Place {
 	photoUri?: string;
 	lat: number;
 	lng: number;
+	ratingCount?: number;
+	priceLevel?: string;
 }
 
 type RouteParams = {
@@ -39,12 +41,20 @@ async function fetchPlaces(lat: number, lng: number): Promise<Place[]> {
 	const res = await axios.post(
 		'https://places.googleapis.com/v1/places:searchNearby',
 		{
-			includedTypes: ['restaurant'],
-			maxResultCount: 10,
+			includedTypes: [
+				'restaurant',
+				'cafe',
+				'bar',
+				'bakery',
+				'fast_food_restaurant',
+				'food_court',
+				'meal_takeaway',
+			],
+			maxResultCount: 20,
 			locationRestriction: {
 				circle: {
 					center: { latitude: lat, longitude: lng },
-					radius: 1000,
+					radius: 200,
 				},
 			},
 		},
@@ -58,6 +68,8 @@ async function fetchPlaces(lat: number, lng: number): Promise<Place[]> {
 					'places.id',
 					'places.location',
 					'places.photos',
+					'places.priceLevel',
+					'places.userRatingCount',
 				].join(','),
 			},
 		}
@@ -69,6 +81,8 @@ async function fetchPlaces(lat: number, lng: number): Promise<Place[]> {
 		photoUri: '', //place.photos?.[0]?.uri,
 		lat: place.location.latitude,
 		lng: place.location.longitude,
+		ratingCount: place.userRatingCount,
+		priceLevel: place.priceLevel,
 	}));
 }
 
@@ -130,6 +144,8 @@ export default function DeckScreen() {
 					name={current.name}
 					rating={current.rating}
 					photoUri={current.photoUri}
+					ratingCount={current.ratingCount}
+					priceLevel={current.priceLevel}
 				/>
 			) : (
 				<Text category='h6' style={{ textAlign: 'center' }}>
