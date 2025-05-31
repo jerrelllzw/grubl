@@ -43,7 +43,6 @@ export default function PlaceCard({
 			style={{
 				borderRadius: 10,
 				padding: 16,
-				alignItems: 'center',
 				marginVertical: 8,
 			}}
 			disabled={true}
@@ -51,7 +50,7 @@ export default function PlaceCard({
 			<Image
 				source={photoUri ? { uri: photoUri } : undefined}
 				style={{
-					maxWidth: 500,
+					maxWidth: '100%',
 					height: 200,
 					borderRadius: 10,
 					marginBottom: 12,
@@ -62,11 +61,11 @@ export default function PlaceCard({
 			<Text category='h6' style={{ marginBottom: 4, textAlign: 'center' }}>
 				{name || 'No name provided'}
 			</Text>
-			<Text appearance='hint' style={{ marginBottom: 4 }}>
+			<Text appearance='hint' style={{ marginBottom: 4, textAlign: 'center' }}>
 				{rating !== undefined ? `${rating} ⭐` : 'No rating'}
 				{ratingCount !== undefined ? ` (${ratingCount})` : ''}
 			</Text>
-			<Text appearance='hint' style={{ marginBottom: 4 }}>
+			<Text appearance='hint' style={{ textAlign: 'center' }}>
 				{priceLevelToDollarSigns(priceLevel)}
 			</Text>
 		</Card>
