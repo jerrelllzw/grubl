@@ -2,6 +2,7 @@ import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Input, Layout, Text } from '@ui-kitten/components';
+import * as Location from 'expo-location';
 import React, { useState } from 'react';
 
 type RootStackParamList = {
@@ -29,6 +30,32 @@ export default function HomeScreen() {
 
 	const radius = RADIUS_OPTIONS[radiusIndex];
 
+	const handleUseCurrentLocation = async () => {
+		try {
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== 'granted') {
+				alert('Permission to access location was denied');
+				return;
+			}
+			const loc = await Location.getCurrentPositionAsync({});
+			const geocode = await Location.reverseGeocodeAsync({
+				latitude: loc.coords.latitude,
+				longitude: loc.coords.longitude,
+			});
+			if (geocode.length > 0) {
+				const { name, street, city, region } = geocode[0];
+				const locationString = [name, street, city, region]
+					.filter(Boolean)
+					.join(', ');
+				setLocation(locationString);
+			} else {
+				alert('Could not determine address from location');
+			}
+		} catch (e) {
+			alert('Failed to get current location');
+		}
+	};
+
 	return (
 		<Layout
 			style={{
@@ -49,8 +76,16 @@ export default function HomeScreen() {
 				placeholder='e.g. Lot 1'
 				value={location}
 				onChangeText={setLocation}
-				style={{ marginBottom: 16 }}
+				style={{ marginBottom: 8 }}
 			/>
+			<Button
+				size='small'
+				appearance='ghost'
+				onPress={handleUseCurrentLocation}
+				style={{ marginBottom: 16 }}
+			>
+				Use Current Location
+			</Button>
 
 			<Text style={{ marginBottom: 4 }}>Search Radius: {radius}m</Text>
 			<Slider
