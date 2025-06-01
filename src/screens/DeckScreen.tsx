@@ -24,6 +24,7 @@ interface Place {
 
 type RouteParams = {
 	location: string;
+	types: string[];
 };
 
 async function fetchCoordinates(address: string): Promise<Coordinates> {
@@ -38,19 +39,15 @@ async function fetchCoordinates(address: string): Promise<Coordinates> {
 	return { lat: result.lat, lng: result.lng };
 }
 
-async function fetchPlaces(lat: number, lng: number): Promise<Place[]> {
+async function fetchPlaces(
+	lat: number,
+	lng: number,
+	types: string[]
+): Promise<Place[]> {
 	const res = await axios.post(
 		'https://places.googleapis.com/v1/places:searchNearby',
 		{
-			includedTypes: [
-				'restaurant',
-				'cafe',
-				'bar',
-				'bakery',
-				'fast_food_restaurant',
-				'food_court',
-				'meal_takeaway',
-			],
+			includedTypes: types,
 			maxResultCount: 20,
 			locationRestriction: {
 				circle: {
@@ -92,6 +89,7 @@ async function fetchPlaces(lat: number, lng: number): Promise<Place[]> {
 export default function DeckScreen() {
 	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
 	const location = route.params.location;
+	const types = route.params.types;
 
 	const [places, setPlaces] = useState<Place[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -101,7 +99,7 @@ export default function DeckScreen() {
 		const load = async () => {
 			try {
 				const { lat, lng } = await fetchCoordinates(`${location}, Singapore`);
-				const placesList = await fetchPlaces(lat, lng);
+				const placesList = await fetchPlaces(lat, lng, types);
 				setPlaces(placesList);
 			} catch (err) {
 				console.error('API error:', err);
