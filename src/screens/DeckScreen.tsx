@@ -25,6 +25,7 @@ interface Place {
 type RouteParams = {
 	location: string;
 	types: string[];
+	radius: number;
 };
 
 async function fetchCoordinates(address: string): Promise<Coordinates> {
@@ -42,17 +43,17 @@ async function fetchCoordinates(address: string): Promise<Coordinates> {
 async function fetchPlaces(
 	lat: number,
 	lng: number,
-	types: string[]
+	types: string[],
+	radius: number
 ): Promise<Place[]> {
 	const res = await axios.post(
 		'https://places.googleapis.com/v1/places:searchNearby',
 		{
 			includedTypes: types,
-			maxResultCount: 20,
 			locationRestriction: {
 				circle: {
 					center: { latitude: lat, longitude: lng },
-					radius: 100,
+					radius: radius,
 				},
 			},
 		},
@@ -90,6 +91,7 @@ export default function DeckScreen() {
 	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
 	const location = route.params.location;
 	const types = route.params.types;
+	const radius = route.params.radius;
 
 	const [places, setPlaces] = useState<Place[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -99,7 +101,7 @@ export default function DeckScreen() {
 		const load = async () => {
 			try {
 				const { lat, lng } = await fetchCoordinates(`${location}, Singapore`);
-				const placesList = await fetchPlaces(lat, lng, types);
+				const placesList = await fetchPlaces(lat, lng, types, radius);
 				setPlaces(placesList);
 			} catch (err) {
 				console.error('API error:', err);
@@ -109,7 +111,7 @@ export default function DeckScreen() {
 			}
 		};
 		load();
-	}, [location]);
+	}, [location, radius, types]);
 
 	const handleNext = () => {
 		if (currentIndex < places.length - 1) setCurrentIndex(currentIndex + 1);
