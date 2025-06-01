@@ -5,6 +5,8 @@ import React, { useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 import PlaceCard from '../components/PlaceCard';
 
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
+
 interface Coordinates {
 	lat: number;
 	lng: number;
