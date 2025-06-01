@@ -2,24 +2,13 @@ import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Input, Layout, Text } from '@ui-kitten/components';
-import * as Location from 'expo-location';
 import React, { useState } from 'react';
+import { PLACE_TYPE_OPTIONS, RADIUS_OPTIONS } from '../constants/places';
+import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
 type RootStackParamList = {
 	Deck: { location: string; types: string[]; radius: number };
 };
-
-const PLACE_TYPE_OPTIONS = [
-	{ label: 'Restaurant', value: 'restaurant' },
-	{ label: 'Cafe', value: 'cafe' },
-	{ label: 'Coffee Shop', value: 'coffee_shop' },
-	{ label: 'Fast Food', value: 'fast_food_restaurant' },
-	{ label: 'Bakery', value: 'bakery' },
-	{ label: 'Bar', value: 'bar' },
-	{ label: 'Food Court', value: 'food_court' },
-	{ label: 'Takeaway', value: 'meal_takeaway' },
-];
-const RADIUS_OPTIONS = [200, 400, 800, 1600];
 
 export default function HomeScreen() {
 	const navigation =
@@ -27,49 +16,28 @@ export default function HomeScreen() {
 	const [location, setLocation] = useState('');
 	const [selectedTypes, setSelectedTypes] = useState<string[]>(['restaurant']);
 	const [radiusIndex, setRadiusIndex] = useState(1);
-
 	const radius = RADIUS_OPTIONS[radiusIndex];
+	const handleUseCurrentLocation = useCurrentLocation(setLocation);
 
-	const handleUseCurrentLocation = async () => {
-		try {
-			const { status } = await Location.requestForegroundPermissionsAsync();
-			if (status !== 'granted') {
-				alert('Permission to access location was denied');
-				return;
-			}
-			const loc = await Location.getCurrentPositionAsync({});
-			const geocode = await Location.reverseGeocodeAsync({
-				latitude: loc.coords.latitude,
-				longitude: loc.coords.longitude,
+	const handleTypeToggle = (value: string) => {
+		setSelectedTypes((prev) =>
+			prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+		);
+	};
+
+	const handleSearch = () => {
+		if (location.trim()) {
+			navigation.navigate('Deck', {
+				location,
+				types: selectedTypes.length ? selectedTypes : ['restaurant'],
+				radius,
 			});
-			if (geocode.length > 0) {
-				const { name, street, city, region } = geocode[0];
-				const locationString = [name, street, city, region]
-					.filter(Boolean)
-					.join(', ');
-				setLocation(locationString);
-			} else {
-				alert('Could not determine address from location');
-			}
-		} catch (e) {
-			alert('Failed to get current location');
 		}
 	};
 
 	return (
-		<Layout
-			style={{
-				flex: 1,
-				padding: 32,
-				justifyContent: 'center',
-			}}
-		>
-			<Text
-				category='h6'
-				style={{
-					marginBottom: 8,
-				}}
-			>
+		<Layout style={{ flex: 1, padding: 32, justifyContent: 'center' }}>
+			<Text category='h6' style={{ marginBottom: 8 }}>
 				Enter a location:
 			</Text>
 			<Input
@@ -91,7 +59,7 @@ export default function HomeScreen() {
 			<Slider
 				style={{ width: '100%', height: 40, marginBottom: 16 }}
 				minimumValue={0}
-				maximumValue={3}
+				maximumValue={RADIUS_OPTIONS.length - 1}
 				step={1}
 				value={radiusIndex}
 				onValueChange={setRadiusIndex}
@@ -115,32 +83,14 @@ export default function HomeScreen() {
 						appearance={selectedTypes.includes(value) ? 'filled' : 'outline'}
 						status={selectedTypes.includes(value) ? 'primary' : 'basic'}
 						style={{ margin: 4 }}
-						onPress={() => {
-							setSelectedTypes((prev) =>
-								prev.includes(value)
-									? prev.filter((t) => t !== value)
-									: [...prev, value]
-							);
-						}}
+						onPress={() => handleTypeToggle(value)}
 					>
 						{label}
 					</Button>
 				))}
 			</Layout>
 
-			<Button
-				onPress={() => {
-					if (location.trim()) {
-						navigation.navigate('Deck', {
-							location,
-							types: selectedTypes.length ? selectedTypes : ['restaurant'],
-							radius,
-						});
-					}
-				}}
-			>
-				Search
-			</Button>
+			<Button onPress={handleSearch}>Search</Button>
 		</Layout>
 	);
 }

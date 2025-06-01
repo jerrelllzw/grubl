@@ -51,7 +51,7 @@ export default function PlaceCard({
 				marginVertical: 8,
 				backgroundColor: '#1c2238',
 			}}
-			disabled={true}
+			disabled
 		>
 			<View style={{ width: '100%', height: 200, marginBottom: 12 }}>
 				<Image

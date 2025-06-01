@@ -1,26 +1,9 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { Button, Layout, Spinner, Text } from '@ui-kitten/components';
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Linking } from 'react-native';
+import { fetchCoordinates, fetchPlaces, Place } from '../api/places';
 import PlaceCard from '../components/PlaceCard';
-
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
-
-interface Coordinates {
-	lat: number;
-	lng: number;
-}
-
-interface Place {
-	name?: string;
-	rating?: number;
-	photoUri?: string;
-	lat: number;
-	lng: number;
-	ratingCount?: number;
-	priceLevel?: string;
-}
 
 type RouteParams = {
 	location: string;
@@ -28,70 +11,9 @@ type RouteParams = {
 	radius: number;
 };
 
-async function fetchCoordinates(address: string): Promise<Coordinates> {
-	const res = await axios.get(
-		'https://maps.googleapis.com/maps/api/geocode/json',
-		{
-			params: { address, key: GOOGLE_API_KEY },
-		}
-	);
-	const result = res.data.results?.[0]?.geometry?.location;
-	if (!result) throw new Error('No coordinates found');
-	return { lat: result.lat, lng: result.lng };
-}
-
-async function fetchPlaces(
-	lat: number,
-	lng: number,
-	types: string[],
-	radius: number
-): Promise<Place[]> {
-	const res = await axios.post(
-		'https://places.googleapis.com/v1/places:searchNearby',
-		{
-			includedTypes: types,
-			locationRestriction: {
-				circle: {
-					center: { latitude: lat, longitude: lng },
-					radius: radius,
-				},
-			},
-		},
-		{
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Goog-Api-Key': GOOGLE_API_KEY,
-				'X-Goog-FieldMask': [
-					'places.displayName',
-					'places.rating',
-					'places.id',
-					'places.location',
-					'places.photos',
-					'places.priceLevel',
-					'places.userRatingCount',
-				].join(','),
-			},
-		}
-	);
-
-	return (res.data.places || []).map((place: any) => ({
-		name: place.displayName?.text,
-		rating: place.rating,
-		photoUri: place.photos?.[0]?.name
-			? `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxWidthPx=800&key=${GOOGLE_API_KEY}`
-			: undefined,
-		lat: place.location.latitude,
-		lng: place.location.longitude,
-		ratingCount: place.userRatingCount,
-		priceLevel: place.priceLevel,
-	}));
-}
-
 export default function DeckScreen() {
 	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
-	const location = route.params.location;
-	const types = route.params.types;
-	const radius = route.params.radius;
+	const { location, types, radius } = route.params;
 
 	const [places, setPlaces] = useState<Place[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -114,7 +36,7 @@ export default function DeckScreen() {
 	}, [location, radius, types]);
 
 	const handleNext = () => {
-		if (currentIndex < places.length - 1) setCurrentIndex(currentIndex + 1);
+		setCurrentIndex((idx) => Math.min(idx + 1, places.length - 1));
 	};
 
 	const handleAccept = () => {
@@ -143,13 +65,7 @@ export default function DeckScreen() {
 	return (
 		<Layout style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
 			{current ? (
-				<PlaceCard
-					name={current.name}
-					rating={current.rating}
-					photoUri={current.photoUri}
-					ratingCount={current.ratingCount}
-					priceLevel={current.priceLevel}
-				/>
+				<PlaceCard {...current} />
 			) : (
 				<Text category='h6' style={{ textAlign: 'center' }}>
 					No places found.
