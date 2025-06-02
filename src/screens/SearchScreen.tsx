@@ -48,10 +48,17 @@ export default function SearchScreen() {
 				<Text category='h6' style={styles.header}>
 					Location:
 				</Text>
-				<Input placeholder='e.g. Lot 1' value={location} onChangeText={setLocation} style={styles.input} />
-				<Button size='small' appearance='ghost' onPress={handleUseCurrentLocation} style={styles.useLocationButton}>
-					Use Current Location
-				</Button>
+				<Layout style={styles.inputRow}>
+					<Input
+						placeholder='e.g. Lot 1'
+						value={location}
+						onChangeText={setLocation}
+						style={[styles.input, { flex: 1 }]}
+					/>
+					<Button size='small' appearance='outline' onPress={handleUseCurrentLocation} style={styles.useLocationButton}>
+						📍
+					</Button>
+				</Layout>
 
 				<Text style={styles.radiusLabel}>Search Radius:</Text>
 				<Select
@@ -96,11 +103,17 @@ const styles = StyleSheet.create({
 	header: {
 		marginBottom: 8,
 	},
+	inputRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: 4,
+	},
 	input: {
 		marginBottom: 4,
 	},
 	useLocationButton: {
-		marginBottom: 16,
+		marginLeft: 8,
+		marginBottom: 4,
 	},
 	radiusLabel: {
 		marginBottom: 4,
