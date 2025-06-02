@@ -45,47 +45,50 @@ export default function SearchScreen() {
 	return (
 		<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 			<Layout style={styles.container}>
-				<Text category='h6' style={styles.header}>
-					Location:
-				</Text>
-				<Layout style={styles.inputRow}>
-					<Input
-						placeholder='e.g. Lot 1'
-						value={location}
-						onChangeText={setLocation}
-						style={[styles.input, { flex: 1 }]}
-					/>
-					<Button size='small' appearance='outline' onPress={handleUseCurrentLocation} style={styles.useLocationButton}>
-						📍
-					</Button>
+				<Layout>
+					<Text category='h6' style={styles.header}>
+						Location:
+					</Text>
+					<Layout style={styles.locationContainer}>
+						<Input placeholder='e.g. Lot 1' value={location} onChangeText={setLocation} style={{ flex: 1 }} />
+						<Button size='small' appearance='outline' onPress={handleUseCurrentLocation}>
+							📍
+						</Button>
+					</Layout>
 				</Layout>
 
-				<Text style={styles.radiusLabel}>Search Radius:</Text>
-				<Select
-					selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
-					onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
-					value={`${radius}m`}
-					style={styles.radiusSelect}
-				>
-					{RADIUS_OPTIONS.map((option) => (
-						<SelectItem key={option} title={`${option}m`} />
-					))}
-				</Select>
+				<Layout>
+					<Text category='h6' style={styles.header}>
+						Search Radius:
+					</Text>
+					<Select
+						selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
+						onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
+						value={`${radius}m`}
+					>
+						{RADIUS_OPTIONS.map((option) => (
+							<SelectItem key={option} title={`${option}m`} />
+						))}
+					</Select>
+				</Layout>
 
-				<Text style={styles.radiusLabel}>Place Types:</Text>
-				<Layout style={styles.placeTypeContainer}>
-					{PLACE_TYPE_OPTIONS.map(({ label, value }) => (
-						<Button
-							key={value}
-							size='tiny'
-							appearance={placeTypes.includes(value) ? 'filled' : 'outline'}
-							status={placeTypes.includes(value) ? 'primary' : 'basic'}
-							style={styles.typeButton}
-							onPress={() => handlePlaceTypeToggle(value)}
-						>
-							{label}
-						</Button>
-					))}
+				<Layout>
+					<Text category='h6' style={styles.header}>
+						Place Types:
+					</Text>
+					<Layout style={styles.placeTypeContainer}>
+						{PLACE_TYPE_OPTIONS.map(({ label, value }) => (
+							<Button
+								key={value}
+								size='tiny'
+								appearance={placeTypes.includes(value) ? 'filled' : 'outline'}
+								status={placeTypes.includes(value) ? 'primary' : 'basic'}
+								onPress={() => handlePlaceTypeToggle(value)}
+							>
+								{label}
+							</Button>
+						))}
+					</Layout>
 				</Layout>
 
 				<Button onPress={handleSearch}>Search</Button>
@@ -99,35 +102,20 @@ const styles = StyleSheet.create({
 		flex: 1,
 		padding: 32,
 		justifyContent: 'center',
+		gap: 16,
 	},
 	header: {
 		marginBottom: 8,
 	},
-	inputRow: {
+	locationContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		marginBottom: 4,
-	},
-	input: {
-		marginBottom: 4,
-	},
-	useLocationButton: {
-		marginLeft: 8,
-		marginBottom: 4,
-	},
-	radiusLabel: {
-		marginBottom: 4,
-	},
-	radiusSelect: {
-		marginBottom: 16,
-	},
-	typeButton: {
-		margin: 4,
+		gap: 8,
 	},
 	placeTypeContainer: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		justifyContent: 'center',
-		marginBottom: 16,
+		gap: 4,
 	},
 });
