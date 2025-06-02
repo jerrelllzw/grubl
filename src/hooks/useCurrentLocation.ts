@@ -1,11 +1,12 @@
 import * as Location from 'expo-location';
+import { handleError } from '../utils/errorHandler';
 
 export function useCurrentLocation(setLocation: (loc: string) => void) {
     return async () => {
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                alert('Permission to access location was denied');
+                handleError('Permission denied', 'Permission to access location was denied');
                 return;
             }
             const loc = await Location.getCurrentPositionAsync({});
@@ -15,15 +16,13 @@ export function useCurrentLocation(setLocation: (loc: string) => void) {
             });
             if (geocode.length > 0) {
                 const { name, street, city, region } = geocode[0];
-                const locationString = [name, street, city, region]
-                    .filter(Boolean)
-                    .join(', ');
+                const locationString = [name, street, city, region].filter(Boolean).join(', ');
                 setLocation(locationString);
             } else {
-                alert('Could not determine address from location');
+                handleError('No geocode result', 'Could not determine address from location');
             }
-        } catch {
-            alert('Failed to get current location');
+        } catch (error) {
+            handleError(error, 'Failed to get current location');
         }
     };
 }
