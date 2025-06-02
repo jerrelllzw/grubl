@@ -10,7 +10,7 @@ const Stack = createNativeStackNavigator();
 export default function index() {
 	return (
 		<ApplicationProvider {...eva} theme={eva.light}>
-			<Stack.Navigator initialRouteName='Search'>
+			<Stack.Navigator initialRouteName='Search' screenOptions={{ headerShown: false }}>
 				<Stack.Screen name='Search' component={SearchScreen} />
 				<Stack.Screen name='Swipe' component={SwipeScreen} />
 			</Stack.Navigator>
