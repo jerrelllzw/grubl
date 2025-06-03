@@ -51,7 +51,7 @@ export default function SearchScreen() {
 					</Text>
 					<Layout style={styles.locationContainer}>
 						<Input placeholder='e.g. Lot 1' value={location} onChangeText={setLocation} style={{ flex: 1 }} />
-						<Button size='small' appearance='outline' onPress={handleUseCurrentLocation}>
+						<Button size='small' status='warning' appearance='outline' onPress={handleUseCurrentLocation}>
 							📍
 						</Button>
 					</Layout>
@@ -82,7 +82,7 @@ export default function SearchScreen() {
 								key={value}
 								size='tiny'
 								appearance={placeTypes.includes(value) ? 'filled' : 'outline'}
-								status={placeTypes.includes(value) ? 'primary' : 'basic'}
+								status={placeTypes.includes(value) ? 'success' : 'basic'}
 								onPress={() => handlePlaceTypeToggle(value)}
 							>
 								{label}
