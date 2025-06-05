@@ -85,8 +85,10 @@ export default function SwipeScreen() {
 	const handleAccept = useCallback(
 		(cardIndex: number) => {
 			const place = places[cardIndex];
-			if (place) {
-				const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}`;
+			if (place && place.id) {
+				const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+					place.name || ''
+				)}&query_place_id=${place.id}`;
 				Linking.openURL(mapsUrl);
 			}
 		},

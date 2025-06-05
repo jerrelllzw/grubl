@@ -13,6 +13,7 @@ export interface Coordinates {
 }
 
 export interface Place {
+    id: string;
     name?: string;
     rating?: number;
     photoUri?: string;
@@ -78,6 +79,7 @@ export async function fetchPlaces(
                 ? `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&key=${API_KEY}`
                 : undefined;
             return {
+                id: place.id,
                 name: place.displayName?.text || '',
                 rating: place.rating ?? undefined,
                 photoUri,
