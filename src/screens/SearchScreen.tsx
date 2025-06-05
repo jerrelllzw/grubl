@@ -16,7 +16,7 @@ export default function SearchScreen() {
 
 	const [location, setLocation] = useState('');
 	const [placeTypes, setPlaceTypes] = useState<string[]>(PLACE_TYPE_OPTIONS.map((option) => option.value));
-	const [radius, setRadius] = useState(RADIUS_OPTIONS[1]);
+	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
 
 	const handleUseCurrentLocation = useCurrentLocation(setLocation);
 
