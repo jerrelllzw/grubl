@@ -77,7 +77,7 @@ export default function SwipeScreen() {
 		),
 		[]
 	);
-	
+
 	const OverlayLabel = ({ color }: { color: string }) => (
 		<View style={[styles.overlayLabelContainer, { backgroundColor: color }]} />
 	);
