@@ -15,7 +15,7 @@ type RouteParams = {
 	placeTypes: string[];
 };
 
-function priceLevelToDollarSigns(level?: string) {
+function priceLevelToDollarSigns(level: string) {
 	switch (level) {
 		case 'PRICE_LEVEL_FREE':
 			return 'Free';
@@ -63,20 +63,25 @@ export default function SwipeScreen() {
 		load();
 	}, [location, radius, placeTypes]);
 
-	const renderCard = useCallback(
-		(place: Place) => (
+	const renderCard = useCallback((place: Place) => {
+		return (
 			<Layout style={styles.cardStyle}>
-				<Image source={place.photoUri ? { uri: place.photoUri } : undefined} style={styles.image} />
-				<Text category='h6'>{place.name || 'No name provided'}</Text>
+				{place.photoUri ? (
+					<Image source={{ uri: place.photoUri }} style={styles.image} />
+				) : (
+					<Text appearance='hint'>No Image</Text>
+				)}
+				<Text category='h6'>{place.name ?? 'No name provided'}</Text>
 				<Text appearance='hint'>
 					{place.rating !== undefined ? `${place.rating} ⭐` : 'No ratings yet'}
 					{place.ratingCount !== undefined ? ` (${place.ratingCount})` : ''}
 				</Text>
-				<Text appearance='hint'>{priceLevelToDollarSigns(place.priceLevel)}</Text>
+				<Text appearance='hint'>
+					{place.priceLevel !== undefined ? priceLevelToDollarSigns(place.priceLevel) : 'No price data'}
+				</Text>
 			</Layout>
-		),
-		[]
-	);
+		);
+	}, []);
 
 	const OverlayLabel = ({ color }: { color: string }) => (
 		<View style={[styles.overlayLabelContainer, { backgroundColor: color }]} />
