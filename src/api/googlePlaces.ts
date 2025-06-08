@@ -16,7 +16,6 @@ export interface Place {
     id: string;
     name?: string;
     rating?: number;
-    photoUri?: string;
     latitude: number;
     longitude: number;
     ratingCount?: number;
@@ -57,7 +56,6 @@ export async function fetchPlaces(
             'places.rating',
             'places.id',
             'places.location',
-            'places.photos',
             'places.priceLevel',
             'places.userRatingCount',
         ].join(','),
@@ -74,15 +72,10 @@ export async function fetchPlaces(
     try {
         const response = await axios.post(url, body, { headers });
         return (response.data.places || []).map((place: any) => {
-            const photoName = place.photos?.[0]?.name;
-            const photoUri = photoName
-                ? `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&key=${API_KEY}`
-                : undefined;
             return {
                 id: place.id,
                 name: place.displayName?.text || '',
                 rating: place.rating ?? undefined,
-                photoUri,
                 latitude: place.location?.latitude,
                 longitude: place.location?.longitude,
                 ratingCount: place.userRatingCount ?? undefined,

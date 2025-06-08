@@ -1,7 +1,7 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { Layout, Spinner, Text } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, Image, Linking, StyleSheet, View } from 'react-native';
+import { Dimensions, Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
 import { fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
@@ -66,11 +66,6 @@ export default function SwipeScreen() {
 	const renderCard = useCallback((place: Place) => {
 		return (
 			<Layout style={styles.cardStyle}>
-				{place.photoUri ? (
-					<Image source={{ uri: place.photoUri }} style={styles.image} />
-				) : (
-					<Text appearance='hint'>No Image</Text>
-				)}
 				<Text category='h6'>{place.name ?? 'No name provided'}</Text>
 				<Text appearance='hint'>
 					{place.rating !== undefined ? `${place.rating} ⭐` : 'No ratings yet'}
@@ -154,10 +149,5 @@ const styles = StyleSheet.create({
 		padding: 16,
 		elevation: 2,
 		gap: 8,
-	},
-	image: {
-		width: '100%',
-		height: '70%',
-		borderRadius: CARD_BORDER_RADIUS,
 	},
 });
