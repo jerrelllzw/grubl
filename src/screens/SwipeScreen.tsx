@@ -31,7 +31,7 @@ export default function SwipeScreen() {
 	useEffect(() => {
 		const load = async () => {
 			try {
-				const coords = await fetchCoordinates(`${location}, Singapore`);
+				const coords = await fetchCoordinates(`${location}`);
 				if (!coords) {
 					setPlaces([]);
 					return;
