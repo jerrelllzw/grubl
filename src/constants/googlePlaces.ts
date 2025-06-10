@@ -7,6 +7,7 @@ export const PLACE_TYPE_OPTIONS = [
     { label: 'Bar', value: 'bar' },
     { label: 'Food Court', value: 'food_court' },
     { label: 'Takeaway', value: 'meal_takeaway' },
+    { label: 'Fine Dining', value: 'fine_dining_restaurant' },
 ];
 
 export const IGNORED_PLACE_TYPES = ['meal_delivery', 'meal_takeaway', 'restaurant'];
