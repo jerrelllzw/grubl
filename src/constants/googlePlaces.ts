@@ -1,13 +1,18 @@
 export const PLACE_TYPE_OPTIONS = [
-    { label: 'Restaurant', value: 'restaurant' },
-    { label: 'Cafe', value: 'cafe' },
-    { label: 'Coffee Shop', value: 'coffee_shop' },
-    { label: 'Fast Food', value: 'fast_food_restaurant' },
     { label: 'Bakery', value: 'bakery' },
     { label: 'Bar', value: 'bar' },
-    { label: 'Food Court', value: 'food_court' },
-    { label: 'Takeaway', value: 'meal_takeaway' },
+    { label: 'Cafe', value: 'cafe' },
+    { label: 'Coffee Shop', value: 'coffee_shop' },
+    { label: 'Deli', value: 'deli' },
+    { label: 'Dessert', value: 'dessert_shop' },
+    { label: 'Fast Food', value: 'fast_food_restaurant' },
     { label: 'Fine Dining', value: 'fine_dining_restaurant' },
+    { label: 'Food Court', value: 'food_court' },
+    { label: 'Ice Cream', value: 'ice_cream_shop' },
+    { label: 'Pub', value: 'pub' },
+    { label: 'Restaurant', value: 'restaurant' },
+    { label: 'Takeaway', value: 'meal_takeaway' },
+    { label: 'Tea House', value: 'tea_house' },
 ];
 
 export const IGNORED_PLACE_TYPES = ['meal_delivery', 'meal_takeaway', 'restaurant'];
