@@ -3,12 +3,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, IndexPath, Input, Layout, Select, SelectItem, Text } from '@ui-kitten/components';
 import React, { useState } from 'react';
 import { Keyboard, StyleSheet, TouchableWithoutFeedback } from 'react-native';
-import { PLACE_TYPE_OPTIONS, RADIUS_OPTIONS } from '../constants/googlePlaces';
+import { PLACE_TYPE_OPTIONS, PRICE_MAP, RADIUS_OPTIONS } from '../constants/googlePlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { handleError } from '../utils/errorHandler';
 
 type RootStackParamList = {
-	Swipe: { location: string; radius: number; placeTypes: string[] };
+	Swipe: { location: string; radius: number; placeTypes: string[]; priceLevels: string[] };
 };
 
 export default function SearchScreen() {
@@ -18,6 +18,7 @@ export default function SearchScreen() {
 	const [placeTypes, setPlaceTypes] = useState<string[]>(PLACE_TYPE_OPTIONS.map((option) => option.value));
 	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
 	const [isLocating, setIsLocating] = useState(false);
+	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const handleUseCurrentLocationInner = useCurrentLocation(setLocation);
 
 	const handleUseCurrentLocation = async () => {
@@ -39,12 +40,23 @@ export default function SearchScreen() {
 		});
 	};
 
+	const handlePriceLevelToggle = (value: string) => {
+		setPriceLevels((prev) => {
+			if (prev.includes(value)) {
+				return prev.length > 1 ? prev.filter((lvl) => lvl !== value) : prev;
+			} else {
+				return [...prev, value];
+			}
+		});
+	};
+
 	const handleSearch = () => {
 		if (location.trim()) {
 			navigation.navigate('Swipe', {
 				location,
 				radius,
 				placeTypes,
+				priceLevels,
 			});
 		} else {
 			handleError('No location entered', 'Please enter a location.');
@@ -91,7 +103,7 @@ export default function SearchScreen() {
 					<Text category='h6' style={styles.header}>
 						Place Types:
 					</Text>
-					<Layout style={styles.placeTypeContainer}>
+					<Layout style={styles.multiSelectContainer}>
 						{PLACE_TYPE_OPTIONS.map(({ label, value }) => (
 							<Button
 								key={value}
@@ -103,6 +115,27 @@ export default function SearchScreen() {
 								{label}
 							</Button>
 						))}
+					</Layout>
+				</Layout>
+
+				<Layout>
+					<Text category='h6' style={styles.header}>
+						Price Level:
+					</Text>
+					<Layout style={styles.multiSelectContainer}>
+						{Object.keys(PRICE_MAP).map((key) => {
+							return (
+								<Button
+									key={key}
+									size='tiny'
+									appearance={priceLevels.includes(key) ? 'filled' : 'outline'}
+									status={priceLevels.includes(key) ? 'success' : 'basic'}
+									onPress={() => handlePriceLevelToggle(key)}
+								>
+									{PRICE_MAP[key]}
+								</Button>
+							);
+						})}
 					</Layout>
 				</Layout>
 
@@ -127,7 +160,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		gap: 8,
 	},
-	placeTypeContainer: {
+	multiSelectContainer: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		justifyContent: 'center',

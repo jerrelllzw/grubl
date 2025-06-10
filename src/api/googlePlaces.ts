@@ -48,6 +48,7 @@ export async function fetchPlaces(
     longitude: number,
     radius: number,
     types: string[],
+    priceLevels: string[]
 ): Promise<Place[]> {
     const url = 'https://places.googleapis.com/v1/places:searchNearby';
     const headers = {
@@ -75,19 +76,21 @@ export async function fetchPlaces(
     };
     try {
         const response = await axios.post(url, body, { headers });
-        return (response.data.places || []).map((place: any) => {
-            return {
-                id: place.id,
-                name: place.displayName?.text ?? undefined,
-                rating: place.rating ?? undefined,
-                latitude: place.location?.latitude,
-                longitude: place.location?.longitude,
-                ratingCount: place.userRatingCount ?? undefined,
-                priceLevel: place.priceLevel ?? undefined,
-                primaryType: place.primaryType ?? undefined,
-                types: place.types || [],
-            };
-        });
+        return (response.data.places || [])
+            .filter((place: any) => priceLevels.includes(place.priceLevel))
+            .map((place: any) => {
+                return {
+                    id: place.id,
+                    name: place.displayName?.text ?? undefined,
+                    rating: place.rating ?? undefined,
+                    latitude: place.location?.latitude,
+                    longitude: place.location?.longitude,
+                    ratingCount: place.userRatingCount ?? undefined,
+                    priceLevel: place.priceLevel ?? undefined,
+                    primaryType: place.primaryType ?? undefined,
+                    types: place.types || [],
+                };
+            });
     } catch (error: any) {
         handleError(error, 'Failed to fetch places.');
         return [];
