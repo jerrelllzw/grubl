@@ -5,6 +5,7 @@ import { Dimensions, Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
 import { fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
+import { EMOJI_MAP, IGNORED_PLACE_TYPES, PRICE_MAP } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 const CARD_BORDER_RADIUS = 15;
@@ -14,23 +15,6 @@ type RouteParams = {
 	radius: number;
 	placeTypes: string[];
 };
-
-function priceLevelToDollarSigns(level: string) {
-	switch (level) {
-		case 'PRICE_LEVEL_FREE':
-			return 'Free';
-		case 'PRICE_LEVEL_INEXPENSIVE':
-			return '$';
-		case 'PRICE_LEVEL_MODERATE':
-			return '$$';
-		case 'PRICE_LEVEL_EXPENSIVE':
-			return '$$$';
-		case 'PRICE_LEVEL_VERY_EXPENSIVE':
-			return '$$$$';
-		default:
-			return '';
-	}
-}
 
 const { width, height } = Dimensions.get('window');
 
@@ -66,14 +50,27 @@ export default function SwipeScreen() {
 	const renderCard = useCallback((place: Place) => {
 		return (
 			<Layout style={styles.cardStyle}>
-				<Text category='h6'>{place.name ?? 'No name provided'}</Text>
+				<Text style={{ textAlign: 'center' }} category='h1'>
+					{place.name ?? 'Unknown'}
+				</Text>
+				<Text style={{ fontSize: 100 }}>{EMOJI_MAP[place.primaryType ?? ''] ?? '🍴'}</Text>
+				<Layout style={styles.typesContainer}>
+					{place.types
+						?.filter((type) => EMOJI_MAP[type] !== undefined && !IGNORED_PLACE_TYPES.includes(type))
+						.map((type) => (
+							<Text key={type} style={styles.typeTag}>
+								{type
+									.split('_')
+									.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+									.join(' ')}
+							</Text>
+						))}
+				</Layout>
 				<Text appearance='hint'>
 					{place.rating !== undefined ? `${place.rating} ⭐` : 'No ratings yet'}
 					{place.ratingCount !== undefined ? ` (${place.ratingCount})` : ''}
 				</Text>
-				<Text appearance='hint'>
-					{place.priceLevel !== undefined ? priceLevelToDollarSigns(place.priceLevel) : 'No price data'}
-				</Text>
+				<Text appearance='hint'>{PRICE_MAP[place.priceLevel ?? ''] ?? 'No price data'}</Text>
 			</Layout>
 		);
 	}, []);
@@ -142,12 +139,23 @@ const styles = StyleSheet.create({
 	},
 	cardStyle: {
 		width: width * 0.9,
-		height: height * 0.8,
+		height: height * 0.5,
 		alignItems: 'center',
 		justifyContent: 'center',
 		borderRadius: CARD_BORDER_RADIUS,
-		padding: 16,
+		padding: 20,
 		elevation: 2,
 		gap: 8,
+	},
+	typesContainer: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		gap: 8,
+	},
+	typeTag: {
+		borderRadius: CARD_BORDER_RADIUS,
+		paddingVertical: 5,
+		paddingHorizontal: 10,
+		backgroundColor: '#f0f0f0',
 	},
 });

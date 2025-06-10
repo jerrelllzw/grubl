@@ -20,6 +20,8 @@ export interface Place {
     longitude: number;
     ratingCount?: number;
     priceLevel?: string;
+    primaryType?: string;
+    types?: string[];
 }
 
 // Geocoding
@@ -58,6 +60,8 @@ export async function fetchPlaces(
             'places.location',
             'places.priceLevel',
             'places.userRatingCount',
+            'places.primaryType',
+            'places.types',
         ].join(','),
     };
     const body = {
@@ -74,12 +78,14 @@ export async function fetchPlaces(
         return (response.data.places || []).map((place: any) => {
             return {
                 id: place.id,
-                name: place.displayName?.text || '',
+                name: place.displayName?.text ?? undefined,
                 rating: place.rating ?? undefined,
                 latitude: place.location?.latitude,
                 longitude: place.location?.longitude,
                 ratingCount: place.userRatingCount ?? undefined,
                 priceLevel: place.priceLevel ?? undefined,
+                primaryType: place.primaryType ?? undefined,
+                types: place.types || [],
             };
         });
     } catch (error: any) {
