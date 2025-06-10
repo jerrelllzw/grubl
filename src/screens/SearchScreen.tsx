@@ -17,8 +17,17 @@ export default function SearchScreen() {
 	const [location, setLocation] = useState('');
 	const [placeTypes, setPlaceTypes] = useState<string[]>(PLACE_TYPE_OPTIONS.map((option) => option.value));
 	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
+	const [isLocating, setIsLocating] = useState(false);
+	const handleUseCurrentLocationInner = useCurrentLocation(setLocation);
 
-	const handleUseCurrentLocation = useCurrentLocation(setLocation);
+	const handleUseCurrentLocation = async () => {
+		try {
+			setIsLocating(true);
+			await handleUseCurrentLocationInner();
+		} finally {
+			setIsLocating(false);
+		}
+	};
 
 	const handlePlaceTypeToggle = (value: string) => {
 		setPlaceTypes((prev) => {
@@ -51,8 +60,14 @@ export default function SearchScreen() {
 					</Text>
 					<Layout style={styles.locationContainer}>
 						<Input placeholder='e.g. Lot 1' value={location} onChangeText={setLocation} style={{ flex: 1 }} />
-						<Button size='small' status='warning' appearance='outline' onPress={handleUseCurrentLocation}>
-							📍
+						<Button
+							size='small'
+							status='warning'
+							appearance='outline'
+							onPress={handleUseCurrentLocation}
+							disabled={isLocating}
+						>
+							{isLocating ? <Text>...</Text> : '📍'}
 						</Button>
 					</Layout>
 				</Layout>
