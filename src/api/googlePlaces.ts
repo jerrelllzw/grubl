@@ -77,7 +77,7 @@ export async function fetchPlaces(
     try {
         const response = await axios.post(url, body, { headers });
         return (response.data.places || [])
-            .filter((place: any) => priceLevels.includes(place.priceLevel))
+            .filter((place: any) => place.priceLevel === undefined || priceLevels.includes(place.priceLevel))
             .map((place: any) => {
                 return {
                     id: place.id,
