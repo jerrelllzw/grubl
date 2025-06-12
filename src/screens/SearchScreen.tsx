@@ -85,7 +85,7 @@ export default function SearchScreen() {
 						/>
 						<Button
 							size='small'
-							status='success'
+							status='primary'
 							appearance='outline'
 							onPress={handleUseCurrentLocation}
 							disabled={isLocating}
@@ -120,7 +120,7 @@ export default function SearchScreen() {
 								key={value}
 								size='tiny'
 								appearance={placeTypes.includes(value) ? 'filled' : 'outline'}
-								status={placeTypes.includes(value) ? 'success' : 'basic'}
+								status={placeTypes.includes(value) ? 'primary' : 'basic'}
 								onPress={() => handlePlaceTypeToggle(value)}
 							>
 								{label}
@@ -140,7 +140,7 @@ export default function SearchScreen() {
 									key={key}
 									size='tiny'
 									appearance={priceLevels.includes(key) ? 'filled' : 'outline'}
-									status={priceLevels.includes(key) ? 'success' : 'basic'}
+									status={priceLevels.includes(key) ? 'primary' : 'basic'}
 									onPress={() => handlePriceLevelToggle(key)}
 								>
 									{PRICE_MAP[key]}
@@ -150,9 +150,9 @@ export default function SearchScreen() {
 					</Layout>
 				</Layout>
 
-				<Layout style={styles.openNowContainer}>
+				<Layout style={[styles.openNowContainer, styles.header]}>
 					<Text>Only show places that are open now</Text>
-					<Toggle checked={openNow} onChange={() => handleOpenNowToggle()} status='success'></Toggle>
+					<Toggle checked={openNow} onChange={() => handleOpenNowToggle()} status='primary'></Toggle>
 				</Layout>
 
 				<Button onPress={handleSearch}>Search</Button>
