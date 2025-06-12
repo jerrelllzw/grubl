@@ -175,7 +175,6 @@ const styles = StyleSheet.create({
 	},
 	locationContainer: {
 		flexDirection: 'row',
-		alignItems: 'center',
 		gap: 8,
 	},
 	multiSelectContainer: {
