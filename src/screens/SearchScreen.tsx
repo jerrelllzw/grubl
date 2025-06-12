@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, IndexPath, Input, Layout, Select, SelectItem, Text } from '@ui-kitten/components';
+import { Button, IndexPath, Input, Layout, Select, SelectItem, Text, Toggle } from '@ui-kitten/components';
 import React, { useState } from 'react';
 import { Keyboard, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { PLACE_TYPE_OPTIONS, PRICE_MAP, RADIUS_OPTIONS } from '../constants/googlePlaces';
@@ -8,7 +8,7 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { handleError } from '../utils/errorHandler';
 
 type RootStackParamList = {
-	Swipe: { location: string; radius: number; placeTypes: string[]; priceLevels: string[] };
+	Swipe: { location: string; radius: number; placeTypes: string[]; priceLevels: string[]; openNow: boolean };
 };
 
 export default function SearchScreen() {
@@ -19,6 +19,7 @@ export default function SearchScreen() {
 	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
 	const [isLocating, setIsLocating] = useState(false);
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
+	const [openNow, setOpenNow] = useState(true);
 	const handleUseCurrentLocationInner = useCurrentLocation(setLocation);
 
 	const handleUseCurrentLocation = async () => {
@@ -50,6 +51,10 @@ export default function SearchScreen() {
 		});
 	};
 
+	const handleOpenNowToggle = () => {
+		setOpenNow((prev) => !prev);
+	};
+
 	const handleSearch = () => {
 		if (location.trim()) {
 			navigation.navigate('Swipe', {
@@ -57,6 +62,7 @@ export default function SearchScreen() {
 				radius,
 				placeTypes,
 				priceLevels,
+				openNow,
 			});
 		} else {
 			handleError('No location entered', 'Please enter a location.');
@@ -138,6 +144,10 @@ export default function SearchScreen() {
 						})}
 					</Layout>
 				</Layout>
+
+				<Toggle checked={openNow} onChange={() => handleOpenNowToggle()} status='success'>
+					<Text>Open Now</Text>
+				</Toggle>
 
 				<Button onPress={handleSearch}>Search</Button>
 			</Layout>

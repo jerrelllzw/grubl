@@ -22,6 +22,7 @@ export interface Place {
     priceLevel?: string;
     primaryType?: string;
     types?: string[];
+    openNow?: boolean;
 }
 
 // Geocoding
@@ -48,7 +49,8 @@ export async function fetchPlaces(
     longitude: number,
     radius: number,
     types: string[],
-    priceLevels: string[]
+    priceLevels: string[],
+    openNow: boolean
 ): Promise<Place[]> {
     const url = 'https://places.googleapis.com/v1/places:searchNearby';
     const headers = {
@@ -63,6 +65,7 @@ export async function fetchPlaces(
             'places.userRatingCount',
             'places.primaryType',
             'places.types',
+            'places.currentOpeningHours'
         ].join(','),
     };
     const body = {
@@ -78,6 +81,7 @@ export async function fetchPlaces(
         const response = await axios.post(url, body, { headers });
         return (response.data.places || [])
             .filter((place: any) => place.priceLevel === undefined || priceLevels.includes(place.priceLevel))
+            .filter((place: any) => !openNow || place?.currentOpeningHours?.openNow)
             .map((place: any) => {
                 return {
                     id: place.id,
@@ -89,6 +93,7 @@ export async function fetchPlaces(
                     priceLevel: place.priceLevel ?? undefined,
                     primaryType: place.primaryType ?? undefined,
                     types: place.types || [],
+                    openNow: place.currentOpeningHours?.openNow ?? undefined,
                 };
             });
     } catch (error: any) {

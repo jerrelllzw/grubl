@@ -15,13 +15,14 @@ type RouteParams = {
 	radius: number;
 	placeTypes: string[];
 	priceLevels: string[];
+	openNow: boolean;
 };
 
 const { width, height } = Dimensions.get('window');
 
 export default function SwipeScreen() {
 	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
-	const { location, radius, placeTypes, priceLevels } = route.params;
+	const { location, radius, placeTypes, priceLevels, openNow } = route.params;
 
 	const [places, setPlaces] = useState<Place[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -36,7 +37,7 @@ export default function SwipeScreen() {
 					setPlaces([]);
 					return;
 				}
-				const placesList = await fetchPlaces(coords.lat, coords.lng, radius, placeTypes, priceLevels);
+				const placesList = await fetchPlaces(coords.lat, coords.lng, radius, placeTypes, priceLevels, openNow);
 				setPlaces(placesList);
 			} catch (err) {
 				handleError(err, 'An error occurred while loading places.');
@@ -46,7 +47,7 @@ export default function SwipeScreen() {
 			}
 		};
 		load();
-	}, [location, radius, placeTypes, priceLevels]);
+	}, [location, radius, placeTypes, priceLevels, openNow]);
 
 	const renderCard = useCallback((place: Place) => {
 		return (
