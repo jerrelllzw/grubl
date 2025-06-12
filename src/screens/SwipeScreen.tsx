@@ -144,7 +144,8 @@ const styles = StyleSheet.create({
 		height: height,
 		alignItems: 'center',
 		justifyContent: 'center',
-		gap: 16,
+		gap: 12,
+		padding: 16,
 	},
 	typesContainer: {
 		flexDirection: 'row',
