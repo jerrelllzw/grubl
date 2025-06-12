@@ -15,13 +15,15 @@ export default function SearchScreen() {
 	const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
 	const [location, setLocation] = useState('');
-	const [placeTypes, setPlaceTypes] = useState<string[]>(PLACE_TYPE_OPTIONS.map((option) => option.value));
-	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
 	const [isLocating, setIsLocating] = useState(false);
+	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
+	const [selectedPlaceTypes, setSelectedPlaceTypes] = useState<IndexPath[]>(
+		PLACE_TYPE_OPTIONS.map((_, i) => new IndexPath(i))
+	);
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const [openNow, setOpenNow] = useState(true);
-	const handleUseCurrentLocationInner = useCurrentLocation(setLocation);
 
+	const handleUseCurrentLocationInner = useCurrentLocation(setLocation);
 	const handleUseCurrentLocation = async () => {
 		try {
 			setIsLocating(true);
@@ -29,16 +31,6 @@ export default function SearchScreen() {
 		} finally {
 			setIsLocating(false);
 		}
-	};
-
-	const handlePlaceTypeToggle = (value: string) => {
-		setPlaceTypes((prev) => {
-			if (prev.includes(value)) {
-				return prev.length > 1 ? prev.filter((t) => t !== value) : prev;
-			} else {
-				return [...prev, value];
-			}
-		});
 	};
 
 	const handlePriceLevelToggle = (value: string) => {
@@ -60,7 +52,7 @@ export default function SearchScreen() {
 			navigation.navigate('Swipe', {
 				location,
 				radius,
-				placeTypes,
+				placeTypes: selectedPlaceTypes.map((i) => PLACE_TYPE_OPTIONS[i.row].value),
 				priceLevels,
 				openNow,
 			});
@@ -82,11 +74,10 @@ export default function SearchScreen() {
 							value={location}
 							onChangeText={setLocation}
 							style={{ flex: 1 }}
-							status='primary'
 						/>
 						<Button
 							size='small'
-							status='primary'
+							status='basic'
 							appearance='outline'
 							onPress={handleUseCurrentLocation}
 							disabled={isLocating}
@@ -104,7 +95,6 @@ export default function SearchScreen() {
 						selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
 						onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
 						value={`${radius}m`}
-						status='primary'
 					>
 						{RADIUS_OPTIONS.map((option) => (
 							<SelectItem key={option} title={`${option}m`} />
@@ -116,19 +106,21 @@ export default function SearchScreen() {
 					<Text category='h6' style={styles.header}>
 						Place Types
 					</Text>
-					<Layout style={styles.multiSelectContainer}>
-						{PLACE_TYPE_OPTIONS.map(({ label, value }) => (
-							<Button
-								key={value}
-								size='tiny'
-								appearance={placeTypes.includes(value) ? 'filled' : 'outline'}
-								status={placeTypes.includes(value) ? 'primary' : 'basic'}
-								onPress={() => handlePlaceTypeToggle(value)}
-							>
-								{label}
-							</Button>
+					<Select
+						multiSelect
+						placeholder='Select place types'
+						value={selectedPlaceTypes.map((i) => PLACE_TYPE_OPTIONS[i.row]?.label).join(', ')}
+						selectedIndex={selectedPlaceTypes}
+						onSelect={(index) => {
+							if (Array.isArray(index)) {
+								setSelectedPlaceTypes(index);
+							}
+						}}
+					>
+						{PLACE_TYPE_OPTIONS.map((item) => (
+							<SelectItem key={item.value} title={item.label} />
 						))}
-					</Layout>
+					</Select>
 				</Layout>
 
 				<Layout>
@@ -152,9 +144,9 @@ export default function SearchScreen() {
 					</Layout>
 				</Layout>
 
-				<Layout style={[styles.openNowContainer, styles.header]}>
+				<Layout style={styles.openNowContainer}>
 					<Text>Only show places that are open now</Text>
-					<Toggle checked={openNow} onChange={() => handleOpenNowToggle()} status='primary'></Toggle>
+					<Toggle checked={openNow} onChange={handleOpenNowToggle}></Toggle>
 				</Layout>
 
 				<Button onPress={handleSearch}>Search</Button>

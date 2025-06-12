@@ -48,7 +48,7 @@ export async function fetchPlaces(
     latitude: number,
     longitude: number,
     radius: number,
-    types: string[],
+    placeTypes: string[],
     priceLevels: string[],
     openNow: boolean
 ): Promise<Place[]> {
@@ -69,7 +69,7 @@ export async function fetchPlaces(
         ].join(','),
     };
     const body = {
-        includedTypes: types,
+        includedTypes: placeTypes.length > 0 ? placeTypes : ['restaurant'],
         locationRestriction: {
             circle: {
                 center: { latitude, longitude },
