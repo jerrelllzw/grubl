@@ -82,6 +82,7 @@ export default function SearchScreen() {
 							value={location}
 							onChangeText={setLocation}
 							style={{ flex: 1 }}
+							status='primary'
 						/>
 						<Button
 							size='small'
@@ -103,6 +104,7 @@ export default function SearchScreen() {
 						selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
 						onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
 						value={`${radius}m`}
+						status='primary'
 					>
 						{RADIUS_OPTIONS.map((option) => (
 							<SelectItem key={option} title={`${option}m`} />
