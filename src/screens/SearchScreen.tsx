@@ -74,13 +74,18 @@ export default function SearchScreen() {
 			<Layout style={styles.container}>
 				<Layout>
 					<Text category='h6' style={styles.header}>
-						Location:
+						Location
 					</Text>
 					<Layout style={styles.locationContainer}>
-						<Input placeholder='e.g. Lot 1' value={location} onChangeText={setLocation} style={{ flex: 1 }} />
+						<Input
+							placeholder='Enter a city, address, or use current location'
+							value={location}
+							onChangeText={setLocation}
+							style={{ flex: 1 }}
+						/>
 						<Button
 							size='small'
-							status='warning'
+							status='success'
 							appearance='outline'
 							onPress={handleUseCurrentLocation}
 							disabled={isLocating}
@@ -92,7 +97,7 @@ export default function SearchScreen() {
 
 				<Layout>
 					<Text category='h6' style={styles.header}>
-						Search Radius:
+						Search Radius
 					</Text>
 					<Select
 						selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
@@ -107,7 +112,7 @@ export default function SearchScreen() {
 
 				<Layout>
 					<Text category='h6' style={styles.header}>
-						Place Types:
+						Place Types
 					</Text>
 					<Layout style={styles.multiSelectContainer}>
 						{PLACE_TYPE_OPTIONS.map(({ label, value }) => (
@@ -126,7 +131,7 @@ export default function SearchScreen() {
 
 				<Layout>
 					<Text category='h6' style={styles.header}>
-						Price Level:
+						Price Level
 					</Text>
 					<Layout style={styles.multiSelectContainer}>
 						{Object.keys(PRICE_MAP).map((key) => {
@@ -145,9 +150,10 @@ export default function SearchScreen() {
 					</Layout>
 				</Layout>
 
-				<Toggle checked={openNow} onChange={() => handleOpenNowToggle()} status='success'>
-					<Text>Open Now</Text>
-				</Toggle>
+				<Layout style={styles.openNowContainer}>
+					<Text>Open show places that are open now</Text>
+					<Toggle checked={openNow} onChange={() => handleOpenNowToggle()} status='success'></Toggle>
+				</Layout>
 
 				<Button onPress={handleSearch}>Search</Button>
 			</Layout>
@@ -173,7 +179,11 @@ const styles = StyleSheet.create({
 	multiSelectContainer: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
-		justifyContent: 'center',
 		gap: 4,
+	},
+	openNowContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
 	},
 });
