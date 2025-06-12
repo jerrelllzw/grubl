@@ -1,5 +1,5 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { Layout, Spinner, Text } from '@ui-kitten/components';
+import { Button, Layout, Spinner, Text } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -60,12 +60,12 @@ export default function SwipeScreen() {
 					{place.types
 						?.filter((type) => EMOJI_MAP[type] !== undefined && !IGNORED_PLACE_TYPES.includes(type))
 						.map((type) => (
-							<Text key={type} style={styles.typeTag}>
+							<Button key={type} size='tiny' appearance='outline'>
 								{type
 									.split('_')
 									.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 									.join(' ')}
-							</Text>
+							</Button>
 						))}
 				</Layout>
 				<Text appearance='hint'>
@@ -140,24 +140,15 @@ const styles = StyleSheet.create({
 		borderRadius: CARD_BORDER_RADIUS,
 	},
 	cardStyle: {
-		width: width * 0.9,
-		height: height * 0.5,
+		width: width,
+		height: height,
 		alignItems: 'center',
 		justifyContent: 'center',
-		borderRadius: CARD_BORDER_RADIUS,
-		padding: 20,
-		elevation: 2,
-		gap: 8,
+		gap: 16,
 	},
 	typesContainer: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		gap: 8,
-	},
-	typeTag: {
-		borderRadius: CARD_BORDER_RADIUS,
-		paddingVertical: 5,
-		paddingHorizontal: 10,
-		backgroundColor: '#f0f0f0',
 	},
 });
