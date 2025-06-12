@@ -151,7 +151,7 @@ export default function SearchScreen() {
 				</Layout>
 
 				<Layout style={styles.openNowContainer}>
-					<Text>Open show places that are open now</Text>
+					<Text>Only show places that are open now</Text>
 					<Toggle checked={openNow} onChange={() => handleOpenNowToggle()} status='success'></Toggle>
 				</Layout>
 
