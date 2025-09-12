@@ -119,9 +119,9 @@ export default function SwipeScreen() {
 					data={places}
 					renderCard={renderCard}
 					onSwipeRight={handleAccept}
-					OverlayLabelRight={() => <OverlayLabel color='green' />}
-					OverlayLabelLeft={() => <OverlayLabel color='red' />}
-					OverlayLabelTop={() => <OverlayLabel color='blue' />}
+					OverlayLabelRight={() => <OverlayLabel color='#3fa07a' />}
+					OverlayLabelLeft={() => <OverlayLabel color='#c94f4f' />}
+					OverlayLabelTop={() => <OverlayLabel color='#7c5ab8' />}
 				/>
 			</Layout>
 		</GestureHandlerRootView>
