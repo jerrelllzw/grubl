@@ -80,7 +80,7 @@ export async function fetchPlaces(
         const response = await axios.post(url, body, { headers });
         return (response.data.places || [])
             .filter((place: any) => FOOD_AND_DRINK_TYPES.includes(place.primaryType))
-            .filter((place: any) => place.priceLevel === undefined || priceLevels.includes(place.priceLevel))
+            .filter((place: any) => place.priceLevel === undefined || place.priceLevel === 'PRICE_LEVEL_FREE' || priceLevels.includes(place.priceLevel))
             .filter((place: any) => !openNow || place?.currentOpeningHours?.openNow)
             .map((place: any) => {
                 return {
