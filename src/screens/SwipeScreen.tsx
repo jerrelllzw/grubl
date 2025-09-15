@@ -1,14 +1,12 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { Button, Layout, Spinner, Text } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, Linking, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
 import { fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
 import { EMOJI_MAP, IGNORED_PLACE_TYPES, PRICE_MAP } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
-
-const CARD_BORDER_RADIUS = 15;
 
 type RouteParams = {
 	location: string;
@@ -18,7 +16,7 @@ type RouteParams = {
 	openNow: boolean;
 };
 
-const { width, height } = Dimensions.get('window');
+const CARD_BORDER_RADIUS = 15;
 
 export default function SwipeScreen() {
 	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
@@ -32,7 +30,7 @@ export default function SwipeScreen() {
 	useEffect(() => {
 		const load = async () => {
 			try {
-				const coords = await fetchCoordinates(`${location}`);
+				const coords = await fetchCoordinates(location);
 				if (!coords) {
 					setPlaces([]);
 					return;
@@ -96,7 +94,7 @@ export default function SwipeScreen() {
 
 	if (loading) {
 		return (
-			<Layout style={[styles.container, { gap: 16 }]}>
+			<Layout style={[styles.loadingContainer, { gap: 16 }]}>
 				<Spinner size='giant' />
 				<Text>Loading places near &quot;{location}&quot;...</Text>
 			</Layout>
@@ -105,7 +103,7 @@ export default function SwipeScreen() {
 
 	if (!places.length) {
 		return (
-			<Layout style={styles.container}>
+			<Layout style={styles.loadingContainer}>
 				<Text category='h6'>No places found.</Text>
 			</Layout>
 		);
@@ -113,17 +111,18 @@ export default function SwipeScreen() {
 
 	return (
 		<GestureHandlerRootView style={styles.container}>
-			<Layout style={styles.container}>
+			<View style={styles.subContainer}>
 				<Swiper
 					ref={swiperRef}
 					data={places}
+					cardStyle={styles.cardStyle}
 					renderCard={renderCard}
 					onSwipeRight={handleAccept}
 					OverlayLabelRight={() => <OverlayLabel color='#3fa07a' />}
 					OverlayLabelLeft={() => <OverlayLabel color='#c94f4f' />}
 					OverlayLabelTop={() => <OverlayLabel color='#7c5ab8' />}
 				/>
-			</Layout>
+			</View>
 		</GestureHandlerRootView>
 	);
 }
@@ -131,21 +130,33 @@ export default function SwipeScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
+		backgroundColor: '#16172b',
+	},
+	subContainer: {
+		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
+	},
+	loadingContainer: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		backgroundColor: '#16172b',
+	},
+	cardStyle: {
+		width: '90%',
+		height: '75%',
+		borderRadius: CARD_BORDER_RADIUS,
+		padding: 16,
+		gap: 12,
+		justifyContent: 'center',
+		alignItems: 'center',
+		backgroundColor: '#222b44',
 	},
 	overlayLabelContainer: {
 		width: '100%',
 		height: '100%',
 		borderRadius: CARD_BORDER_RADIUS,
-	},
-	cardStyle: {
-		width: width,
-		height: height,
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 12,
-		padding: 16,
 	},
 	typesContainer: {
 		flexDirection: 'row',
