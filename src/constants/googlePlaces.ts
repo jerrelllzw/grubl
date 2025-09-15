@@ -15,8 +15,6 @@ export const PLACE_TYPE_OPTIONS = [
     { label: 'Tea House', value: 'tea_house' },
 ];
 
-export const IGNORED_PLACE_TYPES = ['hotel'];
-
 export const RADIUS_OPTIONS = [200, 400, 800, 1600];
 
 export const PRICE_MAP: Record<string, string> = {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { IGNORED_PLACE_TYPES } from '../constants/googlePlaces';
+import { PLACE_TYPE_OPTIONS } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
@@ -78,8 +78,9 @@ export async function fetchPlaces(
     };
     try {
         const response = await axios.post(url, body, { headers });
+        const allowedTypes = Array.from(PLACE_TYPE_OPTIONS.values()).map(option => option.value);
         return (response.data.places || [])
-            .filter((place: any) => !IGNORED_PLACE_TYPES.includes(place.primaryType))
+            .filter((place: any) => allowedTypes.includes(place.primaryType))
             .filter((place: any) => place.priceLevel === undefined || priceLevels.includes(place.priceLevel))
             .filter((place: any) => !openNow || place?.currentOpeningHours?.openNow)
             .map((place: any) => {
