@@ -82,21 +82,6 @@ export default function SearchScreen() {
 
 				<Layout>
 					<Text category='h6' style={styles.header}>
-						Search Radius
-					</Text>
-					<Select
-						selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
-						onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
-						value={`${radius}m`}
-					>
-						{RADIUS_OPTIONS.map((option) => (
-							<SelectItem key={option} title={`${option}m`} />
-						))}
-					</Select>
-				</Layout>
-
-				<Layout>
-					<Text category='h6' style={styles.header}>
 						Place Types
 					</Text>
 					<Select
@@ -117,6 +102,21 @@ export default function SearchScreen() {
 					>
 						{Object.keys(PLACE_TYPE_OPTIONS).map((key) => (
 							<SelectItem key={key} title={PLACE_TYPE_OPTIONS[key]} />
+						))}
+					</Select>
+				</Layout>
+
+				<Layout>
+					<Text category='h6' style={styles.header}>
+						Search Radius
+					</Text>
+					<Select
+						selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
+						onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
+						value={`${radius}m`}
+					>
+						{RADIUS_OPTIONS.map((option) => (
+							<SelectItem key={option} title={`${option}m`} />
 						))}
 					</Select>
 				</Layout>
