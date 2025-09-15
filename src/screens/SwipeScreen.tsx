@@ -5,7 +5,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
 import { fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
-import { IGNORED_PLACE_TYPES, PRICE_MAP } from '../constants/googlePlaces';
+import { PRICE_MAP } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 type RouteParams = {
@@ -54,20 +54,23 @@ export default function SwipeScreen() {
 					{place.name ?? 'Unknown'}
 				</Text>
 				<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
-					{(place.types?.filter((type) => !IGNORED_PLACE_TYPES.includes(type)) ?? []).map((type) => (
-						<Button key={type} size='tiny' appearance='outline'>
-							{type
-								.split('_')
-								.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-								.join(' ')}
+				<Layout style={styles.tagsContainer}>
+					<Button size='tiny' appearance='outline'>
+						{place.primaryType
+							?.split('_')
+							.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+							.join(' ')}
+					</Button>
+					{place.priceLevel && (
+						<Button size='tiny' appearance='outline'>
+							{PRICE_MAP[place.priceLevel]}
 						</Button>
-					))}
+					)}
 				</Layout>
 				<Text appearance='hint'>
 					{place.rating !== undefined ? `${place.rating} ⭐` : 'No ratings yet'}
 					{place.ratingCount !== undefined ? ` (${place.ratingCount})` : ''}
 				</Text>
-				<Text appearance='hint'>{PRICE_MAP[place.priceLevel ?? ''] ?? 'No price data'}</Text>
 			</Layout>
 		);
 	}, []);
@@ -154,9 +157,8 @@ const styles = StyleSheet.create({
 		height: '100%',
 		borderRadius: CARD_BORDER_RADIUS,
 	},
-	typesContainer: {
+	tagsContainer: {
 		flexDirection: 'row',
-		flexWrap: 'wrap',
 		gap: 8,
 		backgroundColor: '#16172b',
 	},
