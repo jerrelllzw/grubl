@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { IGNORED_PLACE_TYPES } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
@@ -21,7 +22,6 @@ export interface Place {
     ratingCount?: number;
     priceLevel?: string;
     primaryType?: string;
-    types?: string[];
     openNow?: boolean;
 }
 
@@ -48,7 +48,7 @@ export async function fetchPlaces(
     latitude: number,
     longitude: number,
     radius: number,
-    placeTypes: string[],
+    placeTypes: string[] = ['restaurant'],
     priceLevels: string[],
     openNow: boolean
 ): Promise<Place[]> {
@@ -64,12 +64,11 @@ export async function fetchPlaces(
             'places.priceLevel',
             'places.userRatingCount',
             'places.primaryType',
-            'places.types',
             'places.currentOpeningHours'
         ].join(','),
     };
     const body = {
-        includedTypes: placeTypes.length > 0 ? placeTypes : ['restaurant'],
+        includedTypes: placeTypes,
         locationRestriction: {
             circle: {
                 center: { latitude, longitude },
@@ -80,6 +79,7 @@ export async function fetchPlaces(
     try {
         const response = await axios.post(url, body, { headers });
         return (response.data.places || [])
+            .filter((place: any) => !IGNORED_PLACE_TYPES.includes(place.primaryType))
             .filter((place: any) => place.priceLevel === undefined || priceLevels.includes(place.priceLevel))
             .filter((place: any) => !openNow || place?.currentOpeningHours?.openNow)
             .map((place: any) => {
@@ -92,7 +92,6 @@ export async function fetchPlaces(
                     ratingCount: place.userRatingCount ?? undefined,
                     priceLevel: place.priceLevel ?? undefined,
                     primaryType: place.primaryType ?? undefined,
-                    types: place.types || [],
                     openNow: place.currentOpeningHours?.openNow ?? undefined,
                 };
             });

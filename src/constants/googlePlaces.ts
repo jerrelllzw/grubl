@@ -15,7 +15,7 @@ export const PLACE_TYPE_OPTIONS = [
     { label: 'Tea House', value: 'tea_house' },
 ];
 
-export const IGNORED_PLACE_TYPES = ['meal_delivery', 'meal_takeaway', 'restaurant'];
+export const IGNORED_PLACE_TYPES = ['hotel'];
 
 export const RADIUS_OPTIONS = [200, 400, 800, 1600];
 

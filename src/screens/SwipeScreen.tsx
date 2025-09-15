@@ -54,7 +54,6 @@ export default function SwipeScreen() {
 					{place.name ?? 'Unknown'}
 				</Text>
 				<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
-				<Layout style={styles.typesContainer}>
 					{(place.types?.filter((type) => !IGNORED_PLACE_TYPES.includes(type)) ?? []).map((type) => (
 						<Button key={type} size='tiny' appearance='outline'>
 							{type
