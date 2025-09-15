@@ -48,7 +48,7 @@ export async function fetchPlaces(
     latitude: number,
     longitude: number,
     radius: number,
-    placeTypes: string[] = ['restaurant'],
+    placeTypes: string[],
     priceLevels: string[],
     openNow: boolean
 ): Promise<Place[]> {
