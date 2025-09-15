@@ -19,9 +19,7 @@ export default function SearchScreen() {
 	const [location, setLocation] = useState('');
 	const [isLocating, setIsLocating] = useState(false);
 	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
-	const [selectedPlaceTypes, setSelectedPlaceTypes] = useState<IndexPath[]>(
-		PLACE_TYPE_OPTIONS.map((_, i) => new IndexPath(i))
-	);
+	const [selectedPlaceTypes, setSelectedPlaceTypes] = useState<string[]>(Object.keys(PLACE_TYPE_OPTIONS));
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const [openNow, setOpenNow] = useState(true);
 
@@ -35,16 +33,6 @@ export default function SearchScreen() {
 		}
 	};
 
-	const handlePriceLevelToggle = (value: string) => {
-		setPriceLevels((prev) => {
-			if (prev.includes(value)) {
-				return prev.length > 1 ? prev.filter((lvl) => lvl !== value) : prev;
-			} else {
-				return [...prev, value];
-			}
-		});
-	};
-
 	const handleOpenNowToggle = () => {
 		setOpenNow((prev) => !prev);
 	};
@@ -54,7 +42,7 @@ export default function SearchScreen() {
 			navigation.navigate('Swipe', {
 				location,
 				radius,
-				placeTypes: selectedPlaceTypes.map((i) => PLACE_TYPE_OPTIONS[i.row].value),
+				placeTypes: selectedPlaceTypes,
 				priceLevels,
 				openNow,
 			});
@@ -114,16 +102,17 @@ export default function SearchScreen() {
 					<Select
 						multiSelect
 						placeholder='Select place types'
-						value={selectedPlaceTypes.map((i) => PLACE_TYPE_OPTIONS[i.row]?.label).join(', ')}
-						selectedIndex={selectedPlaceTypes}
+						value={selectedPlaceTypes.map((key) => PLACE_TYPE_OPTIONS[key]).join(', ')}
+						selectedIndex={selectedPlaceTypes.map((key) => new IndexPath(Object.keys(PLACE_TYPE_OPTIONS).indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
-								setSelectedPlaceTypes(index);
+								const selectedKeys = index.map((i) => Object.keys(PLACE_TYPE_OPTIONS)[i.row]);
+								setSelectedPlaceTypes(selectedKeys.length ? selectedKeys : selectedPlaceTypes);
 							}
 						}}
 					>
-						{PLACE_TYPE_OPTIONS.map((item) => (
-							<SelectItem key={item.value} title={item.label} />
+						{Object.keys(PLACE_TYPE_OPTIONS).map((key) => (
+							<SelectItem key={key} title={PLACE_TYPE_OPTIONS[key]} />
 						))}
 					</Select>
 				</Layout>
@@ -132,21 +121,22 @@ export default function SearchScreen() {
 					<Text category='h6' style={styles.header}>
 						Price Level
 					</Text>
-					<Layout style={styles.multiSelectContainer}>
-						{Object.keys(PRICE_MAP).map((key) => {
-							return (
-								<Button
-									key={key}
-									size='tiny'
-									appearance={priceLevels.includes(key) ? 'filled' : 'outline'}
-									status={priceLevels.includes(key) ? 'primary' : 'basic'}
-									onPress={() => handlePriceLevelToggle(key)}
-								>
-									{PRICE_MAP[key]}
-								</Button>
-							);
-						})}
-					</Layout>
+					<Select
+						multiSelect
+						placeholder='Select price levels'
+						value={priceLevels.map((key) => PRICE_MAP[key]).join(', ')}
+						selectedIndex={priceLevels.map((key) => new IndexPath(Object.keys(PRICE_MAP).indexOf(key)))}
+						onSelect={(index) => {
+							if (Array.isArray(index)) {
+								const selectedKeys = index.map((i) => Object.keys(PRICE_MAP)[i.row]);
+								setPriceLevels(selectedKeys.length ? selectedKeys : priceLevels);
+							}
+						}}
+					>
+						{Object.keys(PRICE_MAP).map((key) => (
+							<SelectItem key={key} title={PRICE_MAP[key]} />
+						))}
+					</Select>
 				</Layout>
 
 				<Layout style={styles.openNowContainer}>

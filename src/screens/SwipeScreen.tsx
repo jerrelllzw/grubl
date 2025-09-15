@@ -62,7 +62,7 @@ export default function SwipeScreen() {
 							.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 							.join(' ')}
 					</Button>
-					{place.priceLevel && (
+					{place.priceLevel !== undefined && PRICE_MAP[place.priceLevel] && (
 						<Button size='tiny' appearance='outline'>
 							{PRICE_MAP[place.priceLevel]}
 						</Button>
