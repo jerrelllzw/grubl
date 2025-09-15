@@ -1,3 +1,4 @@
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, IndexPath, Input, Layout, Select, SelectItem, Text, Toggle } from '@ui-kitten/components';
@@ -82,7 +83,11 @@ export default function SearchScreen() {
 							onPress={handleUseCurrentLocation}
 							disabled={isLocating}
 						>
-							{isLocating ? <Text>...</Text> : '📍'}
+							{isLocating ? (
+								<Text>...</Text>
+							) : (
+								() => <FontAwesome6 name='location-crosshairs' size={20} color='white' />
+							)}
 						</Button>
 					</Layout>
 				</Layout>
