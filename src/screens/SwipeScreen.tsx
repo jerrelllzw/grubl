@@ -113,7 +113,7 @@ export default function SwipeScreen() {
 	if (finished) {
 		return (
 			<Layout style={styles.basicContainer}>
-				<Text category='h6'>No more places found, sorry!</Text>
+				<Text category='h6'>Out of places :/</Text>
 			</Layout>
 		);
 	}
