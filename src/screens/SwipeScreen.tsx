@@ -5,7 +5,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
 import { fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
-import { EMOJI_MAP, IGNORED_PLACE_TYPES, PRICE_MAP } from '../constants/googlePlaces';
+import { IGNORED_PLACE_TYPES, PRICE_MAP } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 type RouteParams = {
@@ -53,10 +53,10 @@ export default function SwipeScreen() {
 				<Text style={{ textAlign: 'center' }} category='h1'>
 					{place.name ?? 'Unknown'}
 				</Text>
-				<Text style={{ fontSize: 100 }}>{EMOJI_MAP[place.primaryType ?? ''] ?? '🍴'}</Text>
+				<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
 				<Layout style={styles.typesContainer}>
 					{place.types
-						?.filter((type) => EMOJI_MAP[type] !== undefined && !IGNORED_PLACE_TYPES.includes(type))
+						?.filter((type) => !IGNORED_PLACE_TYPES.includes(type))
 						.map((type) => (
 							<Button key={type} size='tiny' appearance='outline'>
 								{type
