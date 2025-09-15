@@ -1,3 +1,4 @@
+import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -82,12 +83,11 @@ export default function SearchScreen() {
 							appearance='outline'
 							onPress={handleUseCurrentLocation}
 							disabled={isLocating}
+							style={styles.locationButton}
 						>
-							{isLocating ? (
-								<Text>...</Text>
-							) : (
-								() => <FontAwesome6 name='location-crosshairs' size={20} color='white' />
-							)}
+							{isLocating
+								? () => <Entypo name='dots-three-horizontal' style={styles.locationButton} />
+								: () => <FontAwesome6 name='location-crosshairs' style={styles.locationButton} />}
 						</Button>
 					</Layout>
 				</Layout>
@@ -183,5 +183,11 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
+	},
+	locationButton: {
+		borderColor: '#16172b',
+		backgroundColor: '#1c2238',
+		color: 'white',
+		fontSize: 20,
 	},
 });
