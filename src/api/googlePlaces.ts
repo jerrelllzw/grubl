@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { FOOD_AND_DRINK_TYPES } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
@@ -78,7 +79,8 @@ export async function fetchPlaces(
     try {
         const response = await axios.post(url, body, { headers });
         return (response.data.places || [])
-            .filter((place: any) => place.priceLevel === undefined || place.priceLevel === 'PRICE_LEVEL_FREE' || priceLevels.includes(place.priceLevel))
+            .filter((place: any) => FOOD_AND_DRINK_TYPES.includes(place.primaryType))
+            .filter((place: any) => place.priceLevel === undefined || priceLevels.includes(place.priceLevel))
             .filter((place: any) => !openNow || place?.currentOpeningHours?.openNow)
             .map((place: any) => {
                 return {
