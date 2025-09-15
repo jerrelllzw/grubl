@@ -24,6 +24,7 @@ export default function SwipeScreen() {
 
 	const [places, setPlaces] = useState<Place[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [finished, setFinished] = useState(false);
 
 	const swiperRef = useRef<SwiperCardRefType>(null);
 
@@ -94,7 +95,7 @@ export default function SwipeScreen() {
 
 	if (loading) {
 		return (
-			<Layout style={[styles.loadingContainer, { gap: 16 }]}>
+			<Layout style={[styles.basicContainer, { gap: 16 }]}>
 				<Spinner size='giant' />
 				<Text>Loading places near &quot;{location}&quot;...</Text>
 			</Layout>
@@ -103,15 +104,23 @@ export default function SwipeScreen() {
 
 	if (!places.length) {
 		return (
-			<Layout style={styles.loadingContainer}>
+			<Layout style={styles.basicContainer}>
 				<Text category='h6'>No places found.</Text>
+			</Layout>
+		);
+	}
+
+	if (finished) {
+		return (
+			<Layout style={styles.basicContainer}>
+				<Text category='h6'>No more places found, sorry!</Text>
 			</Layout>
 		);
 	}
 
 	return (
 		<GestureHandlerRootView style={styles.container}>
-			<View style={styles.subContainer}>
+			<View style={styles.basicContainer}>
 				<Swiper
 					ref={swiperRef}
 					data={places}
@@ -121,6 +130,7 @@ export default function SwipeScreen() {
 					OverlayLabelRight={() => <OverlayLabel color='#3fa07a' />}
 					OverlayLabelLeft={() => <OverlayLabel color='#c94f4f' />}
 					OverlayLabelTop={() => <OverlayLabel color='#7c5ab8' />}
+					onSwipedAll={() => setFinished(true)}
 				/>
 			</View>
 		</GestureHandlerRootView>
@@ -132,12 +142,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: '#222b44',
 	},
-	subContainer: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	loadingContainer: {
+	basicContainer: {
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
