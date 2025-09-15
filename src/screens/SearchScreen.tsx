@@ -27,7 +27,7 @@ export default function SearchScreen() {
 	const [isLocating, setIsLocating] = useState(false);
 	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
 	const [categories, setCategories] = useState<string[]>(Object.keys(PLACE_TYPE_OPTIONS));
-	const [excluded, setExcluded] = useState<string[]>(Object.keys(PLACE_TYPE_OPTIONS));
+	const [excluded, setExcluded] = useState<string[]>([]);
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const [openNow, setOpenNow] = useState(true);
 
