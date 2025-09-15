@@ -10,8 +10,9 @@ import { handleError } from '../utils/errorHandler';
 
 type RouteParams = {
 	location: string;
+	categories: string[];
+	excluded: string[];
 	radius: number;
-	placeTypes: string[];
 	priceLevels: string[];
 	openNow: boolean;
 };
@@ -20,7 +21,7 @@ const CARD_BORDER_RADIUS = 15;
 
 export default function SwipeScreen() {
 	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
-	const { location, radius, placeTypes, priceLevels, openNow } = route.params;
+	const { location, categories, excluded, radius, priceLevels, openNow } = route.params;
 
 	const [places, setPlaces] = useState<Place[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -36,7 +37,15 @@ export default function SwipeScreen() {
 					setPlaces([]);
 					return;
 				}
-				const placesList = await fetchPlaces(coords.lat, coords.lng, radius, placeTypes, priceLevels, openNow);
+				const placesList = await fetchPlaces(
+					coords.lat,
+					coords.lng,
+					categories,
+					excluded,
+					radius,
+					priceLevels,
+					openNow
+				);
 				setPlaces(placesList);
 			} catch (err) {
 				handleError(err, 'An error occurred while loading places.');
@@ -46,7 +55,7 @@ export default function SwipeScreen() {
 			}
 		};
 		load();
-	}, [location, radius, placeTypes, priceLevels, openNow]);
+	}, [location, categories, excluded, radius, priceLevels, openNow]);
 
 	const renderCard = useCallback((place: Place) => {
 		return (

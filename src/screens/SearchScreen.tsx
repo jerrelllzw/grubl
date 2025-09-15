@@ -10,7 +10,14 @@ import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { handleError } from '../utils/errorHandler';
 
 type RootStackParamList = {
-	Swipe: { location: string; radius: number; placeTypes: string[]; priceLevels: string[]; openNow: boolean };
+	Swipe: {
+		location: string;
+		categories: string[];
+		excluded: string[];
+		radius: number;
+		priceLevels: string[];
+		openNow: boolean;
+	};
 };
 
 export default function SearchScreen() {
@@ -19,7 +26,8 @@ export default function SearchScreen() {
 	const [location, setLocation] = useState('');
 	const [isLocating, setIsLocating] = useState(false);
 	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
-	const [selectedPlaceTypes, setSelectedPlaceTypes] = useState<string[]>(Object.keys(PLACE_TYPE_OPTIONS));
+	const [categories, setCategories] = useState<string[]>(Object.keys(PLACE_TYPE_OPTIONS));
+	const [excluded, setExcluded] = useState<string[]>(Object.keys(PLACE_TYPE_OPTIONS));
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const [openNow, setOpenNow] = useState(true);
 
@@ -41,8 +49,9 @@ export default function SearchScreen() {
 		if (location.trim()) {
 			navigation.navigate('Swipe', {
 				location,
+				categories,
+				excluded,
 				radius,
-				placeTypes: selectedPlaceTypes,
 				priceLevels,
 				openNow,
 			});
@@ -86,9 +95,8 @@ export default function SearchScreen() {
 					</Text>
 					<Select
 						multiSelect
-						placeholder='Select place types'
-						value={selectedPlaceTypes.map((key) => PLACE_TYPE_OPTIONS[key]).join(', ')}
-						selectedIndex={selectedPlaceTypes.map((key) => new IndexPath(Object.keys(PLACE_TYPE_OPTIONS).indexOf(key)))}
+						value={categories.map((key) => PLACE_TYPE_OPTIONS[key]).join(', ')}
+						selectedIndex={categories.map((key) => new IndexPath(Object.keys(PLACE_TYPE_OPTIONS).indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
 								const selectedKeys = index
@@ -96,7 +104,33 @@ export default function SearchScreen() {
 									.sort(
 										(a, b) => Object.keys(PLACE_TYPE_OPTIONS).indexOf(a) - Object.keys(PLACE_TYPE_OPTIONS).indexOf(b)
 									);
-								setSelectedPlaceTypes(selectedKeys.length ? selectedKeys : selectedPlaceTypes);
+								setCategories(selectedKeys.length ? selectedKeys : categories);
+							}
+						}}
+					>
+						{Object.keys(PLACE_TYPE_OPTIONS).map((key) => (
+							<SelectItem key={key} title={PLACE_TYPE_OPTIONS[key]} />
+						))}
+					</Select>
+				</Layout>
+
+				<Layout>
+					<Text category='h6' style={styles.header}>
+						Exclude
+					</Text>
+					<Select
+						multiSelect
+						placeholder={'None'}
+						value={excluded.map((key) => PLACE_TYPE_OPTIONS[key]).join(', ')}
+						selectedIndex={excluded.map((key) => new IndexPath(Object.keys(PLACE_TYPE_OPTIONS).indexOf(key)))}
+						onSelect={(index) => {
+							if (Array.isArray(index)) {
+								const selectedKeys = index
+									.map((i) => Object.keys(PLACE_TYPE_OPTIONS)[i.row])
+									.sort(
+										(a, b) => Object.keys(PLACE_TYPE_OPTIONS).indexOf(a) - Object.keys(PLACE_TYPE_OPTIONS).indexOf(b)
+									);
+								setExcluded(selectedKeys);
 							}
 						}}
 					>
@@ -127,7 +161,6 @@ export default function SearchScreen() {
 					</Text>
 					<Select
 						multiSelect
-						placeholder='Select price levels'
 						value={priceLevels.map((key) => PRICE_MAP[key]).join(', ')}
 						selectedIndex={priceLevels.map((key) => new IndexPath(Object.keys(PRICE_MAP).indexOf(key)))}
 						onSelect={(index) => {

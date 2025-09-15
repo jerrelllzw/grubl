@@ -47,8 +47,9 @@ export async function fetchCoordinates(address: string): Promise<Coordinates | n
 export async function fetchPlaces(
     latitude: number,
     longitude: number,
+    categories: string[],
+    excluded: string[],
     radius: number,
-    placeTypes: string[],
     priceLevels: string[],
     openNow: boolean
 ): Promise<Place[]> {
@@ -68,7 +69,8 @@ export async function fetchPlaces(
         ].join(','),
     };
     const body = {
-        includedTypes: placeTypes,
+        includedTypes: categories,
+        excludedTypes: excluded,
         locationRestriction: {
             circle: {
                 center: { latitude, longitude },
