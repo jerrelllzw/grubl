@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, IndexPath, Input, Layout, Select, SelectItem, Text, Toggle } from '@ui-kitten/components';
 import React, { useState } from 'react';
 import { Keyboard, StyleSheet, TouchableWithoutFeedback } from 'react-native';
-import { PLACE_TYPE_OPTIONS, PRICE_MAP, RADIUS_OPTIONS } from '../constants/googlePlaces';
+import { CATEGORIES, EXCLUSIONS, PRICE_MAP, RADIUS_OPTIONS } from '../constants/googlePlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { handleError } from '../utils/errorHandler';
 
@@ -26,7 +26,7 @@ export default function SearchScreen() {
 	const [location, setLocation] = useState('');
 	const [isLocating, setIsLocating] = useState(false);
 	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
-	const [categories, setCategories] = useState<string[]>(Object.keys(PLACE_TYPE_OPTIONS));
+	const [categories, setCategories] = useState<string[]>(Object.keys(CATEGORIES));
 	const [excluded, setExcluded] = useState<string[]>([]);
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const [openNow, setOpenNow] = useState(true);
@@ -95,21 +95,19 @@ export default function SearchScreen() {
 					</Text>
 					<Select
 						multiSelect
-						value={categories.map((key) => PLACE_TYPE_OPTIONS[key]).join(', ')}
-						selectedIndex={categories.map((key) => new IndexPath(Object.keys(PLACE_TYPE_OPTIONS).indexOf(key)))}
+						value={categories.map((key) => CATEGORIES[key]).join(', ')}
+						selectedIndex={categories.map((key) => new IndexPath(Object.keys(CATEGORIES).indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
 								const selectedKeys = index
-									.map((i) => Object.keys(PLACE_TYPE_OPTIONS)[i.row])
-									.sort(
-										(a, b) => Object.keys(PLACE_TYPE_OPTIONS).indexOf(a) - Object.keys(PLACE_TYPE_OPTIONS).indexOf(b)
-									);
+									.map((i) => Object.keys(CATEGORIES)[i.row])
+									.sort((a, b) => Object.keys(CATEGORIES).indexOf(a) - Object.keys(CATEGORIES).indexOf(b));
 								setCategories(selectedKeys.length ? selectedKeys : categories);
 							}
 						}}
 					>
-						{Object.keys(PLACE_TYPE_OPTIONS).map((key) => (
-							<SelectItem key={key} title={PLACE_TYPE_OPTIONS[key]} />
+						{Object.keys(CATEGORIES).map((key) => (
+							<SelectItem key={key} title={CATEGORIES[key]} />
 						))}
 					</Select>
 				</Layout>
@@ -121,21 +119,19 @@ export default function SearchScreen() {
 					<Select
 						multiSelect
 						placeholder={'None'}
-						value={excluded.map((key) => PLACE_TYPE_OPTIONS[key]).join(', ')}
-						selectedIndex={excluded.map((key) => new IndexPath(Object.keys(PLACE_TYPE_OPTIONS).indexOf(key)))}
+						value={excluded.map((key) => EXCLUSIONS[key]).join(', ')}
+						selectedIndex={excluded.map((key) => new IndexPath(Object.keys(EXCLUSIONS).indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
 								const selectedKeys = index
-									.map((i) => Object.keys(PLACE_TYPE_OPTIONS)[i.row])
-									.sort(
-										(a, b) => Object.keys(PLACE_TYPE_OPTIONS).indexOf(a) - Object.keys(PLACE_TYPE_OPTIONS).indexOf(b)
-									);
+									.map((i) => Object.keys(EXCLUSIONS)[i.row])
+									.sort((a, b) => Object.keys(EXCLUSIONS).indexOf(a) - Object.keys(EXCLUSIONS).indexOf(b));
 								setExcluded(selectedKeys);
 							}
 						}}
 					>
-						{Object.keys(PLACE_TYPE_OPTIONS).map((key) => (
-							<SelectItem key={key} title={PLACE_TYPE_OPTIONS[key]} />
+						{Object.keys(EXCLUSIONS).map((key) => (
+							<SelectItem key={key} title={EXCLUSIONS[key]} />
 						))}
 					</Select>
 				</Layout>
