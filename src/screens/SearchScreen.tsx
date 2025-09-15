@@ -106,7 +106,11 @@ export default function SearchScreen() {
 						selectedIndex={selectedPlaceTypes.map((key) => new IndexPath(Object.keys(PLACE_TYPE_OPTIONS).indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
-								const selectedKeys = index.map((i) => Object.keys(PLACE_TYPE_OPTIONS)[i.row]);
+								const selectedKeys = index
+									.map((i) => Object.keys(PLACE_TYPE_OPTIONS)[i.row])
+									.sort(
+										(a, b) => Object.keys(PLACE_TYPE_OPTIONS).indexOf(a) - Object.keys(PLACE_TYPE_OPTIONS).indexOf(b)
+									);
 								setSelectedPlaceTypes(selectedKeys.length ? selectedKeys : selectedPlaceTypes);
 							}
 						}}
@@ -128,7 +132,9 @@ export default function SearchScreen() {
 						selectedIndex={priceLevels.map((key) => new IndexPath(Object.keys(PRICE_MAP).indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
-								const selectedKeys = index.map((i) => Object.keys(PRICE_MAP)[i.row]);
+								const selectedKeys = index
+									.map((i) => Object.keys(PRICE_MAP)[i.row])
+									.sort((a, b) => Object.keys(PRICE_MAP).indexOf(a) - Object.keys(PRICE_MAP).indexOf(b));
 								setPriceLevels(selectedKeys.length ? selectedKeys : priceLevels);
 							}
 						}}
