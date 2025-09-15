@@ -68,12 +68,7 @@ export default function SearchScreen() {
 						Location
 					</Text>
 					<Layout style={styles.locationContainer}>
-						<Input
-							placeholder='Enter a city, address, or use current location'
-							value={location}
-							onChangeText={setLocation}
-							style={{ flex: 1 }}
-						/>
+						<Input placeholder='Enter a location' value={location} onChangeText={setLocation} style={{ flex: 1 }} />
 						<Button
 							size='small'
 							status='basic'
