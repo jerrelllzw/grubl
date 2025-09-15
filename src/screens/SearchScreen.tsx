@@ -82,7 +82,7 @@ export default function SearchScreen() {
 
 				<Layout>
 					<Text category='h6' style={styles.header}>
-						Place Types
+						Categories
 					</Text>
 					<Select
 						multiSelect
@@ -108,7 +108,7 @@ export default function SearchScreen() {
 
 				<Layout>
 					<Text category='h6' style={styles.header}>
-						Search Radius
+						Radius
 					</Text>
 					<Select
 						selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
