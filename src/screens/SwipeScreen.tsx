@@ -55,16 +55,14 @@ export default function SwipeScreen() {
 				</Text>
 				<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
 				<Layout style={styles.typesContainer}>
-					{place.types
-						?.filter((type) => !IGNORED_PLACE_TYPES.includes(type))
-						.map((type) => (
-							<Button key={type} size='tiny' appearance='outline'>
-								{type
-									.split('_')
-									.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-									.join(' ')}
-							</Button>
-						))}
+					{(place.types?.filter((type) => !IGNORED_PLACE_TYPES.includes(type)) ?? []).map((type) => (
+						<Button key={type} size='tiny' appearance='outline'>
+							{type
+								.split('_')
+								.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+								.join(' ')}
+						</Button>
+					))}
 				</Layout>
 				<Text appearance='hint'>
 					{place.rating !== undefined ? `${place.rating} ⭐` : 'No ratings yet'}
@@ -130,7 +128,7 @@ export default function SwipeScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#16172b',
+		backgroundColor: '#222b44',
 	},
 	subContainer: {
 		flex: 1,
@@ -141,7 +139,6 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
-		backgroundColor: '#16172b',
 	},
 	cardStyle: {
 		width: '90%',
@@ -151,7 +148,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 		justifyContent: 'center',
 		alignItems: 'center',
-		backgroundColor: '#222b44',
+		backgroundColor: '#16172b',
 	},
 	overlayLabelContainer: {
 		width: '100%',
@@ -162,5 +159,6 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		gap: 8,
+		backgroundColor: '#16172b',
 	},
 });
