@@ -159,7 +159,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: 32,
+		padding: 48,
 		justifyContent: 'center',
 		gap: 16,
 	},
