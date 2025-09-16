@@ -63,7 +63,12 @@ export default function SwipeScreen() {
 	const renderCard = useCallback((place: Place) => {
 		return (
 			<Layout style={styles.cardStyle}>
-				<Text style={{ textAlign: 'center' }} category='h1' numberOfLines={5} ellipsizeMode='tail'>
+				<Text
+					style={{ textAlign: 'center', paddingHorizontal: 48 }}
+					category='h1'
+					numberOfLines={5}
+					ellipsizeMode='tail'
+				>
 					{place.name ?? 'Unknown'}
 				</Text>
 				<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
