@@ -20,6 +20,10 @@ export default {
 			},
 			edgeToEdgeEnabled: true,
 			enforceNavigationBarContrast: true,
+			navigationBar: {
+				backgroundColor: '#ffffff',
+				barStyle: 'dark-content',
+			},
 			package: 'com.lerej.grubl',
 		},
 		web: {
@@ -34,7 +38,7 @@ export default {
 				'expo-splash-screen',
 				{
 					image: './assets/images/logo.png',
-					imageWidth: 200,
+					imageWidth: 300,
 					resizeMode: 'contain',
 					backgroundColor: '#ffffff',
 				},
