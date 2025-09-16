@@ -131,7 +131,7 @@ export default function SwipeScreen() {
 					]}
 					gap={5}
 				/>
-				<Text style={{ textAlign: 'center' }} category='h1' numberOfLines={3} ellipsizeMode='tail'>
+				<Text style={{ textAlign: 'center' }} category='h1' numberOfLines={5} ellipsizeMode='tail'>
 					Looking for places near &quot;{location}&quot;
 				</Text>
 			</Layout>
