@@ -128,7 +128,7 @@ export default function SwipeScreen() {
 	}
 
 	return (
-		<GestureHandlerRootView style={styles.container}>
+		<GestureHandlerRootView style={{ flex: 1 }}>
 			<View style={styles.basicContainer}>
 				<Swiper
 					ref={swiperRef}
@@ -147,24 +147,19 @@ export default function SwipeScreen() {
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: '#222b44',
-	},
 	basicContainer: {
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	cardStyle: {
-		width: '90%',
-		height: '75%',
+		width: '100%',
+		height: '90%',
 		borderRadius: CARD_BORDER_RADIUS,
 		padding: 16,
 		gap: 12,
 		justifyContent: 'center',
 		alignItems: 'center',
-		backgroundColor: '#16172b',
 	},
 	overlayLabelContainer: {
 		width: '100%',
@@ -174,6 +169,5 @@ const styles = StyleSheet.create({
 	tagsContainer: {
 		flexDirection: 'row',
 		gap: 8,
-		backgroundColor: '#16172b',
 	},
 });

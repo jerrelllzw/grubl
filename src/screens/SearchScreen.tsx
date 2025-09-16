@@ -75,11 +75,10 @@ export default function SearchScreen() {
 							appearance='outline'
 							onPress={handleUseCurrentLocation}
 							disabled={isLocating}
-							style={styles.locationButton}
 						>
 							{isLocating
-								? () => <Entypo name='dots-three-horizontal' style={styles.locationButton} />
-								: () => <FontAwesome6 name='location-crosshairs' style={styles.locationButton} />}
+								? () => <Entypo name='dots-three-horizontal' size={20} />
+								: () => <FontAwesome6 name='location-crosshairs' size={20} />}
 						</Button>
 					</Layout>
 				</Layout>
@@ -203,11 +202,5 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-	},
-	locationButton: {
-		borderColor: '#16172b',
-		backgroundColor: '#1c2238',
-		color: 'white',
-		fontSize: 20,
 	},
 });
