@@ -72,7 +72,7 @@ export default function SwipeScreen() {
 					{place.name ?? 'Unknown'}
 				</Text>
 				<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
-				<Layout style={styles.tagsContainer}>
+				<Layout style={[styles.tagsContainer, { backgroundColor: theme['color-basic-500'] }]}>
 					<Tag
 						label={place.primaryType
 							.split('_')
@@ -83,7 +83,7 @@ export default function SwipeScreen() {
 						<Tag label={PRICE_MAP[place.priceLevel]}></Tag>
 					)}
 				</Layout>
-				<Text appearance='hint'>
+				<Text>
 					{place.rating !== undefined ? (
 						<>
 							{place.rating} <AntDesign name='star' size={14} />
@@ -118,7 +118,7 @@ export default function SwipeScreen() {
 		return (
 			<Layout style={styles.loadingContainer}>
 				<Spinner size='giant' />
-				<Text category='h6' appearance='hint' numberOfLines={3} ellipsizeMode='tail'>
+				<Text category='h1' numberOfLines={3} ellipsizeMode='tail'>
 					Looking for places near &quot;{location}&quot;
 				</Text>
 			</Layout>
@@ -128,7 +128,7 @@ export default function SwipeScreen() {
 	if (!places.length) {
 		return (
 			<Layout style={styles.basicContainer}>
-				<Text category='h6'>No places found :&apos;)</Text>
+				<Text category='h1'>No places found :&apos;)</Text>
 			</Layout>
 		);
 	}
@@ -136,14 +136,14 @@ export default function SwipeScreen() {
 	if (finished) {
 		return (
 			<Layout style={styles.basicContainer}>
-				<Text category='h6'>Out of places :/</Text>
+				<Text category='h1'>Out of places :/</Text>
 			</Layout>
 		);
 	}
 
 	return (
-		<GestureHandlerRootView style={{ flex: 1 }}>
-			<View style={styles.basicContainer}>
+		<GestureHandlerRootView style={[{ flex: 1 }, { backgroundColor: theme['color-basic-100'] }]}>
+			<View style={styles.cardContainer}>
 				<Swiper
 					ref={swiperRef}
 					data={places}
@@ -166,6 +166,13 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
+	cardContainer: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginHorizontal: 48,
+		marginVertical: 200,
+	},
 	loadingContainer: {
 		flex: 1,
 		alignItems: 'center',
@@ -180,6 +187,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 		justifyContent: 'center',
 		alignItems: 'center',
+		backgroundColor: '#FEEFDC', // "color-basic-500", doesn't work in rn-swiper-list for some reason
 	},
 	overlayLabelContainer: {
 		width: '100%',
