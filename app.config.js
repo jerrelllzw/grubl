@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 export default {
 	expo: {
-		name: 'grubl',
+		name: 'Grubl',
 		slug: 'grubl',
 		version: '1.0.0',
 		orientation: 'portrait',
