@@ -1,6 +1,6 @@
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { Layout, Spinner, Text } from '@ui-kitten/components';
+import { Layout, Spinner, Text, useTheme } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -22,6 +22,7 @@ type RouteParams = {
 const CARD_BORDER_RADIUS = 15;
 
 export default function SwipeScreen() {
+	const theme = useTheme();
 	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
 	const { location, categories, excluded, radius, priceLevels, openNow } = route.params;
 
@@ -142,9 +143,9 @@ export default function SwipeScreen() {
 					cardStyle={styles.cardStyle}
 					renderCard={renderCard}
 					onSwipeRight={handleAccept}
-					OverlayLabelRight={() => <OverlayLabel color='#3fa07a' />}
-					OverlayLabelLeft={() => <OverlayLabel color='#c94f4f' />}
-					OverlayLabelTop={() => <OverlayLabel color='#7c5ab8' />}
+					OverlayLabelRight={() => <OverlayLabel color={theme['color-overlay-yes']} />}
+					OverlayLabelLeft={() => <OverlayLabel color={theme['color-overlay-no']} />}
+					OverlayLabelTop={() => <OverlayLabel color={theme['color-overlay-save']} />}
 					onSwipedAll={() => setFinished(true)}
 				/>
 			</View>
