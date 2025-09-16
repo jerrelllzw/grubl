@@ -136,7 +136,7 @@ export const EXCLUSIONS: Record<string, string> = {
     wine_bar: 'Wine Bar'
 };
 
-export const RADIUS_OPTIONS = [500, 1000, 1500];
+export const RADIUS_OPTIONS = [100, 200, 300, 400, 500];
 
 export const PRICE_MAP: Record<string, string> = {
     PRICE_LEVEL_INEXPENSIVE: '$',
