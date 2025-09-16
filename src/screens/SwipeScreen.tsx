@@ -138,7 +138,8 @@ export default function SwipeScreen() {
 		);
 	}
 
-	if (!places.length || places.length === 1) { // Swiper needs at least 2 cards to function properly
+	if (!places.length || places.length === 1) {
+		// Swiper needs >=2 cards to function properly
 		return (
 			<Layout style={styles.basicContainer}>
 				<Text category='h1'>No places found :&apos;)</Text>
