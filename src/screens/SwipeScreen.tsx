@@ -161,9 +161,8 @@ const styles = StyleSheet.create({
 	},
 	cardStyle: {
 		width: '100%',
-		height: '90%',
+		height: '100%',
 		borderRadius: CARD_BORDER_RADIUS,
-		padding: 16,
 		gap: 12,
 		justifyContent: 'center',
 		alignItems: 'center',
