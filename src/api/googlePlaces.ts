@@ -43,6 +43,26 @@ export async function fetchCoordinates(address: string): Promise<Coordinates | n
     }
 }
 
+// Autocomplete
+export async function fetchAutoComplete(input: string): Promise<any[]> {
+    const url = 'https://places.googleapis.com/v1/places:autocomplete';
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': API_KEY,
+    };
+    const body = {
+        input: input,
+    };
+    try {
+        const response = await axios.post(url, body, { headers });
+        return (response.data.suggestions || [])
+            .map((suggestion: any) => { return suggestion.placePrediction.text.text; });
+    } catch (error: any) {
+        handleError(error, 'Failed to fetch autocomplete suggestions.');
+        return [];
+    }
+}
+
 // Nearby Search
 export async function fetchPlaces(
     latitude: number,

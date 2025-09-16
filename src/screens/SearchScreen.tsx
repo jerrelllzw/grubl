@@ -1,8 +1,20 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, IndexPath, Input, Layout, Select, SelectItem, Text, Toggle } from '@ui-kitten/components';
-import React, { useState } from 'react';
-import { Keyboard, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import {
+	Button,
+	IndexPath,
+	Input,
+	Layout,
+	List,
+	ListItem,
+	Select,
+	SelectItem,
+	Text,
+	Toggle,
+} from '@ui-kitten/components';
+import React, { useEffect, useRef, useState } from 'react';
+import { Keyboard, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
+import { fetchAutoComplete } from '../api/googlePlaces';
 import { CATEGORIES, EXCLUSIONS, PRICE_MAP, RADIUS_OPTIONS } from '../constants/googlePlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { handleError } from '../utils/errorHandler';
@@ -23,19 +35,30 @@ export default function SearchScreen() {
 
 	const [location, setLocation] = useState('');
 	const [isLocating, setIsLocating] = useState(false);
+	const [suggestions, setSuggestions] = useState<string[]>([]);
+	const [showSuggestions, setShowSuggestions] = useState(false);
+	const suppressAutocompleteRef = useRef(false);
 	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
 	const [categories, setCategories] = useState<string[]>(Object.keys(CATEGORIES));
 	const [excluded, setExcluded] = useState<string[]>([]);
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const [openNow, setOpenNow] = useState(true);
 
+	const clearSuggestions = () => {
+		setSuggestions([]);
+		setShowSuggestions(false);
+	};
+
 	const handleUseCurrentLocationInner = useCurrentLocation(setLocation);
 	const handleUseCurrentLocation = async () => {
 		try {
 			setIsLocating(true);
+			suppressAutocompleteRef.current = true;
 			await handleUseCurrentLocationInner();
+			clearSuggestions();
 		} finally {
 			setIsLocating(false);
+			setTimeout(() => (suppressAutocompleteRef.current = false), 500);
 		}
 	};
 
@@ -58,25 +81,77 @@ export default function SearchScreen() {
 		}
 	};
 
+	useEffect(() => {
+		if (suppressAutocompleteRef.current) return;
+
+		const timeout = setTimeout(async () => {
+			if (location.trim().length > 2) {
+				try {
+					const results = await fetchAutoComplete(location);
+					setSuggestions(results);
+					setShowSuggestions(true);
+				} catch (e) {
+					clearSuggestions();
+				}
+			}
+		}, 300);
+
+		return () => clearTimeout(timeout);
+	}, [location]);
+
 	return (
-		<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+		<TouchableWithoutFeedback
+			onPress={() => {
+				Keyboard.dismiss();
+				setShowSuggestions(false);
+			}}
+		>
 			<Layout style={styles.container}>
 				<Layout>
 					<Text category='h6' style={styles.header}>
 						Location
 					</Text>
-					<Layout style={styles.locationContainer}>
-						<Input placeholder='Enter a location' value={location} onChangeText={setLocation} style={{ flex: 1 }} />
-						<Button
-							size='small'
-							status='basic'
-							appearance='outline'
-							onPress={handleUseCurrentLocation}
-							disabled={isLocating}
-						>
-							{isLocating ? '...' : '📍'}
-						</Button>
-					</Layout>
+					<View style={{ position: 'relative' }}>
+						<Layout style={styles.locationContainer}>
+							<Input
+								placeholder='Enter a location'
+								value={location}
+								onChangeText={setLocation}
+								style={{ flex: 1 }}
+								onFocus={() => {
+									if (suggestions.length) setShowSuggestions(true);
+								}}
+							/>
+							<Button
+								size='small'
+								status='basic'
+								appearance='outline'
+								onPress={handleUseCurrentLocation}
+								disabled={isLocating}
+							>
+								{isLocating ? '...' : '📍'}
+							</Button>
+						</Layout>
+
+						{showSuggestions && suggestions.length > 0 && (
+							<View style={styles.suggestionDropdown}>
+								<List
+									data={suggestions}
+									renderItem={({ item }) => (
+										<ListItem
+											title={item}
+											onPress={() => {
+												suppressAutocompleteRef.current = true;
+												setLocation(item);
+												clearSuggestions();
+												setTimeout(() => (suppressAutocompleteRef.current = false), 500);
+											}}
+										/>
+									)}
+								/>
+							</View>
+						)}
+					</View>
 				</Layout>
 
 				<Layout>
@@ -189,14 +264,23 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		gap: 8,
 	},
-	multiSelectContainer: {
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 4,
-	},
 	openNowContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
+	},
+	suggestionDropdown: {
+		position: 'absolute',
+		top: 52,
+		left: 0,
+		right: 0,
+		borderRadius: 8,
+		maxHeight: 200,
+		zIndex: 10,
+		elevation: 5,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.2,
+		shadowRadius: 4,
 	},
 });
