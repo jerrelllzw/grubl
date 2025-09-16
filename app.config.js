@@ -19,11 +19,6 @@ export default {
 				backgroundColor: '#ffffff',
 			},
 			edgeToEdgeEnabled: true,
-			enforceNavigationBarContrast: true,
-			navigationBar: {
-				backgroundColor: '#ffffff',
-				barStyle: 'dark-content',
-			},
 			package: 'com.lerej.grubl',
 		},
 		web: {
