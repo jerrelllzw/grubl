@@ -111,9 +111,11 @@ export default function SwipeScreen() {
 
 	if (loading) {
 		return (
-			<Layout style={[styles.basicContainer, { gap: 16 }]}>
+			<Layout style={styles.loadingContainer}>
 				<Spinner size='giant' />
-				<Text>Loading places near &quot;{location}&quot;...</Text>
+				<Text category='h6' appearance='hint' numberOfLines={3} ellipsizeMode='tail'>
+					Looking for places near &quot;{location}&quot;
+				</Text>
 			</Layout>
 		);
 	}
@@ -121,7 +123,7 @@ export default function SwipeScreen() {
 	if (!places.length) {
 		return (
 			<Layout style={styles.basicContainer}>
-				<Text category='h6'>No places found.</Text>
+				<Text category='h6'>No places found :&apos;)</Text>
 			</Layout>
 		);
 	}
@@ -158,6 +160,13 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
+	},
+	loadingContainer: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 16,
+		padding: 48,
 	},
 	cardStyle: {
 		width: '100%',
