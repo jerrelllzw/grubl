@@ -18,7 +18,6 @@ const Tag = ({ label }: TagProps) => {
 
 const styles = StyleSheet.create({
 	tag: {
-		backgroundColor: '$color-info-500',
 		paddingHorizontal: 10,
 		paddingVertical: 4,
 		borderRadius: 20,
