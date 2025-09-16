@@ -62,42 +62,45 @@ export default function SwipeScreen() {
 		load();
 	}, [location, categories, excluded, radius, priceLevels, openNow]);
 
-	const renderCard = useCallback((place: Place) => {
-		return (
-			<Layout style={styles.cardStyle}>
-				<Text
-					style={{ textAlign: 'center', paddingHorizontal: 48 }}
-					category='h1'
-					numberOfLines={5}
-					ellipsizeMode='tail'
-				>
-					{place.name ?? 'Unknown'}
-				</Text>
-				<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
-				<Layout style={[styles.tagsContainer, { backgroundColor: theme['color-basic-500'] }]}>
-					<Tag
-						label={place.primaryType
-							.split('_')
-							.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-							.join(' ')}
-					></Tag>
-					{place.priceLevel !== undefined && PRICE_MAP[place.priceLevel] && (
-						<Tag label={PRICE_MAP[place.priceLevel]}></Tag>
-					)}
+	const renderCard = useCallback(
+		(place: Place) => {
+			return (
+				<Layout style={styles.cardStyle}>
+					<Text
+						style={{ textAlign: 'center', paddingHorizontal: 48 }}
+						category='h1'
+						numberOfLines={5}
+						ellipsizeMode='tail'
+					>
+						{place.name ?? 'Unknown'}
+					</Text>
+					<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
+					<Layout style={[styles.tagsContainer, { backgroundColor: theme['color-basic-500'] }]}>
+						<Tag
+							label={place.primaryType
+								.split('_')
+								.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+								.join(' ')}
+						></Tag>
+						{place.priceLevel !== undefined && PRICE_MAP[place.priceLevel] && (
+							<Tag label={PRICE_MAP[place.priceLevel]}></Tag>
+						)}
+					</Layout>
+					<Text>
+						{place.rating !== undefined ? (
+							<>
+								{place.rating} <AntDesign name='star' size={14} />
+								{place.ratingCount !== undefined && ` (${place.ratingCount})`}
+							</>
+						) : (
+							'No ratings yet'
+						)}
+					</Text>
 				</Layout>
-				<Text>
-					{place.rating !== undefined ? (
-						<>
-							{place.rating} <AntDesign name='star' size={14} />
-							{place.ratingCount !== undefined && ` (${place.ratingCount})`}
-						</>
-					) : (
-						'No ratings yet'
-					)}
-				</Text>
-			</Layout>
-		);
-	}, []);
+			);
+		},
+		[theme]
+	);
 
 	const OverlayLabel = ({ color }: { color: string }) => (
 		<View style={[styles.overlayLabelContainer, { backgroundColor: color }]} />
@@ -135,7 +138,7 @@ export default function SwipeScreen() {
 		);
 	}
 
-	if (!places.length) {
+	if (!places.length || places.length === 1) { // Swiper needs at least 2 cards to function properly
 		return (
 			<Layout style={styles.basicContainer}>
 				<Text category='h1'>No places found :&apos;)</Text>
