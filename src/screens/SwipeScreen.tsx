@@ -1,10 +1,11 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { Button, Layout, Spinner, Text } from '@ui-kitten/components';
+import { Layout, Spinner, Text } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
 import { fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
+import Tag from '../components/Tag';
 import { PRICE_MAP } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
@@ -65,16 +66,14 @@ export default function SwipeScreen() {
 				</Text>
 				<Text style={{ fontSize: 100 }}>{'🍴'}</Text>
 				<Layout style={styles.tagsContainer}>
-					<Button size='tiny' appearance='outline'>
-						{place.primaryType
-							?.split('_')
+					<Tag
+						label={place.primaryType
+							.split('_')
 							.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 							.join(' ')}
-					</Button>
+					></Tag>
 					{place.priceLevel !== undefined && PRICE_MAP[place.priceLevel] && (
-						<Button size='tiny' appearance='outline'>
-							{PRICE_MAP[place.priceLevel]}
-						</Button>
+						<Tag label={PRICE_MAP[place.priceLevel]}></Tag>
 					)}
 				</Layout>
 				<Text appearance='hint'>

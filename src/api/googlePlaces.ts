@@ -21,7 +21,7 @@ export interface Place {
     longitude: number;
     ratingCount?: number;
     priceLevel?: string;
-    primaryType?: string;
+    primaryType: string;
     openNow?: boolean;
 }
 
