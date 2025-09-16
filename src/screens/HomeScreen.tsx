@@ -1,8 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Layout, Text } from '@ui-kitten/components';
+import { Button, Layout } from '@ui-kitten/components';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 
 type RootStackParamList = {
 	Search: undefined;
@@ -13,7 +13,7 @@ export default function HomeScreen() {
 
 	return (
 		<Layout style={styles.container}>
-			<Text category='h1'>Grubl</Text>
+			<Image source={require('../assets/images/hero.png')} style={styles.title} />
 			<Button onPress={() => navigation.navigate('Search')}>Let&apos;s Eat!</Button>
 		</Layout>
 	);
@@ -26,5 +26,10 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		padding: 16,
 		gap: 32,
+	},
+	title: {
+		width: 300,
+		height: 300,
+		resizeMode: 'contain',
 	},
 });
