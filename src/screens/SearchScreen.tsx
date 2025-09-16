@@ -1,10 +1,7 @@
-import Entypo from '@expo/vector-icons/Entypo';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, IndexPath, Input, Layout, Select, SelectItem, Text, Toggle } from '@ui-kitten/components';
-import * as Font from 'expo-font';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Keyboard, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { CATEGORIES, EXCLUSIONS, PRICE_MAP, RADIUS_OPTIONS } from '../constants/googlePlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
@@ -31,16 +28,6 @@ export default function SearchScreen() {
 	const [excluded, setExcluded] = useState<string[]>([]);
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const [openNow, setOpenNow] = useState(true);
-
-	useEffect(() => {
-		async function loadFonts() {
-			await Font.loadAsync({
-				...Entypo.font,
-				...FontAwesome6.font,
-			});
-		}
-		loadFonts();
-	}, []);
 
 	const handleUseCurrentLocationInner = useCurrentLocation(setLocation);
 	const handleUseCurrentLocation = async () => {
