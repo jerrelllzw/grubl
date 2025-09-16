@@ -1,9 +1,10 @@
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { Layout, Spinner, Text, useTheme } from '@ui-kitten/components';
+import { Layout, Text, useTheme } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import LoadingDots from 'react-native-loading-dots';
 import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
 import { fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
 import Tag from '../components/Tag';
@@ -54,6 +55,7 @@ export default function SwipeScreen() {
 				handleError(err, 'An error occurred while loading places.');
 				setPlaces([]);
 			} finally {
+				await new Promise((resolve) => setTimeout(resolve, 1000)); // Didn't do a loading screen for nothing!
 				setLoading(false);
 			}
 		};
@@ -117,8 +119,16 @@ export default function SwipeScreen() {
 	if (loading) {
 		return (
 			<Layout style={styles.loadingContainer}>
-				<Spinner size='giant' />
-				<Text category='h1' numberOfLines={3} ellipsizeMode='tail'>
+				<LoadingDots
+					colors={[
+						theme['color-basic-700'],
+						theme['color-primary-600'],
+						theme['color-success-500'],
+						theme['color-info-500'],
+					]}
+					gap={5}
+				/>
+				<Text style={{ textAlign: 'center' }} category='h1' numberOfLines={3} ellipsizeMode='tail'>
 					Looking for places near &quot;{location}&quot;
 				</Text>
 			</Layout>
@@ -177,7 +187,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
-		gap: 16,
+		gap: 40,
 		padding: 48,
 	},
 	cardStyle: {
