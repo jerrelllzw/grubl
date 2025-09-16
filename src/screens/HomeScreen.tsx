@@ -31,5 +31,6 @@ const styles = StyleSheet.create({
 		width: 300,
 		height: 300,
 		resizeMode: 'contain',
+		borderRadius: 100,
 	},
 });
