@@ -1,3 +1,4 @@
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { Layout, Spinner, Text } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -77,8 +78,14 @@ export default function SwipeScreen() {
 					)}
 				</Layout>
 				<Text appearance='hint'>
-					{place.rating !== undefined ? `${place.rating} ⭐` : 'No ratings yet'}
-					{place.ratingCount !== undefined ? ` (${place.ratingCount})` : ''}
+					{place.rating !== undefined ? (
+						<>
+							{place.rating} <AntDesign name='star' size={14} />
+							{place.ratingCount !== undefined && ` (${place.ratingCount})`}
+						</>
+					) : (
+						'No ratings yet'
+					)}
 				</Text>
 			</Layout>
 		);
