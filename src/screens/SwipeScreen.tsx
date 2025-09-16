@@ -1,4 +1,3 @@
-import AntDesign from '@expo/vector-icons/AntDesign';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { Layout, Text, useTheme } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -89,7 +88,8 @@ export default function SwipeScreen() {
 					<Text>
 						{place.rating !== undefined ? (
 							<>
-								{place.rating} <AntDesign name='star' size={14} />
+								{place.rating}
+								<Text style={{ fontSize: 18 }}>★</Text>
 								{place.ratingCount !== undefined && ` (${place.ratingCount})`}
 							</>
 						) : (
