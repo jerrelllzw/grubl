@@ -76,9 +76,7 @@ export default function SearchScreen() {
 							onPress={handleUseCurrentLocation}
 							disabled={isLocating}
 						>
-							{isLocating
-								? () => <Entypo name='dots-three-horizontal' size={20} />
-								: () => <FontAwesome6 name='location-crosshairs' size={20} />}
+							{isLocating ? <Entypo name='dots-three-horizontal' /> : <FontAwesome6 name='location-crosshairs' />}
 						</Button>
 					</Layout>
 				</Layout>

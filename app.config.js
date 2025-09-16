@@ -19,6 +19,7 @@ export default {
 				backgroundColor: '#ffffff',
 			},
 			edgeToEdgeEnabled: true,
+			enforceNavigationBarContrast: true,
 			package: 'com.lerej.grubl',
 		},
 		web: {
