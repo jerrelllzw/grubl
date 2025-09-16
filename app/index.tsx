@@ -1,3 +1,4 @@
+import HomeScreen from '@/src/screens/HomeScreen';
 import * as eva from '@eva-design/eva';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ApplicationProvider } from '@ui-kitten/components';
@@ -11,7 +12,8 @@ const Stack = createNativeStackNavigator();
 export default function index() {
 	return (
 		<ApplicationProvider {...eva} theme={{ ...eva.light, ...theme }}>
-			<Stack.Navigator initialRouteName='Search' screenOptions={{ headerShown: false }}>
+			<Stack.Navigator initialRouteName='Home' screenOptions={{ headerShown: false }}>
+				<Stack.Screen name='Home' component={HomeScreen} />
 				<Stack.Screen name='Search' component={SearchScreen} />
 				<Stack.Screen name='Swipe' component={SwipeScreen} />
 			</Stack.Navigator>
