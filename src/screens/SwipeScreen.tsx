@@ -166,7 +166,7 @@ export default function SwipeScreen() {
 					onSwipeRight={handleAccept}
 					OverlayLabelRight={() => <OverlayLabel color={theme['color-overlay-yes']} />}
 					OverlayLabelLeft={() => <OverlayLabel color={theme['color-overlay-no']} />}
-					OverlayLabelTop={() => <OverlayLabel color={theme['color-overlay-save']} />}
+					OverlayLabelBottom={() => <OverlayLabel color={theme['color-overlay-save']} />}
 					onSwipedAll={() => setFinished(true)}
 				/>
 			</View>
