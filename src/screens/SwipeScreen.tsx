@@ -96,6 +96,7 @@ export default function SwipeScreen() {
 							'No ratings yet'
 						)}
 					</Text>
+					<Text>{place.distance} away</Text>
 				</Layout>
 			);
 		},

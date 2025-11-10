@@ -17,13 +17,32 @@ export interface Place {
     id: string;
     name?: string;
     rating?: number;
-    latitude: number;
-    longitude: number;
     ratingCount?: number;
     priceLevel?: string;
     primaryType: string;
-    openNow?: boolean;
+    distance?: string;
 }
+
+const calculateDistance = (point1: Coordinates, point2: Coordinates): string => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (point2.lat - point1.lat) * Math.PI / 180;
+    const dLon = (point2.lng - point1.lng) * Math.PI / 180;
+
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(point1.lat * Math.PI / 180) *
+        Math.cos(point2.lat * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distanceKm = R * c;
+
+    if (distanceKm < 1) {
+        return `${Math.round(distanceKm * 1000)}m`;
+    } else {
+        return `${distanceKm.toFixed(1)}km`;
+    }
+};
 
 // Geocoding
 export async function fetchCoordinates(address: string): Promise<Coordinates | null> {
@@ -109,12 +128,13 @@ export async function fetchPlaces(
                     id: place.id,
                     name: place.displayName?.text ?? undefined,
                     rating: place.rating ?? undefined,
-                    latitude: place.location?.latitude,
-                    longitude: place.location?.longitude,
                     ratingCount: place.userRatingCount ?? undefined,
                     priceLevel: place.priceLevel ?? undefined,
                     primaryType: place.primaryType ?? undefined,
-                    openNow: place.currentOpeningHours?.openNow ?? undefined,
+                    distance: calculateDistance(
+                        { lat: place.location?.latitude, lng: place.location?.longitude },
+                        { lat: latitude, lng: longitude }
+                    ),
                 };
             });
     } catch (error: any) {
