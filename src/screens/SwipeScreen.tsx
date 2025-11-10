@@ -55,7 +55,7 @@ export default function SwipeScreen() {
 				handleError(err, 'An error occurred while loading places.');
 				setPlaces([]);
 			} finally {
-				await new Promise((resolve) => setTimeout(resolve, 2750)); // Didn't do a loading screen for nothing!
+				await new Promise((resolve) => setTimeout(resolve, 1500)); // Didn't do a loading screen for nothing!
 				setLoading(false);
 			}
 		};
