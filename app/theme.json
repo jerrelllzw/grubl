@@ -68,7 +68,7 @@
 	"color-basic-transparent-500": "rgba(128, 128, 128, 0.4)",
 	"color-basic-transparent-600": "rgba(128, 128, 128, 0.48)",
 
-	"color-overlay-yes": "#5EE57B",
+	"color-overlay-maps": "#4BA3E5",
 	"color-overlay-no": "#DB4876",
-	"color-overlay-save": "#9B59B6"
+	"color-overlay-shortlist": "#9B59B6"
 }

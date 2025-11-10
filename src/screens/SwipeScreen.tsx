@@ -1,5 +1,5 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { Layout, Text, useTheme } from '@ui-kitten/components';
+import { Button, Layout, Text, useTheme } from '@ui-kitten/components';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -177,12 +177,13 @@ export default function SwipeScreen() {
 					renderCard={renderCard}
 					onSwipeRight={handleMaps}
 					onSwipeBottom={handleShortlist}
-					OverlayLabelRight={() => <OverlayLabel color={theme['color-overlay-yes']} />}
+					OverlayLabelRight={() => <OverlayLabel color={theme['color-overlay-maps']} />}
 					OverlayLabelLeft={() => <OverlayLabel color={theme['color-overlay-no']} />}
-					OverlayLabelBottom={() => <OverlayLabel color={theme['color-overlay-save']} />}
+					OverlayLabelBottom={() => <OverlayLabel color={theme['color-overlay-shortlist']} />}
 					onSwipedAll={() => setFinished(true)}
 				/>
 			</View>
+			<Button>Shortlisted</Button>
 		</GestureHandlerRootView>
 	);
 }
