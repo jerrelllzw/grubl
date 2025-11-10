@@ -27,6 +27,7 @@ export default function SwipeScreen() {
 	const { location, categories, excluded, radius, priceLevels, openNow } = route.params;
 
 	const [places, setPlaces] = useState<Place[]>([]);
+	const [shortListedPlaces, setShortListedPlaces] = useState<Place[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [finished, setFinished] = useState(false);
 
@@ -107,7 +108,7 @@ export default function SwipeScreen() {
 		<View style={[styles.overlayLabelContainer, { backgroundColor: color }]} />
 	);
 
-	const handleAccept = useCallback(
+	const handleMaps = useCallback(
 		(cardIndex: number) => {
 			const place = places[cardIndex];
 			if (place && place.id) {
@@ -115,6 +116,16 @@ export default function SwipeScreen() {
 					place.name || ''
 				)}&query_place_id=${place.id}`;
 				Linking.openURL(mapsUrl);
+			}
+		},
+		[places]
+	);
+
+	const handleShortlist = useCallback(
+		(cardIndex: number) => {
+			const place = places[cardIndex];
+			if (place && place.id) {
+				setShortListedPlaces((prev) => [...prev, place]);
 			}
 		},
 		[places]
@@ -164,7 +175,8 @@ export default function SwipeScreen() {
 					data={places}
 					cardStyle={styles.cardStyle}
 					renderCard={renderCard}
-					onSwipeRight={handleAccept}
+					onSwipeRight={handleMaps}
+					onSwipeBottom={handleShortlist}
 					OverlayLabelRight={() => <OverlayLabel color={theme['color-overlay-yes']} />}
 					OverlayLabelLeft={() => <OverlayLabel color={theme['color-overlay-no']} />}
 					OverlayLabelBottom={() => <OverlayLabel color={theme['color-overlay-save']} />}
