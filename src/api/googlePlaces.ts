@@ -63,7 +63,7 @@ export async function fetchCoordinates(address: string): Promise<Coordinates | n
 }
 
 // Autocomplete
-export async function fetchAutoComplete(input: string): Promise<any[]> {
+export async function fetchAutoComplete(input: string): Promise<string[]> {
     const url = 'https://places.googleapis.com/v1/places:autocomplete';
     const headers = {
         'Content-Type': 'application/json',
@@ -74,8 +74,9 @@ export async function fetchAutoComplete(input: string): Promise<any[]> {
     };
     try {
         const response = await axios.post(url, body, { headers });
-        return (response.data.suggestions || [])
-            .map((suggestion: any) => { return suggestion.placePrediction.text.text; });
+        return (response.data?.suggestions ?? [])
+            .map((suggestion: any) => suggestion?.placePrediction?.text?.text)
+            .filter((text: unknown): text is string => typeof text === 'string');
     } catch (error: any) {
         handleError(error, 'Failed to fetch autocomplete suggestions.');
         return [];
@@ -131,10 +132,12 @@ export async function fetchPlaces(
                     ratingCount: place.userRatingCount ?? undefined,
                     priceLevel: place.priceLevel ?? undefined,
                     primaryType: place.primaryType ?? undefined,
-                    distance: calculateDistance(
-                        { lat: place.location?.latitude, lng: place.location?.longitude },
-                        { lat: latitude, lng: longitude }
-                    ),
+                    distance: place.location
+                        ? calculateDistance(
+                              { lat: place.location.latitude, lng: place.location.longitude },
+                              { lat: latitude, lng: longitude }
+                          )
+                        : undefined,
                 };
             });
     } catch (error: any) {

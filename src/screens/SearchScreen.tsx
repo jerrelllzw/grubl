@@ -1,22 +1,32 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
-	Button,
 	IndexPath,
 	Input,
-	Layout,
 	List,
 	ListItem,
 	Select,
 	SelectItem,
-	Text,
 	Toggle,
 } from '@ui-kitten/components';
 import React, { useEffect, useRef, useState } from 'react';
-import { Keyboard, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
+import {
+	ActivityIndicator,
+	Keyboard,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchAutoComplete } from '../api/googlePlaces';
+import GradientButton from '../components/GradientButton';
+import SectionCard from '../components/SectionCard';
 import { CATEGORIES, EXCLUSIONS, PRICE_MAP, RADIUS_OPTIONS } from '../constants/googlePlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
+import { COLORS, FONTS, RADIUS, SHADOWS } from '../theme/tokens';
 import { handleError } from '../utils/errorHandler';
 
 type RootStackParamList = {
@@ -62,10 +72,6 @@ export default function SearchScreen() {
 		}
 	};
 
-	const handleOpenNowToggle = () => {
-		setOpenNow((prev) => !prev);
-	};
-
 	const handleSearch = () => {
 		if (location.trim()) {
 			navigation.navigate('Swipe', {
@@ -77,7 +83,7 @@ export default function SearchScreen() {
 				openNow,
 			});
 		} else {
-			handleError('No location entered', 'Please enter a location.');
+			handleError('No location entered', 'Please enter a location to start.');
 		}
 	};
 
@@ -90,7 +96,7 @@ export default function SearchScreen() {
 					const results = await fetchAutoComplete(location);
 					setSuggestions(results);
 					setShowSuggestions(true);
-				} catch (e) {
+				} catch {
 					clearSuggestions();
 				}
 			}
@@ -99,188 +105,297 @@ export default function SearchScreen() {
 		return () => clearTimeout(timeout);
 	}, [location]);
 
+	const categoryKeys = Object.keys(CATEGORIES);
+	const exclusionKeys = Object.keys(EXCLUSIONS);
+	const priceKeys = Object.keys(PRICE_MAP);
+
 	return (
-		<TouchableWithoutFeedback
-			onPress={() => {
-				Keyboard.dismiss();
-				setShowSuggestions(false);
-			}}
-		>
-			<Layout style={styles.container}>
-				<Layout>
-					<Text category='h6' style={styles.header}>
-						Location
-					</Text>
-					<View style={{ position: 'relative' }}>
-						<Layout style={styles.locationContainer}>
-							<Input
-								placeholder='Enter a location'
-								value={location}
-								onChangeText={setLocation}
-								style={{ flex: 1 }}
-								onFocus={() => {
-									if (suggestions.length) setShowSuggestions(true);
-								}}
-							/>
-							<Button
-								size='small'
-								status='basic'
-								appearance='outline'
-								onPress={handleUseCurrentLocation}
-								disabled={isLocating}
-							>
-								{isLocating ? '...' : '📍'}
-							</Button>
-						</Layout>
+		<SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+			<View style={styles.header}>
+				<Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+					<Ionicons name='chevron-back' size={24} color={COLORS.ink} />
+				</Pressable>
+				<View>
+					<Text style={styles.headerTitle}>What sounds good?</Text>
+					<Text style={styles.headerSubtitle}>Set your taste, then start swiping</Text>
+				</View>
+			</View>
 
-						{showSuggestions && suggestions.length > 0 && (
-							<View style={styles.suggestionDropdown}>
-								<List
-									data={suggestions}
-									renderItem={({ item }) => (
-										<ListItem
-											title={item}
-											onPress={() => {
-												suppressAutocompleteRef.current = true;
-												setLocation(item);
-												clearSuggestions();
-												setTimeout(() => (suppressAutocompleteRef.current = false), 500);
-											}}
-										/>
-									)}
-								/>
-							</View>
-						)}
+			<ScrollView
+				style={styles.scroll}
+				contentContainerStyle={styles.scrollContent}
+				keyboardShouldPersistTaps='handled'
+				showsVerticalScrollIndicator={false}
+				onScrollBeginDrag={() => {
+					Keyboard.dismiss();
+					setShowSuggestions(false);
+				}}
+			>
+				<SectionCard icon='location' label='Location' style={styles.locationSection}>
+					<View style={styles.locationRow}>
+						<Input
+							placeholder='Where are you eating?'
+							value={location}
+							onChangeText={setLocation}
+							size='large'
+							style={styles.input}
+							onFocus={() => {
+								if (suggestions.length) setShowSuggestions(true);
+							}}
+						/>
+						<Pressable
+							style={styles.locButton}
+							onPress={handleUseCurrentLocation}
+							disabled={isLocating}
+						>
+							{isLocating ? (
+								<ActivityIndicator size='small' color={COLORS.brand} />
+							) : (
+								<Ionicons name='locate' size={22} color={COLORS.brand} />
+							)}
+						</Pressable>
 					</View>
-				</Layout>
 
-				<Layout>
-					<Text category='h6' style={styles.header}>
-						Categories
-					</Text>
+					{showSuggestions && suggestions.length > 0 && (
+						<View style={[styles.suggestionDropdown, SHADOWS.card]}>
+							<List
+								data={suggestions}
+								keyboardShouldPersistTaps='handled'
+								renderItem={({ item }) => (
+									<ListItem
+										title={item}
+										onPress={() => {
+											suppressAutocompleteRef.current = true;
+											setLocation(item);
+											clearSuggestions();
+											Keyboard.dismiss();
+											setTimeout(() => (suppressAutocompleteRef.current = false), 500);
+										}}
+									/>
+								)}
+							/>
+						</View>
+					)}
+				</SectionCard>
+
+				<SectionCard icon='restaurant' label='Categories'>
 					<Select
 						multiSelect
+						size='large'
 						value={categories.map((key) => CATEGORIES[key]).join(', ')}
-						selectedIndex={categories.map((key) => new IndexPath(Object.keys(CATEGORIES).indexOf(key)))}
+						selectedIndex={categories.map((key) => new IndexPath(categoryKeys.indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
 								const selectedKeys = index
-									.map((i) => Object.keys(CATEGORIES)[i.row])
-									.sort((a, b) => Object.keys(CATEGORIES).indexOf(a) - Object.keys(CATEGORIES).indexOf(b));
+									.map((i) => categoryKeys[i.row])
+									.sort((a, b) => categoryKeys.indexOf(a) - categoryKeys.indexOf(b));
 								setCategories(selectedKeys.length ? selectedKeys : categories);
 							}
 						}}
 					>
-						{Object.keys(CATEGORIES).map((key) => (
+						{categoryKeys.map((key) => (
 							<SelectItem key={key} title={CATEGORIES[key]} />
 						))}
 					</Select>
-				</Layout>
+				</SectionCard>
 
-				<Layout>
-					<Text category='h6' style={styles.header}>
-						Exclude
-					</Text>
+				<SectionCard icon='close-circle' label='Exclude'>
 					<Select
 						multiSelect
-						placeholder={'None'}
-						value={excluded.map((key) => EXCLUSIONS[key]).join(', ')}
-						selectedIndex={excluded.map((key) => new IndexPath(Object.keys(EXCLUSIONS).indexOf(key)))}
+						size='large'
+						placeholder='Nothing excluded'
+						value={excluded.length ? excluded.map((key) => EXCLUSIONS[key]).join(', ') : ''}
+						selectedIndex={excluded.map((key) => new IndexPath(exclusionKeys.indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
 								const selectedKeys = index
-									.map((i) => Object.keys(EXCLUSIONS)[i.row])
-									.sort((a, b) => Object.keys(EXCLUSIONS).indexOf(a) - Object.keys(EXCLUSIONS).indexOf(b));
+									.map((i) => exclusionKeys[i.row])
+									.sort((a, b) => exclusionKeys.indexOf(a) - exclusionKeys.indexOf(b));
 								setExcluded(selectedKeys);
 							}
 						}}
 					>
-						{Object.keys(EXCLUSIONS).map((key) => (
+						{exclusionKeys.map((key) => (
 							<SelectItem key={key} title={EXCLUSIONS[key]} />
 						))}
 					</Select>
-				</Layout>
+				</SectionCard>
 
-				<Layout>
-					<Text category='h6' style={styles.header}>
-						Radius
-					</Text>
-					<Select
-						selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
-						onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
-						value={`${radius}m`}
-					>
-						{RADIUS_OPTIONS.map((option) => (
-							<SelectItem key={option} title={`${option}m`} />
-						))}
-					</Select>
-				</Layout>
+				<View style={styles.row}>
+					<SectionCard icon='navigate' label='Radius' style={styles.flex1}>
+						<Select
+							size='large'
+							selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
+							onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
+							value={`${radius} m`}
+						>
+							{RADIUS_OPTIONS.map((option) => (
+								<SelectItem key={option} title={`${option} m`} />
+							))}
+						</Select>
+					</SectionCard>
 
-				<Layout>
-					<Text category='h6' style={styles.header}>
-						Price Level
-					</Text>
-					<Select
-						multiSelect
-						value={priceLevels.map((key) => PRICE_MAP[key]).join(', ')}
-						selectedIndex={priceLevels.map((key) => new IndexPath(Object.keys(PRICE_MAP).indexOf(key)))}
-						onSelect={(index) => {
-							if (Array.isArray(index)) {
-								const selectedKeys = index
-									.map((i) => Object.keys(PRICE_MAP)[i.row])
-									.sort((a, b) => Object.keys(PRICE_MAP).indexOf(a) - Object.keys(PRICE_MAP).indexOf(b));
-								setPriceLevels(selectedKeys.length ? selectedKeys : priceLevels);
-							}
-						}}
-					>
-						{Object.keys(PRICE_MAP).map((key) => (
-							<SelectItem key={key} title={PRICE_MAP[key]} />
-						))}
-					</Select>
-				</Layout>
+					<SectionCard icon='cash' label='Price' style={styles.flex1}>
+						<Select
+							multiSelect
+							size='large'
+							value={priceLevels.map((key) => PRICE_MAP[key]).join(' ')}
+							selectedIndex={priceLevels.map((key) => new IndexPath(priceKeys.indexOf(key)))}
+							onSelect={(index) => {
+								if (Array.isArray(index)) {
+									const selectedKeys = index
+										.map((i) => priceKeys[i.row])
+										.sort((a, b) => priceKeys.indexOf(a) - priceKeys.indexOf(b));
+									setPriceLevels(selectedKeys.length ? selectedKeys : priceLevels);
+								}
+							}}
+						>
+							{priceKeys.map((key) => (
+								<SelectItem key={key} title={PRICE_MAP[key]} />
+							))}
+						</Select>
+					</SectionCard>
+				</View>
 
-				<Layout style={styles.openNowContainer}>
-					<Text>Only show places that are open now</Text>
-					<Toggle checked={openNow} onChange={handleOpenNowToggle}></Toggle>
-				</Layout>
+				<View style={[styles.openNowCard, SHADOWS.soft]}>
+					<View style={styles.openNowText}>
+						<View style={styles.iconBadge}>
+							<Ionicons name='time' size={16} color={COLORS.brand} />
+						</View>
+						<View style={styles.flex1}>
+							<Text style={styles.openNowTitle}>Open now</Text>
+							<Text style={styles.openNowHint}>Only show places currently open</Text>
+						</View>
+					</View>
+					<Toggle checked={openNow} onChange={() => setOpenNow((prev) => !prev)} />
+				</View>
+			</ScrollView>
 
-				<Button onPress={handleSearch}>Search</Button>
-			</Layout>
-		</TouchableWithoutFeedback>
+			<View style={styles.footer}>
+				<GradientButton title='Find Food' icon='search' onPress={handleSearch} />
+			</View>
+		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: 48,
-		justifyContent: 'center',
-		gap: 16,
+		backgroundColor: COLORS.bg,
 	},
 	header: {
-		marginBottom: 8,
-	},
-	locationContainer: {
-		flexDirection: 'row',
-		gap: 8,
-	},
-	openNowContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		justifyContent: 'space-between',
+		gap: 12,
+		paddingHorizontal: 20,
+		paddingBottom: 12,
+	},
+	backButton: {
+		width: 44,
+		height: 44,
+		borderRadius: 14,
+		backgroundColor: COLORS.surface,
+		alignItems: 'center',
+		justifyContent: 'center',
+		...SHADOWS.soft,
+	},
+	headerTitle: {
+		fontFamily: FONTS.extrabold,
+		fontSize: 22,
+		color: COLORS.ink,
+	},
+	headerSubtitle: {
+		fontFamily: FONTS.regular,
+		fontSize: 13,
+		color: COLORS.muted,
+	},
+	scroll: {
+		flex: 1,
+	},
+	scrollContent: {
+		paddingHorizontal: 20,
+		paddingTop: 8,
+		paddingBottom: 24,
+		gap: 14,
+	},
+	locationSection: {
+		zIndex: 30,
+		elevation: 30,
+	},
+	locationRow: {
+		flexDirection: 'row',
+		gap: 10,
+	},
+	input: {
+		flex: 1,
+		borderRadius: RADIUS.md,
+	},
+	locButton: {
+		width: 52,
+		height: 52,
+		borderRadius: RADIUS.md,
+		backgroundColor: COLORS.brandSoft,
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 	suggestionDropdown: {
 		position: 'absolute',
-		top: 52,
-		left: 0,
-		right: 0,
-		borderRadius: 8,
-		maxHeight: 200,
-		zIndex: 10,
-		elevation: 5,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.2,
-		shadowRadius: 4,
+		top: 92,
+		left: 16,
+		right: 16,
+		backgroundColor: COLORS.surface,
+		borderRadius: RADIUS.md,
+		maxHeight: 220,
+		overflow: 'hidden',
+		zIndex: 50,
+		elevation: 40,
+	},
+	row: {
+		flexDirection: 'row',
+		gap: 14,
+	},
+	flex1: {
+		flex: 1,
+	},
+	openNowCard: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		backgroundColor: COLORS.surface,
+		borderRadius: RADIUS.lg,
+		padding: 16,
+	},
+	openNowText: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 10,
+		flex: 1,
+		paddingRight: 12,
+	},
+	iconBadge: {
+		width: 30,
+		height: 30,
+		borderRadius: 10,
+		backgroundColor: COLORS.brandSoft,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	openNowTitle: {
+		fontFamily: FONTS.semibold,
+		fontSize: 15,
+		color: COLORS.ink,
+	},
+	openNowHint: {
+		fontFamily: FONTS.regular,
+		fontSize: 12,
+		color: COLORS.muted,
+	},
+	footer: {
+		paddingHorizontal: 20,
+		paddingTop: 10,
+		paddingBottom: 8,
+		backgroundColor: COLORS.bg,
+		borderTopWidth: 1,
+		borderTopColor: COLORS.hairline,
 	},
 });

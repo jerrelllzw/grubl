@@ -136,6 +136,69 @@ export const EXCLUSIONS: Record<string, string> = {
     wine_bar: 'Wine Bar'
 };
 
+// Maps a Google `primaryType` to a representative emoji shown on the swipe card.
+const PLACE_EMOJI: Record<string, string> = {
+    acai_shop: '🍓',
+    bagel_shop: '🥯',
+    bakery: '🥐',
+    bar: '🍸',
+    bar_and_grill: '🍻',
+    barbecue_restaurant: '🍖',
+    breakfast_restaurant: '🍳',
+    brunch_restaurant: '🥞',
+    buffet_restaurant: '🍽️',
+    cafe: '☕',
+    cafeteria: '🍱',
+    candy_store: '🍬',
+    cat_cafe: '🐱',
+    chinese_restaurant: '🥡',
+    chocolate_factory: '🍫',
+    chocolate_shop: '🍫',
+    coffee_shop: '☕',
+    confectionery: '🍬',
+    deli: '🥪',
+    dessert_restaurant: '🍰',
+    dessert_shop: '🧁',
+    diner: '🍳',
+    dog_cafe: '🐶',
+    donut_shop: '🍩',
+    fast_food_restaurant: '🍟',
+    fine_dining_restaurant: '🍷',
+    food_court: '🍱',
+    french_restaurant: '🥖',
+    greek_restaurant: '🥙',
+    hamburger_restaurant: '🍔',
+    ice_cream_shop: '🍦',
+    indian_restaurant: '🍛',
+    indonesian_restaurant: '🍲',
+    italian_restaurant: '🍝',
+    japanese_restaurant: '🍱',
+    juice_shop: '🧃',
+    korean_restaurant: '🍲',
+    lebanese_restaurant: '🧆',
+    mediterranean_restaurant: '🫒',
+    mexican_restaurant: '🌮',
+    middle_eastern_restaurant: '🧆',
+    pizza_restaurant: '🍕',
+    pub: '🍺',
+    ramen_restaurant: '🍜',
+    sandwich_shop: '🥪',
+    seafood_restaurant: '🦞',
+    spanish_restaurant: '🥘',
+    steak_house: '🥩',
+    sushi_restaurant: '🍣',
+    tea_house: '🍵',
+    thai_restaurant: '🍜',
+    turkish_restaurant: '🥙',
+    vegan_restaurant: '🥗',
+    vegetarian_restaurant: '🥗',
+    vietnamese_restaurant: '🍜',
+    wine_bar: '🍷',
+};
+
+export const getPlaceEmoji = (primaryType?: string): string =>
+    (primaryType && PLACE_EMOJI[primaryType]) || '🍴';
+
 export const RADIUS_OPTIONS = [100, 200, 300, 400, 500];
 
 export const PRICE_MAP: Record<string, string> = {
