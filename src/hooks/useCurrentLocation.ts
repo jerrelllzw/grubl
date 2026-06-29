@@ -1,7 +1,12 @@
 import * as Location from 'expo-location';
+import type { Coordinates } from '../api/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
-export function useCurrentLocation(setLocation: (loc: string) => void) {
+// Resolves the device's current position to both a human-readable label and the
+// exact coordinates, so callers can search without a second geocoding round-trip.
+export function useCurrentLocation(
+    onResolved: (label: string, coords: Coordinates) => void
+) {
     return async () => {
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
@@ -13,18 +18,21 @@ export function useCurrentLocation(setLocation: (loc: string) => void) {
             const loc = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.High,
             });
+            const coords: Coordinates = {
+                lat: loc.coords.latitude,
+                lng: loc.coords.longitude,
+            };
 
             const geocode = await Location.reverseGeocodeAsync({
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
+                latitude: coords.lat,
+                longitude: coords.lng,
             });
 
             if (geocode.length > 0) {
                 const { name, street, city, region } = geocode[0];
-                const locationString = [name, street, city, region].filter(Boolean).join(', ');
-                setLocation(locationString);
-
-                return Promise.resolve(locationString);
+                const label = [name, street, city, region].filter(Boolean).join(', ');
+                onResolved(label, coords);
+                return Promise.resolve(label);
             } else {
                 handleError('No geocode result', 'Could not determine address from location');
                 return Promise.reject(new Error('No geocode result'));
