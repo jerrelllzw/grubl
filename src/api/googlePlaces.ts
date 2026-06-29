@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FOOD_AND_DRINK_TYPES } from '../constants/googlePlaces';
+import { CRAVING_BY_KEY } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
@@ -23,8 +23,9 @@ export interface Place {
     distance?: string;
 }
 
-const calculateDistance = (point1: Coordinates, point2: Coordinates): string => {
-    const R = 6371; // Earth's radius in kilometers
+// Straight-line distance between two points, in metres.
+const distanceInMetres = (point1: Coordinates, point2: Coordinates): number => {
+    const R = 6371000; // Earth's radius in metres
     const dLat = (point2.lat - point1.lat) * Math.PI / 180;
     const dLon = (point2.lng - point1.lng) * Math.PI / 180;
 
@@ -35,13 +36,20 @@ const calculateDistance = (point1: Coordinates, point2: Coordinates): string => 
         Math.sin(dLon / 2) ** 2;
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distanceKm = R * c;
+    return R * c;
+};
 
-    if (distanceKm < 1) {
-        return `${Math.round(distanceKm * 1000)}m`;
-    } else {
-        return `${distanceKm.toFixed(1)}km`;
-    }
+const formatDistance = (metres: number): string =>
+    metres < 1000 ? `${Math.round(metres)}m` : `${(metres / 1000).toFixed(1)}km`;
+
+// Turns the chosen cravings into a single natural-language query. Text Search
+// matches on cuisine words, so this surfaces more relevant places than the
+// exact `primaryType` matching that Nearby Search is limited to.
+const buildFoodQuery = (cravings: string[]): string => {
+    const terms = cravings
+        .map((key) => CRAVING_BY_KEY[key]?.term)
+        .filter((term): term is string => Boolean(term));
+    return terms.length ? terms.join(', ') : 'restaurants and places to eat';
 };
 
 // Geocoding
@@ -83,17 +91,26 @@ export async function fetchAutoComplete(input: string): Promise<string[]> {
     }
 }
 
-// Nearby Search
+const ALL_PRICE_LEVELS = [
+    'PRICE_LEVEL_INEXPENSIVE',
+    'PRICE_LEVEL_MODERATE',
+    'PRICE_LEVEL_EXPENSIVE',
+    'PRICE_LEVEL_VERY_EXPENSIVE',
+];
+
+const MAX_PAGES = 3; // Text Search returns up to 20 per page → up to 60 places.
+
+// Text Search. Builds a deeper, more relevant deck than Nearby Search: it ranks
+// by relevance to the craving, filters price/open-now server-side, and paginates.
 export async function fetchPlaces(
     latitude: number,
     longitude: number,
-    categories: string[],
-    excluded: string[],
+    cravings: string[],
     radius: number,
     priceLevels: string[],
     openNow: boolean
 ): Promise<Place[]> {
-    const url = 'https://places.googleapis.com/v1/places:searchNearby';
+    const url = 'https://places.googleapis.com/v1/places:searchText';
     const headers = {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': API_KEY,
@@ -105,41 +122,69 @@ export async function fetchPlaces(
             'places.priceLevel',
             'places.userRatingCount',
             'places.primaryType',
-            'places.currentOpeningHours'
+            'nextPageToken',
         ].join(','),
     };
-    const body = {
-        includedTypes: categories,
-        excludedTypes: excluded,
-        locationRestriction: {
+
+    const body: Record<string, any> = {
+        textQuery: buildFoodQuery(cravings),
+        locationBias: {
             circle: {
                 center: { latitude, longitude },
                 radius,
             },
         },
+        pageSize: 20,
     };
+
+    // Only constrain open-now when the user wants it on; the API treats a `false`
+    // as "no filter" anyway, so we just omit it.
+    if (openNow) body.openNow = true;
+
+    // Pushing price server-side excludes places that have no price data, so only
+    // do it when the user has actually narrowed from "any price".
+    const narrowedPrice =
+        priceLevels.length > 0 && priceLevels.length < ALL_PRICE_LEVELS.length;
+    if (narrowedPrice) body.priceLevels = priceLevels;
+
+    const origin: Coordinates = { lat: latitude, lng: longitude };
+    const seen = new Set<string>();
+    const places: Place[] = [];
+
     try {
-        const response = await axios.post(url, body, { headers });
-        return (response.data.places || [])
-            .filter((place: any) => FOOD_AND_DRINK_TYPES.includes(place.primaryType))
-            .filter((place: any) => place.priceLevel === undefined || place.priceLevel === 'PRICE_LEVEL_FREE' || priceLevels.includes(place.priceLevel))
-            .filter((place: any) => !openNow || place?.currentOpeningHours?.openNow)
-            .map((place: any) => {
-                return {
+        let pageToken: string | undefined;
+        for (let page = 0; page < MAX_PAGES; page++) {
+            const response = await axios.post(
+                url,
+                pageToken ? { ...body, pageToken } : body,
+                { headers }
+            );
+
+            for (const place of response.data.places ?? []) {
+                if (!place.id || seen.has(place.id)) continue;
+                seen.add(place.id);
+
+                const coords = place.location
+                    ? { lat: place.location.latitude, lng: place.location.longitude }
+                    : undefined;
+                // locationBias can spill beyond the circle; keep the deck honest.
+                if (coords && distanceInMetres(coords, origin) > radius) continue;
+
+                places.push({
                     id: place.id,
                     name: place.displayName?.text ?? undefined,
                     rating: place.rating ?? undefined,
                     ratingCount: place.userRatingCount ?? undefined,
                     priceLevel: place.priceLevel ?? undefined,
                     primaryType: place.primaryType ?? undefined,
-                    distance: place.location
-                        ? calculateDistance(
-                              { lat: place.location.latitude, lng: place.location.longitude },
-                              { lat: latitude, lng: longitude }
-                          )
-                        : undefined,
-                };
-            });
+                    distance: coords ? formatDistance(distanceInMetres(coords, origin)) : undefined,
+                });
+            }
+
+            pageToken = response.data.nextPageToken;
+            if (!pageToken) break;
+        }
+        return places;
     } catch (error: any) {
         handleError(error, 'Failed to fetch places.');
         return [];
