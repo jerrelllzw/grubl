@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Slider from '@react-native-community/slider';
 import {
 	IndexPath,
 	Input,
@@ -22,18 +21,10 @@ import {
 	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Coordinates, fetchAutoComplete } from '../api/googlePlaces';
+import { fetchAutoComplete } from '../api/googlePlaces';
 import GradientButton from '../components/GradientButton';
 import SectionCard from '../components/SectionCard';
-import {
-	CRAVINGS,
-	formatRadius,
-	PRICE_MAP,
-	RADIUS_DEFAULT,
-	RADIUS_MAX,
-	RADIUS_MIN,
-	RADIUS_STEP,
-} from '../constants/googlePlaces';
+import { CATEGORIES, EXCLUSIONS, PRICE_MAP, RADIUS_OPTIONS } from '../constants/googlePlaces';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { COLORS, FONTS, RADIUS, SHADOWS } from '../theme/tokens';
 import { handleError } from '../utils/errorHandler';
@@ -41,8 +32,8 @@ import { handleError } from '../utils/errorHandler';
 type RootStackParamList = {
 	Swipe: {
 		location: string;
-		coords?: Coordinates;
-		cravings: string[];
+		categories: string[];
+		excluded: string[];
 		radius: number;
 		priceLevels: string[];
 		openNow: boolean;
@@ -53,16 +44,13 @@ export default function SearchScreen() {
 	const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
 	const [location, setLocation] = useState('');
-	// Exact coordinates when the user picks "current location"; cleared the
-	// moment they type, since the text no longer matches these coords.
-	const [coords, setCoords] = useState<Coordinates | null>(null);
 	const [isLocating, setIsLocating] = useState(false);
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const suppressAutocompleteRef = useRef(false);
-
-	const [radius, setRadius] = useState(RADIUS_DEFAULT);
-	const [cravings, setCravings] = useState<string[]>([]);
+	const [radius, setRadius] = useState(RADIUS_OPTIONS[0]);
+	const [categories, setCategories] = useState<string[]>(Object.keys(CATEGORIES));
+	const [excluded, setExcluded] = useState<string[]>([]);
 	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
 	const [openNow, setOpenNow] = useState(true);
 
@@ -71,21 +59,7 @@ export default function SearchScreen() {
 		setShowSuggestions(false);
 	};
 
-	const onChangeLocation = (text: string) => {
-		setLocation(text);
-		setCoords(null);
-	};
-
-	const toggleCraving = (key: string) => {
-		setCravings((prev) =>
-			prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-		);
-	};
-
-	const handleUseCurrentLocationInner = useCurrentLocation((label, resolved) => {
-		setLocation(label);
-		setCoords(resolved);
-	});
+	const handleUseCurrentLocationInner = useCurrentLocation(setLocation);
 	const handleUseCurrentLocation = async () => {
 		try {
 			setIsLocating(true);
@@ -102,8 +76,8 @@ export default function SearchScreen() {
 		if (location.trim()) {
 			navigation.navigate('Swipe', {
 				location,
-				coords: coords ?? undefined,
-				cravings,
+				categories,
+				excluded,
 				radius,
 				priceLevels,
 				openNow,
@@ -131,6 +105,8 @@ export default function SearchScreen() {
 		return () => clearTimeout(timeout);
 	}, [location]);
 
+	const categoryKeys = Object.keys(CATEGORIES);
+	const exclusionKeys = Object.keys(EXCLUSIONS);
 	const priceKeys = Object.keys(PRICE_MAP);
 
 	return (
@@ -160,7 +136,7 @@ export default function SearchScreen() {
 						<Input
 							placeholder='Where are you eating?'
 							value={location}
-							onChangeText={onChangeLocation}
+							onChangeText={setLocation}
 							size='large'
 							style={styles.input}
 							onFocus={() => {
@@ -191,7 +167,6 @@ export default function SearchScreen() {
 										onPress={() => {
 											suppressAutocompleteRef.current = true;
 											setLocation(item);
-											setCoords(null);
 											clearSuggestions();
 											Keyboard.dismiss();
 											setTimeout(() => (suppressAutocompleteRef.current = false), 500);
@@ -203,66 +178,84 @@ export default function SearchScreen() {
 					)}
 				</SectionCard>
 
-				<SectionCard icon='fast-food' label='Craving'>
-					<Text style={styles.cravingHint}>
-						{cravings.length ? `${cravings.length} selected` : 'Pick a few, or leave blank to see everything'}
-					</Text>
-					<View style={styles.cravingGrid}>
-						{CRAVINGS.map((craving) => {
-							const active = cravings.includes(craving.key);
-							return (
-								<Pressable
-									key={craving.key}
-									onPress={() => toggleCraving(craving.key)}
-									style={[styles.cravingChip, active && styles.cravingChipActive]}
-								>
-									<Text style={styles.cravingEmoji}>{craving.emoji}</Text>
-									<Text style={[styles.cravingLabel, active && styles.cravingLabelActive]}>
-										{craving.label}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
-				</SectionCard>
-
-				<SectionCard icon='navigate' label='Distance'>
-					<View style={styles.radiusRow}>
-						<Text style={styles.radiusValue}>{formatRadius(radius)}</Text>
-						<Text style={styles.radiusCaption}>around your spot</Text>
-					</View>
-					<Slider
-						minimumValue={RADIUS_MIN}
-						maximumValue={RADIUS_MAX}
-						step={RADIUS_STEP}
-						value={radius}
-						onValueChange={setRadius}
-						minimumTrackTintColor={COLORS.brand}
-						maximumTrackTintColor={COLORS.hairline}
-						thumbTintColor={COLORS.brand}
-					/>
-				</SectionCard>
-
-				<SectionCard icon='cash' label='Price'>
+				<SectionCard icon='restaurant' label='Categories'>
 					<Select
 						multiSelect
 						size='large'
-						value={priceLevels.map((key) => PRICE_MAP[key]).join(' ')}
-						selectedIndex={priceLevels.map((key) => new IndexPath(priceKeys.indexOf(key)))}
+						value={categories.map((key) => CATEGORIES[key]).join(', ')}
+						selectedIndex={categories.map((key) => new IndexPath(categoryKeys.indexOf(key)))}
 						onSelect={(index) => {
 							if (Array.isArray(index)) {
 								const selectedKeys = index
-									.map((i) => priceKeys[i.row])
-									.sort((a, b) => priceKeys.indexOf(a) - priceKeys.indexOf(b));
-								setPriceLevels(selectedKeys.length ? selectedKeys : priceLevels);
+									.map((i) => categoryKeys[i.row])
+									.sort((a, b) => categoryKeys.indexOf(a) - categoryKeys.indexOf(b));
+								setCategories(selectedKeys.length ? selectedKeys : categories);
 							}
 						}}
 					>
-						{priceKeys.map((key) => (
-							<SelectItem key={key} title={PRICE_MAP[key]} />
+						{categoryKeys.map((key) => (
+							<SelectItem key={key} title={CATEGORIES[key]} />
 						))}
 					</Select>
 				</SectionCard>
+
+				<SectionCard icon='close-circle' label='Exclude'>
+					<Select
+						multiSelect
+						size='large'
+						placeholder='Nothing excluded'
+						value={excluded.length ? excluded.map((key) => EXCLUSIONS[key]).join(', ') : ''}
+						selectedIndex={excluded.map((key) => new IndexPath(exclusionKeys.indexOf(key)))}
+						onSelect={(index) => {
+							if (Array.isArray(index)) {
+								const selectedKeys = index
+									.map((i) => exclusionKeys[i.row])
+									.sort((a, b) => exclusionKeys.indexOf(a) - exclusionKeys.indexOf(b));
+								setExcluded(selectedKeys);
+							}
+						}}
+					>
+						{exclusionKeys.map((key) => (
+							<SelectItem key={key} title={EXCLUSIONS[key]} />
+						))}
+					</Select>
+				</SectionCard>
+
+				<View style={styles.row}>
+					<SectionCard icon='navigate' label='Radius' style={styles.flex1}>
+						<Select
+							size='large'
+							selectedIndex={new IndexPath(RADIUS_OPTIONS.indexOf(radius))}
+							onSelect={(index) => setRadius(RADIUS_OPTIONS[(index as IndexPath).row])}
+							value={`${radius} m`}
+						>
+							{RADIUS_OPTIONS.map((option) => (
+								<SelectItem key={option} title={`${option} m`} />
+							))}
+						</Select>
+					</SectionCard>
+
+					<SectionCard icon='cash' label='Price' style={styles.flex1}>
+						<Select
+							multiSelect
+							size='large'
+							value={priceLevels.map((key) => PRICE_MAP[key]).join(' ')}
+							selectedIndex={priceLevels.map((key) => new IndexPath(priceKeys.indexOf(key)))}
+							onSelect={(index) => {
+								if (Array.isArray(index)) {
+									const selectedKeys = index
+										.map((i) => priceKeys[i.row])
+										.sort((a, b) => priceKeys.indexOf(a) - priceKeys.indexOf(b));
+									setPriceLevels(selectedKeys.length ? selectedKeys : priceLevels);
+								}
+							}}
+						>
+							{priceKeys.map((key) => (
+								<SelectItem key={key} title={PRICE_MAP[key]} />
+							))}
+						</Select>
+					</SectionCard>
+				</View>
 
 				<View style={[styles.openNowCard, SHADOWS.soft]}>
 					<View style={styles.openNowText}>
@@ -357,64 +350,10 @@ const styles = StyleSheet.create({
 		zIndex: 50,
 		elevation: 40,
 	},
-
-	/* Craving picker */
-	cravingHint: {
-		fontFamily: FONTS.regular,
-		fontSize: 12,
-		color: COLORS.muted,
-		marginTop: -4,
-	},
-	cravingGrid: {
+	row: {
 		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 8,
+		gap: 14,
 	},
-	cravingChip: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 6,
-		paddingHorizontal: 12,
-		paddingVertical: 9,
-		borderRadius: RADIUS.pill,
-		backgroundColor: COLORS.surfaceAlt,
-		borderWidth: 1.5,
-		borderColor: 'transparent',
-	},
-	cravingChipActive: {
-		backgroundColor: COLORS.brandSoft,
-		borderColor: COLORS.brand,
-	},
-	cravingEmoji: {
-		fontSize: 15,
-	},
-	cravingLabel: {
-		fontFamily: FONTS.semibold,
-		fontSize: 13,
-		color: COLORS.body,
-	},
-	cravingLabelActive: {
-		color: COLORS.brandDark,
-	},
-
-	/* Distance slider */
-	radiusRow: {
-		flexDirection: 'row',
-		alignItems: 'baseline',
-		gap: 8,
-		marginTop: -2,
-	},
-	radiusValue: {
-		fontFamily: FONTS.extrabold,
-		fontSize: 20,
-		color: COLORS.ink,
-	},
-	radiusCaption: {
-		fontFamily: FONTS.regular,
-		fontSize: 13,
-		color: COLORS.muted,
-	},
-
 	flex1: {
 		flex: 1,
 	},

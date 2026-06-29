@@ -17,7 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import LoadingDots from 'react-native-loading-dots';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
-import { Coordinates, fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
+import { fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
 import CircleButton from '../components/CircleButton';
 import GradientButton from '../components/GradientButton';
 import Tag from '../components/Tag';
@@ -27,8 +27,8 @@ import { handleError } from '../utils/errorHandler';
 
 type RouteParams = {
 	location: string;
-	coords?: Coordinates;
-	cravings: string[];
+	categories: string[];
+	excluded: string[];
 	radius: number;
 	priceLevels: string[];
 	openNow: boolean;
@@ -124,7 +124,7 @@ const SwipeBadge = ({ label, color, rotate }: { label: string; color: string; ro
 export default function SwipeScreen() {
 	const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
-	const { location, coords: passedCoords, cravings, radius, priceLevels, openNow } = route.params;
+	const { location, categories, excluded, radius, priceLevels, openNow } = route.params;
 
 	const [places, setPlaces] = useState<Place[]>([]);
 	const [shortListedPlaces, setShortListedPlaces] = useState<Place[]>([]);
@@ -139,9 +139,7 @@ export default function SwipeScreen() {
 		const load = async () => {
 			const startedAt = Date.now();
 			try {
-				// Use the exact coordinates when they came from "current location";
-				// otherwise geocode the typed address.
-				const coords = passedCoords ?? (await fetchCoordinates(location));
+				const coords = await fetchCoordinates(location);
 				if (!coords) {
 					setPlaces([]);
 					return;
@@ -149,7 +147,8 @@ export default function SwipeScreen() {
 				const placesList = await fetchPlaces(
 					coords.lat,
 					coords.lng,
-					cravings,
+					categories,
+					excluded,
 					radius,
 					priceLevels,
 					openNow
@@ -169,7 +168,7 @@ export default function SwipeScreen() {
 			}
 		};
 		load();
-	}, [location, passedCoords, cravings, radius, priceLevels, openNow]);
+	}, [location, categories, excluded, radius, priceLevels, openNow]);
 
 	const addToShortlist = useCallback((place?: Place) => {
 		if (!place?.id) return;
@@ -648,7 +647,7 @@ const styles = StyleSheet.create({
 	},
 	overlayBottomAlign: {
 		alignItems: 'center',
-		justifyContent: 'flex-start',
+		justifyContent: 'flex-end',
 	},
 	swipeBadge: {
 		borderWidth: 4,
