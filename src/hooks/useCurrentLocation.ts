@@ -1,9 +1,11 @@
 import * as Location from 'expo-location';
-import type { Coordinates } from '../api/googlePlaces';
+import { reverseGeocode, type Coordinates } from '../api/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 // Resolves the device's current position to both a human-readable label and the
 // exact coordinates, so callers can search without a second geocoding round-trip.
+// Permission + GPS come from the OS (expo-location); the coords→label step uses
+// Photon/OSM, matching the autocomplete source so labels read consistently.
 export function useCurrentLocation(onResolved: (label: string, coords: Coordinates) => void) {
 	return async () => {
 		try {
@@ -21,20 +23,11 @@ export function useCurrentLocation(onResolved: (label: string, coords: Coordinat
 				lng: loc.coords.longitude,
 			};
 
-			const geocode = await Location.reverseGeocodeAsync({
-				latitude: coords.lat,
-				longitude: coords.lng,
-			});
-
-			if (geocode.length > 0) {
-				const { name, street, city, region } = geocode[0];
-				const label = [name, street, city, region].filter(Boolean).join(', ');
-				onResolved(label, coords);
-				return Promise.resolve(label);
-			} else {
-				handleError('No geocode result', 'Could not determine address from location');
-				return Promise.reject(new Error('No geocode result'));
-			}
+			// We have valid coordinates either way; the label is just for display, so
+			// fall back to a generic one rather than failing the whole lookup.
+			const label = (await reverseGeocode(coords)) ?? 'Current location';
+			onResolved(label, coords);
+			return Promise.resolve(label);
 		} catch (error) {
 			handleError(error, 'Failed to get current location');
 			return Promise.reject(error);

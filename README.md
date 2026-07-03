@@ -2,11 +2,20 @@
 
 A swipe-based food recommender app for Android.
 
-Enter a location and your preferences, then swipe through nearby places:
+Set your location and preferences, then swipe through nearby places:
 
-- **Swipe right** to open the place in Google Maps.
-- **Swipe left** to skip it.
-- **Swipe down** to add it to your shortlist, which you can review anytime via the **Shortlisted** button.
+- **Swipe right (YUM)** to add a place to your shortlist.
+- **Swipe left (NAH)** to skip it.
+- **Undo** rewinds your last swipe if you slipped.
+
+When the deck runs out, Grubl picks one spot from your shortlist as the verdict.
+From there you can **open it in Google Maps**, hit **Pick another** to re-roll a
+different one of your yums, or **tap any place in the shortlist** to make it the
+pick instead.
+
+> Places are shown as coloured cards with a cuisine emoji rather than photos —
+> the Google Places Photo endpoint is billed separately and intentionally left
+> out for now.
 
 ## 🚀 Getting Started
 
@@ -18,15 +27,18 @@ npm install
 
 ### 2. Configure Your Google API Key
 
-The app uses the Google Geocoding and Places APIs. Copy the example env file and add your key:
+Restaurant search uses the Google **Places API (New)**. Location autocomplete and
+geocoding use [Photon](https://photon.komoot.io/) (OpenStreetMap) — free and no
+key required. Copy the example env file and add your key:
 
 ```bash
 cp .env.example .env
 ```
 
 Then set `EXPO_PUBLIC_GOOGLE_API_KEY` in `.env`. You can create a key in the
-[Google Cloud Console](https://console.cloud.google.com/) with the **Geocoding API**
-and **Places API (New)** enabled.
+[Google Cloud Console](https://console.cloud.google.com/) with the
+**Places API (New)** enabled. Without a key the app falls back to a bundled demo
+deck, but autocomplete still works.
 
 ### 3. Start the Expo Development Server
 

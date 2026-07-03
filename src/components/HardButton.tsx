@@ -14,6 +14,8 @@ export default function HardButton({
 	faceStyle,
 	containerStyle,
 	onPress,
+	disabled = false,
+	accessibilityLabel,
 	children,
 }: {
 	dx: number;
@@ -23,18 +25,26 @@ export default function HardButton({
 	faceStyle?: StyleProp<ViewStyle>;
 	containerStyle?: StyleProp<ViewStyle>;
 	onPress?: () => void;
+	disabled?: boolean;
+	accessibilityLabel?: string;
 	children?: React.ReactNode;
 }) {
 	const [pressed, setPressed] = useState(false);
-	const shift = pressed
-		? [{ translateX: dx - PRESSED_GAP }, { translateY: dy - PRESSED_GAP }]
-		: [{ translateX: 0 }, { translateY: 0 }];
+	// When disabled, sit flush with the shadow (looks "un-poppable") and dim.
+	const shift =
+		pressed && !disabled
+			? [{ translateX: dx - PRESSED_GAP }, { translateY: dy - PRESSED_GAP }]
+			: [{ translateX: 0 }, { translateY: 0 }];
 	return (
 		<Pressable
 			onPress={onPress}
 			onPressIn={() => setPressed(true)}
 			onPressOut={() => setPressed(false)}
-			style={containerStyle}
+			disabled={disabled}
+			accessibilityRole="button"
+			accessibilityLabel={accessibilityLabel}
+			accessibilityState={{ disabled }}
+			style={[containerStyle, disabled && styles.disabled]}
 		>
 			<View style={styles.wrap}>
 				<View
@@ -52,5 +62,8 @@ export default function HardButton({
 const styles = StyleSheet.create({
 	wrap: {
 		position: 'relative',
+	},
+	disabled: {
+		opacity: 0.4,
 	},
 });

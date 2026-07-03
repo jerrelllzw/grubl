@@ -11,35 +11,40 @@ import {
 	View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fetchAutoComplete, type Coordinates } from '../api/googlePlaces';
+import { fetchAutoComplete, type Coordinates, type Suggestion } from '../api/googlePlaces';
 import HardButton from '../components/HardButton';
-import { CRAVINGS, PRICE_KEYS, PRICE_MAP } from '../constants/googlePlaces';
+import { CRAVINGS, DEFAULT_RADIUS, PRICE_KEYS, PRICE_MAP, RADII_OPTIONS } from '../constants/googlePlaces';
 import type { SearchQuery } from '../data/restaurants';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { handleError } from '../utils/errorHandler';
 import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 
 export default function SearchScreen({
-	radius,
+	initial,
 	onBack,
 	onSearch,
 }: {
-	radius: string;
+	initial: SearchQuery | null;
 	onBack: () => void;
 	onSearch: (query: SearchQuery) => void;
 }) {
 	const insets = useSafeAreaInsets();
 
-	const [location, setLocation] = useState('');
-	const [coords, setCoords] = useState<Coordinates | null>(null);
+	// Seed from the last search so tweaking one filter doesn't mean re-entering all.
+	const [location, setLocation] = useState(initial?.location ?? '');
+	const [coords, setCoords] = useState<Coordinates | null>(initial?.coords ?? null);
 	const [isLocating, setIsLocating] = useState(false);
-	const [suggestions, setSuggestions] = useState<string[]>([]);
+	const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const suppressAutocomplete = useRef(false);
 
-	const [cravings, setCravings] = useState<string[]>([]);
-	const [priceLevels, setPriceLevels] = useState<string[]>(PRICE_KEYS);
-	const [openNow, setOpenNow] = useState(true);
+	const [radius, setRadius] = useState(initial?.radius ?? DEFAULT_RADIUS);
+	const [cravings, setCravings] = useState<string[]>(initial?.cravings ?? []);
+	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? PRICE_KEYS);
+	const [openNow, setOpenNow] = useState(initial?.openNow ?? true);
+
+	// Both "none" and "all" prices mean no price constraint — say so plainly.
+	const priceIsAny = priceLevels.length === 0 || priceLevels.length === PRICE_KEYS.length;
 
 	const clearSuggestions = () => {
 		setSuggestions([]);
@@ -108,7 +113,13 @@ export default function SearchScreen({
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 14 }]}>
 			<View style={styles.header}>
-				<Pressable style={styles.backButton} onPress={onBack} hitSlop={8}>
+				<Pressable
+					style={styles.backButton}
+					onPress={onBack}
+					hitSlop={8}
+					accessibilityRole="button"
+					accessibilityLabel="Back"
+				>
 					<Ionicons name="chevron-back" size={24} color={COLORS.ink} />
 				</Pressable>
 				<Text style={styles.title}>WHAT SOUNDS GOOD?</Text>
@@ -126,7 +137,7 @@ export default function SearchScreen({
 			>
 				{/* Location */}
 				<View style={styles.locationSection}>
-					<Text style={styles.label}>LOCATION · WITHIN {radius.toUpperCase()}</Text>
+					<Text style={styles.label}>LOCATION</Text>
 					<View style={styles.locationRow}>
 						<TextInput
 							style={styles.input}
@@ -135,8 +146,15 @@ export default function SearchScreen({
 							value={location}
 							onChangeText={onChangeLocation}
 							onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+							accessibilityLabel="Location"
 						/>
-						<Pressable style={styles.gpsButton} onPress={useCurrentLocationPress} disabled={isLocating}>
+						<Pressable
+							style={styles.gpsButton}
+							onPress={useCurrentLocationPress}
+							disabled={isLocating}
+							accessibilityRole="button"
+							accessibilityLabel="Use my current location"
+						>
 							{isLocating ? (
 								<ActivityIndicator size="small" color={COLORS.ink} />
 							) : (
@@ -147,14 +165,16 @@ export default function SearchScreen({
 
 					{showSuggestions && suggestions.length > 0 && (
 						<View style={styles.dropdown}>
-							{suggestions.slice(0, 5).map((item) => (
+							{suggestions.slice(0, 5).map((item, i) => (
 								<Pressable
-									key={item}
+									key={`${item.label}-${i}`}
 									style={styles.suggestion}
+									accessibilityRole="button"
+									accessibilityLabel={item.label}
 									onPress={() => {
 										suppressAutocomplete.current = true;
-										setLocation(item);
-										setCoords(null);
+										setLocation(item.label);
+										setCoords(item.coords); // Photon gives coords inline — no geocode needed
 										clearSuggestions();
 										Keyboard.dismiss();
 										setTimeout(() => (suppressAutocomplete.current = false), 500);
@@ -162,12 +182,35 @@ export default function SearchScreen({
 								>
 									<Ionicons name="location-outline" size={16} color={COLORS.tomato} />
 									<Text style={styles.suggestionText} numberOfLines={1}>
-										{item}
+										{item.label}
 									</Text>
 								</Pressable>
 							))}
+							<Text style={styles.attribution}>Locations © OpenStreetMap</Text>
 						</View>
 					)}
+				</View>
+
+				{/* Radius */}
+				<View style={styles.section}>
+					<Text style={styles.label}>HOW FAR</Text>
+					<View style={styles.chipWrap}>
+						{RADII_OPTIONS.map((r) => {
+							const active = radius === r;
+							return (
+								<Pressable
+									key={r}
+									onPress={() => setRadius(r)}
+									style={[styles.priceChip, active ? styles.chipActive : styles.chipInactive]}
+									accessibilityRole="button"
+									accessibilityState={{ selected: active }}
+									accessibilityLabel={`Within ${r}`}
+								>
+									<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>{r}</Text>
+								</Pressable>
+							);
+						})}
+					</View>
 				</View>
 
 				{/* Craving */}
@@ -177,7 +220,14 @@ export default function SearchScreen({
 						{CRAVINGS.map((c) => {
 							const active = cravings.includes(c.key);
 							return (
-								<Pressable key={c.key} onPress={() => toggleCraving(c.key)} style={[styles.chip, active ? styles.chipActive : styles.chipInactive]}>
+								<Pressable
+									key={c.key}
+									onPress={() => toggleCraving(c.key)}
+									style={[styles.chip, active ? styles.chipActive : styles.chipInactive]}
+									accessibilityRole="button"
+									accessibilityState={{ selected: active }}
+									accessibilityLabel={c.label}
+								>
 									<Text style={styles.chipEmoji}>{c.emoji}</Text>
 									<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>{c.label}</Text>
 								</Pressable>
@@ -188,12 +238,19 @@ export default function SearchScreen({
 
 				{/* Price */}
 				<View style={styles.section}>
-					<Text style={styles.label}>PRICE</Text>
+					<Text style={styles.label}>PRICE · {priceIsAny ? 'ANY' : `${priceLevels.length} PICKED`}</Text>
 					<View style={styles.chipWrap}>
 						{PRICE_KEYS.map((key) => {
 							const active = priceLevels.includes(key);
 							return (
-								<Pressable key={key} onPress={() => togglePrice(key)} style={[styles.priceChip, active ? styles.chipActive : styles.chipInactive]}>
+								<Pressable
+									key={key}
+									onPress={() => togglePrice(key)}
+									style={[styles.priceChip, active ? styles.chipActive : styles.chipInactive]}
+									accessibilityRole="button"
+									accessibilityState={{ selected: active }}
+									accessibilityLabel={`Price ${PRICE_MAP[key]}`}
+								>
 									<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>{PRICE_MAP[key]}</Text>
 								</Pressable>
 							);
@@ -202,7 +259,13 @@ export default function SearchScreen({
 				</View>
 
 				{/* Open now */}
-				<Pressable style={styles.toggleRow} onPress={() => setOpenNow((v) => !v)}>
+				<Pressable
+					style={styles.toggleRow}
+					onPress={() => setOpenNow((v) => !v)}
+					accessibilityRole="switch"
+					accessibilityLabel="Open now"
+					accessibilityState={{ checked: openNow }}
+				>
 					<View>
 						<Text style={styles.toggleTitle}>Open now</Text>
 						<Text style={styles.toggleHint}>Only show places open right now</Text>
@@ -214,7 +277,7 @@ export default function SearchScreen({
 			</ScrollView>
 
 			<View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-				<HardButton dx={6} dy={6} color={COLORS.tomato} radius={RADII.cta} onPress={handleFind} faceStyle={styles.ctaFace}>
+				<HardButton dx={6} dy={6} color={COLORS.tomato} radius={RADII.cta} onPress={handleFind} accessibilityLabel="Find food" faceStyle={styles.ctaFace}>
 					<Text style={styles.ctaText}>FIND FOOD →</Text>
 				</HardButton>
 			</View>
@@ -315,6 +378,14 @@ const styles = StyleSheet.create({
 		fontFamily: FONTS.medium,
 		fontSize: 14,
 		color: COLORS.ink,
+	},
+	attribution: {
+		fontFamily: FONTS.medium,
+		fontSize: 10,
+		color: COLORS.muted,
+		textAlign: 'right',
+		paddingHorizontal: 14,
+		paddingVertical: 6,
 	},
 	section: {},
 	chipWrap: {

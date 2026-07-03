@@ -12,9 +12,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { DEFAULT_RADIUS } from '../src/constants/googlePlaces';
 import {
 	pickWinner,
+	rerollWinner,
 	searchRestaurants,
 	type Restaurant,
 	type SearchQuery,
@@ -46,12 +46,12 @@ export default function Index() {
 	});
 
 	const [screen, setScreen] = useState<Screen>('intro');
-	const [radius, setRadius] = useState<string>(DEFAULT_RADIUS);
 	const [query, setQuery] = useState<SearchQuery | null>(null);
 	const [deck, setDeck] = useState<Restaurant[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [emptyReason, setEmptyReason] = useState<'location' | 'no-results'>('no-results');
 	const [winner, setWinner] = useState<Restaurant | null>(null);
-	const [likesCount, setLikesCount] = useState(0);
+	const [likes, setLikes] = useState<Restaurant[]>([]);
 	const [runId, setRunId] = useState(0); // remounts the deck for a fresh swipe run
 
 	useEffect(() => {
@@ -67,23 +67,33 @@ export default function Index() {
 		setRunId((id) => id + 1);
 		setScreen('swipe');
 		try {
-			setDeck(await searchRestaurants(q));
+			const { deck: found, locationResolved } = await searchRestaurants(q);
+			setDeck(found);
+			setEmptyReason(locationResolved ? 'no-results' : 'location');
 		} finally {
 			setLoading(false);
 		}
 	}, []);
 
-	const handleComplete = useCallback((likes: Restaurant[]) => {
-		setWinner(pickWinner(likes, WINNER_STRATEGY));
-		setLikesCount(likes.length);
+	const handleComplete = useCallback((liked: Restaurant[]) => {
+		setLikes(liked);
+		setWinner(pickWinner(liked, WINNER_STRATEGY));
 		setScreen('result');
 	}, []);
+
+	// Re-roll a different pick from the existing likes — no re-swipe needed.
+	const handleReroll = useCallback(() => {
+		setWinner((current) => (current ? rerollWinner(likes, current.id) : pickWinner(likes, WINNER_STRATEGY)));
+	}, [likes]);
+
+	// Promote a specific liked place to the pick (tapped from the shortlist).
+	const handlePick = useCallback((r: Restaurant) => setWinner(r), []);
 
 	const handleAgain = useCallback(() => {
 		// Re-swipe the same deck without another API round-trip.
 		setRunId((id) => id + 1);
 		setWinner(null);
-		setLikesCount(0);
+		setLikes([]);
 		setScreen('swipe');
 	}, []);
 
@@ -96,19 +106,17 @@ export default function Index() {
 			<SafeAreaProvider>
 				<StatusBar style="dark" />
 				<View style={{ flex: 1, backgroundColor: COLORS.cream }}>
-					{screen === 'intro' && (
-						<IntroScreen radius={radius} onPickRadius={setRadius} onStart={handleStart} />
-					)}
+					{screen === 'intro' && <IntroScreen onStart={handleStart} />}
 
 					{screen === 'search' && (
-						<SearchScreen radius={radius} onBack={() => setScreen('intro')} onSearch={handleSearch} />
+						<SearchScreen initial={query} onBack={() => setScreen('intro')} onSearch={handleSearch} />
 					)}
 
 					{screen === 'swipe' &&
 						(loading ? (
 							<LoadingScreen location={query?.location ?? ''} />
 						) : deck.length === 0 ? (
-							<EmptyScreen onAdjust={handleNewSearch} />
+							<EmptyScreen reason={emptyReason} onAdjust={handleNewSearch} />
 						) : (
 							<SwipeScreen key={runId} deck={deck} showRating={SHOW_RATING} onComplete={handleComplete} />
 						))}
@@ -116,8 +124,10 @@ export default function Index() {
 					{screen === 'result' && (
 						<VerdictScreen
 							winner={winner}
-							likesCount={likesCount}
+							likes={likes}
 							showRating={SHOW_RATING}
+							onReroll={handleReroll}
+							onPick={handlePick}
 							onAgain={handleAgain}
 							onNewSearch={handleNewSearch}
 						/>

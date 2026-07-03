@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -30,6 +32,7 @@ export default function SwipeScreen({
 	const insets = useSafeAreaInsets();
 	const [index, setIndex] = useState(0);
 	const likesRef = useRef<Restaurant[]>([]);
+	const historyRef = useRef<number[]>([]); // direction of each committed swipe, for undo
 
 	const tx = useSharedValue(0);
 	const ty = useSharedValue(0);
@@ -39,6 +42,8 @@ export default function SwipeScreen({
 	const advance = useCallback(
 		(dir: number) => {
 			if (dir > 0) likesRef.current = likesRef.current.concat(deck[index]);
+			historyRef.current.push(dir);
+			Haptics.selectionAsync().catch(() => {});
 			tx.value = 0;
 			ty.value = 0;
 			locked.value = false;
@@ -51,6 +56,22 @@ export default function SwipeScreen({
 		},
 		[deck, index, onComplete, tx, ty, locked]
 	);
+
+	// Rewind the last swipe: step back a card and un-count a like if it was one.
+	const undo = useCallback(() => {
+		if (locked.value || index === 0) return;
+		const lastDir = historyRef.current.pop();
+		if (lastDir !== undefined && lastDir > 0) likesRef.current = likesRef.current.slice(0, -1);
+		Haptics.selectionAsync().catch(() => {});
+		const prev = index - 1;
+		setIndex(prev);
+		// Slide the returning card back in from the side it flew off toward.
+		const from = (lastDir ?? 1) > 0 ? FLY_DISTANCE : -FLY_DISTANCE;
+		tx.value = from;
+		ty.value = -40;
+		tx.value = withTiming(0, { duration: 300 });
+		ty.value = withTiming(0, { duration: 300 });
+	}, [index, tx, ty, locked]);
 
 	const fling = useCallback(
 		(dir: number) => {
@@ -151,7 +172,20 @@ export default function SwipeScreen({
 					dy={4}
 					color={COLORS.ink}
 					radius={RADII.pill}
+					onPress={undo}
+					disabled={index === 0}
+					accessibilityLabel="Undo last swipe"
+					faceStyle={styles.undoButton}
+				>
+					<Ionicons name="arrow-undo" size={22} color={COLORS.ink} />
+				</HardButton>
+				<HardButton
+					dx={4}
+					dy={4}
+					color={COLORS.ink}
+					radius={RADII.pill}
 					onPress={() => fling(-1)}
+					accessibilityLabel="Nope — skip this place"
 					faceStyle={styles.nopeButton}
 				>
 					<Text style={styles.nopeGlyph}>✕</Text>
@@ -162,6 +196,7 @@ export default function SwipeScreen({
 					color={COLORS.ink}
 					radius={RADII.pill}
 					onPress={() => fling(1)}
+					accessibilityLabel="Yum — add to your shortlist"
 					containerStyle={styles.yumContainer}
 					faceStyle={styles.yumButton}
 				>
@@ -243,6 +278,16 @@ const styles = StyleSheet.create({
 		gap: 16,
 		paddingHorizontal: 24,
 		paddingTop: 14,
+	},
+	undoButton: {
+		width: 56,
+		height: 56,
+		borderRadius: RADII.pill,
+		backgroundColor: COLORS.yolk,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 	nopeButton: {
 		width: 64,

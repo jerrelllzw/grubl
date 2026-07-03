@@ -54,39 +54,77 @@ const buildFoodQuery = (cravings: string[]): string => {
 	return terms.length ? terms.join(', ') : 'restaurants and places to eat';
 };
 
-// Geocoding
+// Location lookups (autocomplete + geocoding) use Photon — Komoot's free,
+// key-less search-as-you-type service over OpenStreetMap data. Photon returns
+// coordinates inline, so a picked suggestion needs no separate geocoding call.
+// Data © OpenStreetMap contributors.
+const PHOTON_URL = 'https://photon.komoot.io/api/';
+const PHOTON_REVERSE_URL = 'https://photon.komoot.io/reverse';
+
+export interface Suggestion {
+	label: string;
+	coords: Coordinates;
+}
+
+// Builds a readable one-line label from a Photon feature's properties, dropping
+// blanks and consecutive duplicates (e.g. a city named the same as its region).
+function photonLabel(props: Record<string, any>): string {
+	const primary = props.name || [props.housenumber, props.street].filter(Boolean).join(' ');
+	const out: string[] = [];
+	for (const part of [primary, props.city, props.state, props.country]) {
+		if (part && out[out.length - 1] !== part) out.push(part);
+	}
+	return out.join(', ');
+}
+
+// A Photon feature is GeoJSON: geometry.coordinates is [lon, lat].
+function photonToSuggestion(feature: any): Suggestion | null {
+	const coordinates = feature?.geometry?.coordinates;
+	if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+	const label = photonLabel(feature.properties ?? {});
+	if (!label) return null;
+	return { label, coords: { lat: coordinates[1], lng: coordinates[0] } };
+}
+
+// Geocoding — resolve a free-typed place to coordinates. Returns null when the
+// place can't be found; the caller surfaces a "couldn't find that place" screen.
 export async function fetchCoordinates(address: string): Promise<Coordinates | null> {
 	try {
-		const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-			params: { address, key: API_KEY },
-		});
-		const location = response.data?.results?.[0]?.geometry?.location;
-		if (!location) {
-			handleError('No coordinates found', 'Could not find coordinates for the provided address.');
-			return null;
-		}
-		return { lat: location.lat, lng: location.lng };
+		const response = await axios.get(PHOTON_URL, { params: { q: address, limit: 1 } });
+		const suggestion = photonToSuggestion(response.data?.features?.[0]);
+		return suggestion?.coords ?? null;
 	} catch (error: any) {
-		handleError(error, 'Failed to fetch coordinates.');
+		// Log in dev only; the empty "WHERE'S THAT?" screen is the user-facing message.
+		handleError(error);
 		return null;
 	}
 }
 
-// Autocomplete
-export async function fetchAutoComplete(input: string): Promise<string[]> {
-	const url = 'https://places.googleapis.com/v1/places:autocomplete';
-	const headers = {
-		'Content-Type': 'application/json',
-		'X-Goog-Api-Key': API_KEY,
-	};
-	const body = { input };
+// Reverse geocoding — turn device GPS coordinates into a readable label, using
+// the same Photon/OSM source as autocomplete so the labels are consistent.
+export async function reverseGeocode(coords: Coordinates): Promise<string | null> {
 	try {
-		const response = await axios.post(url, body, { headers });
-		return (response.data?.suggestions ?? [])
-			.map((suggestion: any) => suggestion?.placePrediction?.text?.text)
-			.filter((text: unknown): text is string => typeof text === 'string');
+		const response = await axios.get(PHOTON_REVERSE_URL, {
+			params: { lat: coords.lat, lon: coords.lng },
+		});
+		const feature = response.data?.features?.[0];
+		return feature ? photonLabel(feature.properties ?? {}) || null : null;
 	} catch (error: any) {
-		handleError(error, 'Failed to fetch autocomplete suggestions.');
+		handleError(error);
+		return null;
+	}
+}
+
+// Autocomplete — search-as-you-type suggestions, each carrying its coordinates.
+export async function fetchAutoComplete(input: string): Promise<Suggestion[]> {
+	try {
+		const response = await axios.get(PHOTON_URL, { params: { q: input, limit: 5 } });
+		return (response.data?.features ?? [])
+			.map(photonToSuggestion)
+			.filter((s: Suggestion | null): s is Suggestion => s !== null);
+	} catch (error: any) {
+		// Silent on failure — this fires on every keystroke; no alert spam.
+		handleError(error);
 		return [];
 	}
 }

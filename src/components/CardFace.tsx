@@ -1,11 +1,13 @@
 import React from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { metaLine, type Restaurant } from '../data/restaurants';
 import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 import StripePhoto from './StripePhoto';
 
-// Full-bleed photo card with a floating, tilted "sticker" info panel. Shared by
-// the swipe deck and the verdict winner card. Pass stamp overlays as children.
+// Placeholder food card: a hue-tinted field with the cuisine's emoji standing in
+// for a (separately-billed) photo, plus a floating, tilted "sticker" info panel.
+// Shared by the swipe deck and the verdict winner card. Pass stamp overlays as
+// children.
 
 export default function CardFace({
 	restaurant,
@@ -14,7 +16,7 @@ export default function CardFace({
 	shadow = { dx: 7, dy: 7, color: COLORS.ink },
 	nameSize = 23,
 	metaSize = 15,
-	showCaption = true,
+	emojiSize = 96,
 	children,
 }: {
 	restaurant: Restaurant;
@@ -23,11 +25,15 @@ export default function CardFace({
 	shadow?: { dx: number; dy: number; color: string };
 	nameSize?: number;
 	metaSize?: number;
-	showCaption?: boolean;
+	emojiSize?: number;
 	children?: React.ReactNode;
 }) {
 	return (
-		<View style={styles.root}>
+		<View
+			style={styles.root}
+			accessible
+			accessibilityLabel={`${restaurant.name}. ${metaLine(restaurant, showRating)}`}
+		>
 			{/* hard offset shadow */}
 			<View
 				style={[
@@ -38,7 +44,11 @@ export default function CardFace({
 			{/* bordered card */}
 			<View style={[StyleSheet.absoluteFillObject, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: COLORS.ink, backgroundColor: COLORS.paper, overflow: 'hidden' }]}>
 				<StripePhoto hue={restaurant.hue} radius={cardRadius} />
-				{showCaption && <Text style={styles.caption}>[photo: {restaurant.photoLabel}]</Text>}
+
+				{/* emoji stand-in for a photo */}
+				<View style={styles.emojiWrap} pointerEvents="none">
+					<Text style={[styles.emoji, { fontSize: emojiSize }]}>{restaurant.emoji}</Text>
+				</View>
 
 				{/* info sticker panel */}
 				<View style={styles.stickerWrap}>
@@ -63,13 +73,15 @@ const styles = StyleSheet.create({
 	root: {
 		flex: 1,
 	},
-	caption: {
-		position: 'absolute',
-		top: 14,
-		left: 16,
-		fontFamily: Platform.select({ ios: 'Courier', default: 'monospace' }),
-		fontSize: 11,
-		color: 'rgba(26,26,26,0.5)',
+	emojiWrap: {
+		...StyleSheet.absoluteFillObject,
+		alignItems: 'center',
+		justifyContent: 'center',
+		// bias upward so the emoji sits above the bottom info sticker
+		paddingBottom: 64,
+	},
+	emoji: {
+		textAlign: 'center',
 	},
 	stickerWrap: {
 		position: 'absolute',

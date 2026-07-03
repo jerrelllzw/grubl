@@ -18,12 +18,32 @@ export function LoadingScreen({ location }: { location: string }) {
 	);
 }
 
-export function EmptyScreen({ onAdjust }: { onAdjust: () => void }) {
+export function EmptyScreen({
+	reason = 'no-results',
+	onAdjust,
+}: {
+	reason?: 'location' | 'no-results';
+	onAdjust: () => void;
+}) {
+	const isLocation = reason === 'location';
 	return (
 		<View style={styles.center}>
-			<Text style={styles.headline}>TOUGH{'\n'}LUCK.</Text>
-			<Text style={styles.body}>Nothing matched your search.{'\n'}Widen the radius or drop a filter.</Text>
-			<HardButton dx={5} dy={5} color={COLORS.ink} radius={RADII.sticker} onPress={onAdjust} containerStyle={styles.button} faceStyle={styles.buttonFace}>
+			<Text style={styles.headline}>{isLocation ? 'WHERE’S\nTHAT?' : 'TOUGH\nLUCK.'}</Text>
+			<Text style={styles.body}>
+				{isLocation
+					? 'We couldn’t find that place.\nCheck the spelling or tap the\nlocation button to use GPS.'
+					: 'Nothing matched your search.\nWiden the radius or drop a filter.'}
+			</Text>
+			<HardButton
+				dx={5}
+				dy={5}
+				color={COLORS.ink}
+				radius={RADII.sticker}
+				onPress={onAdjust}
+				accessibilityLabel="Adjust search"
+				containerStyle={styles.button}
+				faceStyle={styles.buttonFace}
+			>
 				<Text style={styles.buttonText}>ADJUST SEARCH</Text>
 			</HardButton>
 		</View>
