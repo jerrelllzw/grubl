@@ -1,16 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Slider from '@react-native-community/slider';
-import {
-	IndexPath,
-	Input,
-	List,
-	ListItem,
-	Select,
-	SelectItem,
-	Toggle,
-} from '@ui-kitten/components';
 import React, { useEffect, useRef, useState } from 'react';
 import {
 	ActivityIndicator,
@@ -19,51 +7,38 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Coordinates, fetchAutoComplete } from '../api/googlePlaces';
-import GradientButton from '../components/GradientButton';
-import SectionCard from '../components/SectionCard';
-import {
-	CRAVINGS,
-	formatRadius,
-	PRICE_MAP,
-	RADIUS_DEFAULT,
-	RADIUS_MAX,
-	RADIUS_MIN,
-	RADIUS_STEP,
-} from '../constants/googlePlaces';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fetchAutoComplete, type Coordinates } from '../api/googlePlaces';
+import HardButton from '../components/HardButton';
+import { CRAVINGS, PRICE_KEYS, PRICE_MAP } from '../constants/googlePlaces';
+import type { SearchQuery } from '../data/restaurants';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
-import { COLORS, FONTS, RADIUS, SHADOWS } from '../theme/tokens';
 import { handleError } from '../utils/errorHandler';
+import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 
-type RootStackParamList = {
-	Swipe: {
-		location: string;
-		coords?: Coordinates;
-		cravings: string[];
-		radius: number;
-		priceLevels: string[];
-		openNow: boolean;
-	};
-};
-
-export default function SearchScreen() {
-	const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+export default function SearchScreen({
+	radius,
+	onBack,
+	onSearch,
+}: {
+	radius: string;
+	onBack: () => void;
+	onSearch: (query: SearchQuery) => void;
+}) {
+	const insets = useSafeAreaInsets();
 
 	const [location, setLocation] = useState('');
-	// Exact coordinates when the user picks "current location"; cleared the
-	// moment they type, since the text no longer matches these coords.
 	const [coords, setCoords] = useState<Coordinates | null>(null);
 	const [isLocating, setIsLocating] = useState(false);
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
-	const suppressAutocompleteRef = useRef(false);
+	const suppressAutocomplete = useRef(false);
 
-	const [radius, setRadius] = useState(RADIUS_DEFAULT);
 	const [cravings, setCravings] = useState<string[]>([]);
-	const [priceLevels, setPriceLevels] = useState<string[]>(Object.keys(PRICE_MAP));
+	const [priceLevels, setPriceLevels] = useState<string[]>(PRICE_KEYS);
 	const [openNow, setOpenNow] = useState(true);
 
 	const clearSuggestions = () => {
@@ -73,248 +48,206 @@ export default function SearchScreen() {
 
 	const onChangeLocation = (text: string) => {
 		setLocation(text);
-		setCoords(null);
+		setCoords(null); // typed text no longer matches the resolved GPS coords
 	};
 
-	const toggleCraving = (key: string) => {
-		setCravings((prev) =>
-			prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-		);
-	};
+	const toggleCraving = (key: string) =>
+		setCravings((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
-	const handleUseCurrentLocationInner = useCurrentLocation((label, resolved) => {
+	const togglePrice = (key: string) =>
+		setPriceLevels((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+
+	const resolveCurrentLocation = useCurrentLocation((label, resolved) => {
 		setLocation(label);
 		setCoords(resolved);
 	});
-	const handleUseCurrentLocation = async () => {
+
+	const useCurrentLocationPress = async () => {
 		try {
 			setIsLocating(true);
-			suppressAutocompleteRef.current = true;
-			await handleUseCurrentLocationInner();
+			suppressAutocomplete.current = true;
+			await resolveCurrentLocation();
 			clearSuggestions();
+		} catch {
+			// handled inside the hook
 		} finally {
 			setIsLocating(false);
-			setTimeout(() => (suppressAutocompleteRef.current = false), 500);
+			setTimeout(() => (suppressAutocomplete.current = false), 500);
 		}
 	};
 
-	const handleSearch = () => {
-		if (location.trim()) {
-			navigation.navigate('Swipe', {
-				location,
-				coords: coords ?? undefined,
-				cravings,
-				radius,
-				priceLevels,
-				openNow,
-			});
-		} else {
-			handleError('No location entered', 'Please enter a location to start.');
+	const handleFind = () => {
+		if (!location.trim()) {
+			handleError('No location', 'Enter a location to start swiping.');
+			return;
 		}
+		Keyboard.dismiss();
+		onSearch({
+			location: location.trim(),
+			coords: coords ?? undefined,
+			radius,
+			cravings,
+			priceLevels,
+			openNow,
+		});
 	};
 
+	// Debounced autocomplete.
 	useEffect(() => {
-		if (suppressAutocompleteRef.current) return;
-
-		const timeout = setTimeout(async () => {
+		if (suppressAutocomplete.current) return;
+		const t = setTimeout(async () => {
 			if (location.trim().length > 2) {
-				try {
-					const results = await fetchAutoComplete(location);
-					setSuggestions(results);
-					setShowSuggestions(true);
-				} catch {
-					clearSuggestions();
-				}
+				const results = await fetchAutoComplete(location);
+				setSuggestions(results);
+				setShowSuggestions(results.length > 0);
 			}
 		}, 300);
-
-		return () => clearTimeout(timeout);
+		return () => clearTimeout(t);
 	}, [location]);
 
-	const priceKeys = Object.keys(PRICE_MAP);
-
 	return (
-		<SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+		<View style={[styles.container, { paddingTop: insets.top + 14 }]}>
 			<View style={styles.header}>
-				<Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-					<Ionicons name='chevron-back' size={24} color={COLORS.ink} />
+				<Pressable style={styles.backButton} onPress={onBack} hitSlop={8}>
+					<Ionicons name="chevron-back" size={24} color={COLORS.ink} />
 				</Pressable>
-				<View>
-					<Text style={styles.headerTitle}>What sounds good?</Text>
-					<Text style={styles.headerSubtitle}>Set your taste, then start swiping</Text>
-				</View>
+				<Text style={styles.title}>WHAT SOUNDS GOOD?</Text>
 			</View>
 
 			<ScrollView
 				style={styles.scroll}
-				contentContainerStyle={styles.scrollContent}
-				keyboardShouldPersistTaps='handled'
+				contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}
+				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
 				onScrollBeginDrag={() => {
 					Keyboard.dismiss();
 					setShowSuggestions(false);
 				}}
 			>
-				<SectionCard icon='location' label='Location' style={styles.locationSection}>
+				{/* Location */}
+				<View style={styles.locationSection}>
+					<Text style={styles.label}>LOCATION · WITHIN {radius.toUpperCase()}</Text>
 					<View style={styles.locationRow}>
-						<Input
-							placeholder='Where are you eating?'
+						<TextInput
+							style={styles.input}
+							placeholder="Where are you eating?"
+							placeholderTextColor="rgba(90,83,71,0.6)"
 							value={location}
 							onChangeText={onChangeLocation}
-							size='large'
-							style={styles.input}
-							onFocus={() => {
-								if (suggestions.length) setShowSuggestions(true);
-							}}
+							onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
 						/>
-						<Pressable
-							style={styles.locButton}
-							onPress={handleUseCurrentLocation}
-							disabled={isLocating}
-						>
+						<Pressable style={styles.gpsButton} onPress={useCurrentLocationPress} disabled={isLocating}>
 							{isLocating ? (
-								<ActivityIndicator size='small' color={COLORS.brand} />
+								<ActivityIndicator size="small" color={COLORS.ink} />
 							) : (
-								<Ionicons name='locate' size={22} color={COLORS.brand} />
+								<Ionicons name="locate" size={22} color={COLORS.ink} />
 							)}
 						</Pressable>
 					</View>
 
 					{showSuggestions && suggestions.length > 0 && (
-						<View style={[styles.suggestionDropdown, SHADOWS.card]}>
-							<List
-								data={suggestions}
-								keyboardShouldPersistTaps='handled'
-								renderItem={({ item }) => (
-									<ListItem
-										title={item}
-										onPress={() => {
-											suppressAutocompleteRef.current = true;
-											setLocation(item);
-											setCoords(null);
-											clearSuggestions();
-											Keyboard.dismiss();
-											setTimeout(() => (suppressAutocompleteRef.current = false), 500);
-										}}
-									/>
-								)}
-							/>
+						<View style={styles.dropdown}>
+							{suggestions.slice(0, 5).map((item) => (
+								<Pressable
+									key={item}
+									style={styles.suggestion}
+									onPress={() => {
+										suppressAutocomplete.current = true;
+										setLocation(item);
+										setCoords(null);
+										clearSuggestions();
+										Keyboard.dismiss();
+										setTimeout(() => (suppressAutocomplete.current = false), 500);
+									}}
+								>
+									<Ionicons name="location-outline" size={16} color={COLORS.tomato} />
+									<Text style={styles.suggestionText} numberOfLines={1}>
+										{item}
+									</Text>
+								</Pressable>
+							))}
 						</View>
 					)}
-				</SectionCard>
+				</View>
 
-				<SectionCard icon='fast-food' label='Craving'>
-					<Text style={styles.cravingHint}>
-						{cravings.length ? `${cravings.length} selected` : 'Pick a few, or leave blank to see everything'}
-					</Text>
-					<View style={styles.cravingGrid}>
-						{CRAVINGS.map((craving) => {
-							const active = cravings.includes(craving.key);
+				{/* Craving */}
+				<View style={styles.section}>
+					<Text style={styles.label}>CRAVING · {cravings.length ? `${cravings.length} PICKED` : 'ANYTHING'}</Text>
+					<View style={styles.chipWrap}>
+						{CRAVINGS.map((c) => {
+							const active = cravings.includes(c.key);
 							return (
-								<Pressable
-									key={craving.key}
-									onPress={() => toggleCraving(craving.key)}
-									style={[styles.cravingChip, active && styles.cravingChipActive]}
-								>
-									<Text style={styles.cravingEmoji}>{craving.emoji}</Text>
-									<Text style={[styles.cravingLabel, active && styles.cravingLabelActive]}>
-										{craving.label}
-									</Text>
+								<Pressable key={c.key} onPress={() => toggleCraving(c.key)} style={[styles.chip, active ? styles.chipActive : styles.chipInactive]}>
+									<Text style={styles.chipEmoji}>{c.emoji}</Text>
+									<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>{c.label}</Text>
 								</Pressable>
 							);
 						})}
 					</View>
-				</SectionCard>
-
-				<SectionCard icon='navigate' label='Distance'>
-					<View style={styles.radiusRow}>
-						<Text style={styles.radiusValue}>{formatRadius(radius)}</Text>
-						<Text style={styles.radiusCaption}>around your spot</Text>
-					</View>
-					<Slider
-						minimumValue={RADIUS_MIN}
-						maximumValue={RADIUS_MAX}
-						step={RADIUS_STEP}
-						value={radius}
-						onValueChange={setRadius}
-						minimumTrackTintColor={COLORS.brand}
-						maximumTrackTintColor={COLORS.hairline}
-						thumbTintColor={COLORS.brand}
-					/>
-				</SectionCard>
-
-				<SectionCard icon='cash' label='Price'>
-					<Select
-						multiSelect
-						size='large'
-						value={priceLevels.map((key) => PRICE_MAP[key]).join(' ')}
-						selectedIndex={priceLevels.map((key) => new IndexPath(priceKeys.indexOf(key)))}
-						onSelect={(index) => {
-							if (Array.isArray(index)) {
-								const selectedKeys = index
-									.map((i) => priceKeys[i.row])
-									.sort((a, b) => priceKeys.indexOf(a) - priceKeys.indexOf(b));
-								setPriceLevels(selectedKeys.length ? selectedKeys : priceLevels);
-							}
-						}}
-					>
-						{priceKeys.map((key) => (
-							<SelectItem key={key} title={PRICE_MAP[key]} />
-						))}
-					</Select>
-				</SectionCard>
-
-				<View style={[styles.openNowCard, SHADOWS.soft]}>
-					<View style={styles.openNowText}>
-						<View style={styles.iconBadge}>
-							<Ionicons name='time' size={16} color={COLORS.brand} />
-						</View>
-						<View style={styles.flex1}>
-							<Text style={styles.openNowTitle}>Open now</Text>
-							<Text style={styles.openNowHint}>Only show places currently open</Text>
-						</View>
-					</View>
-					<Toggle checked={openNow} onChange={() => setOpenNow((prev) => !prev)} />
 				</View>
+
+				{/* Price */}
+				<View style={styles.section}>
+					<Text style={styles.label}>PRICE</Text>
+					<View style={styles.chipWrap}>
+						{PRICE_KEYS.map((key) => {
+							const active = priceLevels.includes(key);
+							return (
+								<Pressable key={key} onPress={() => togglePrice(key)} style={[styles.priceChip, active ? styles.chipActive : styles.chipInactive]}>
+									<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>{PRICE_MAP[key]}</Text>
+								</Pressable>
+							);
+						})}
+					</View>
+				</View>
+
+				{/* Open now */}
+				<Pressable style={styles.toggleRow} onPress={() => setOpenNow((v) => !v)}>
+					<View>
+						<Text style={styles.toggleTitle}>Open now</Text>
+						<Text style={styles.toggleHint}>Only show places open right now</Text>
+					</View>
+					<View style={[styles.toggleTrack, openNow ? styles.toggleOn : styles.toggleOff]}>
+						<View style={[styles.toggleKnob, openNow ? styles.knobOn : styles.knobOff]} />
+					</View>
+				</Pressable>
 			</ScrollView>
 
-			<View style={styles.footer}>
-				<GradientButton title='Find Food' icon='search' onPress={handleSearch} />
+			<View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+				<HardButton dx={6} dy={6} color={COLORS.tomato} radius={RADII.cta} onPress={handleFind} faceStyle={styles.ctaFace}>
+					<Text style={styles.ctaText}>FIND FOOD →</Text>
+				</HardButton>
 			</View>
-		</SafeAreaView>
+		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: COLORS.bg,
+		backgroundColor: COLORS.cream,
 	},
 	header: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: 12,
+		gap: 10,
 		paddingHorizontal: 20,
-		paddingBottom: 12,
+		paddingBottom: 10,
 	},
 	backButton: {
 		width: 44,
 		height: 44,
-		borderRadius: 14,
-		backgroundColor: COLORS.surface,
+		borderRadius: RADII.sticker,
+		backgroundColor: COLORS.paper,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
-		...SHADOWS.soft,
 	},
-	headerTitle: {
-		fontFamily: FONTS.extrabold,
+	title: {
+		fontFamily: FONTS.display,
 		fontSize: 22,
 		color: COLORS.ink,
-	},
-	headerSubtitle: {
-		fontFamily: FONTS.regular,
-		fontSize: 13,
-		color: COLORS.muted,
 	},
 	scroll: {
 		flex: 1,
@@ -322,12 +255,17 @@ const styles = StyleSheet.create({
 	scrollContent: {
 		paddingHorizontal: 20,
 		paddingTop: 8,
-		paddingBottom: 24,
-		gap: 14,
+		gap: 22,
+	},
+	label: {
+		fontFamily: FONTS.bold,
+		fontSize: 13,
+		letterSpacing: 1.2,
+		color: COLORS.ink,
+		marginBottom: 12,
 	},
 	locationSection: {
 		zIndex: 30,
-		elevation: 30,
 	},
 	locationRow: {
 		flexDirection: 'row',
@@ -335,128 +273,163 @@ const styles = StyleSheet.create({
 	},
 	input: {
 		flex: 1,
-		borderRadius: RADIUS.md,
+		height: 54,
+		backgroundColor: COLORS.paper,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		borderRadius: RADII.sticker,
+		paddingHorizontal: 16,
+		fontFamily: FONTS.semibold,
+		fontSize: 16,
+		color: COLORS.ink,
 	},
-	locButton: {
-		width: 52,
-		height: 52,
-		borderRadius: RADIUS.md,
-		backgroundColor: COLORS.brandSoft,
+	gpsButton: {
+		width: 54,
+		height: 54,
+		backgroundColor: COLORS.yolk,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		borderRadius: RADII.sticker,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	suggestionDropdown: {
-		position: 'absolute',
-		top: 92,
-		left: 16,
-		right: 16,
-		backgroundColor: COLORS.surface,
-		borderRadius: RADIUS.md,
-		maxHeight: 220,
+	dropdown: {
+		marginTop: 8,
+		backgroundColor: COLORS.paper,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		borderRadius: RADII.sticker,
 		overflow: 'hidden',
-		zIndex: 50,
-		elevation: 40,
 	},
-
-	/* Craving picker */
-	cravingHint: {
-		fontFamily: FONTS.regular,
-		fontSize: 12,
-		color: COLORS.muted,
-		marginTop: -4,
+	suggestion: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
+		paddingHorizontal: 14,
+		paddingVertical: 13,
+		borderBottomWidth: 1,
+		borderBottomColor: 'rgba(26,26,26,0.1)',
 	},
-	cravingGrid: {
+	suggestionText: {
+		flex: 1,
+		fontFamily: FONTS.medium,
+		fontSize: 14,
+		color: COLORS.ink,
+	},
+	section: {},
+	chipWrap: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		gap: 8,
 	},
-	cravingChip: {
+	chip: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 6,
-		paddingHorizontal: 12,
+		borderRadius: RADII.chip,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
 		paddingVertical: 9,
-		borderRadius: RADIUS.pill,
-		backgroundColor: COLORS.surfaceAlt,
-		borderWidth: 1.5,
-		borderColor: 'transparent',
+		paddingHorizontal: 14,
 	},
-	cravingChipActive: {
-		backgroundColor: COLORS.brandSoft,
-		borderColor: COLORS.brand,
+	priceChip: {
+		minWidth: 56,
+		alignItems: 'center',
+		borderRadius: RADII.chip,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		paddingVertical: 10,
+		paddingHorizontal: 16,
 	},
-	cravingEmoji: {
+	chipActive: {
+		backgroundColor: COLORS.ink,
+	},
+	chipInactive: {
+		backgroundColor: COLORS.paper,
+	},
+	chipEmoji: {
 		fontSize: 15,
 	},
-	cravingLabel: {
-		fontFamily: FONTS.semibold,
-		fontSize: 13,
-		color: COLORS.body,
+	chipText: {
+		fontFamily: FONTS.bold,
+		fontSize: 14,
 	},
-	cravingLabelActive: {
-		color: COLORS.brandDark,
+	chipTextActive: {
+		color: COLORS.cream,
 	},
-
-	/* Distance slider */
-	radiusRow: {
-		flexDirection: 'row',
-		alignItems: 'baseline',
-		gap: 8,
-		marginTop: -2,
-	},
-	radiusValue: {
-		fontFamily: FONTS.extrabold,
-		fontSize: 20,
+	chipTextInactive: {
 		color: COLORS.ink,
 	},
-	radiusCaption: {
-		fontFamily: FONTS.regular,
-		fontSize: 13,
-		color: COLORS.muted,
-	},
-
-	flex1: {
-		flex: 1,
-	},
-	openNowCard: {
+	toggleRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		backgroundColor: COLORS.surface,
-		borderRadius: RADIUS.lg,
+		backgroundColor: COLORS.paper,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		borderRadius: RADII.sticker,
 		padding: 16,
 	},
-	openNowText: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 10,
-		flex: 1,
-		paddingRight: 12,
-	},
-	iconBadge: {
-		width: 30,
-		height: 30,
-		borderRadius: 10,
-		backgroundColor: COLORS.brandSoft,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	openNowTitle: {
-		fontFamily: FONTS.semibold,
-		fontSize: 15,
+	toggleTitle: {
+		fontFamily: FONTS.bold,
+		fontSize: 16,
 		color: COLORS.ink,
 	},
-	openNowHint: {
-		fontFamily: FONTS.regular,
+	toggleHint: {
+		fontFamily: FONTS.medium,
 		fontSize: 12,
 		color: COLORS.muted,
+		marginTop: 2,
+	},
+	toggleTrack: {
+		width: 56,
+		height: 32,
+		borderRadius: RADII.pill,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		justifyContent: 'center',
+		paddingHorizontal: 3,
+	},
+	toggleOn: {
+		backgroundColor: COLORS.green,
+	},
+	toggleOff: {
+		backgroundColor: COLORS.paper,
+	},
+	toggleKnob: {
+		width: 20,
+		height: 20,
+		borderRadius: RADII.pill,
+		backgroundColor: COLORS.ink,
+	},
+	knobOn: {
+		alignSelf: 'flex-end',
+	},
+	knobOff: {
+		alignSelf: 'flex-start',
 	},
 	footer: {
+		position: 'absolute',
+		left: 0,
+		right: 0,
+		bottom: 0,
 		paddingHorizontal: 20,
-		paddingTop: 10,
-		paddingBottom: 8,
-		backgroundColor: COLORS.bg,
+		paddingTop: 12,
+		backgroundColor: COLORS.cream,
 		borderTopWidth: 1,
-		borderTopColor: COLORS.hairline,
+		borderTopColor: 'rgba(26,26,26,0.1)',
+	},
+	ctaFace: {
+		width: '100%',
+		paddingVertical: 18,
+		alignItems: 'center',
+		backgroundColor: COLORS.ink,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+	},
+	ctaText: {
+		fontFamily: FONTS.display,
+		fontSize: 20,
+		color: COLORS.cream,
 	},
 });

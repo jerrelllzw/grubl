@@ -6,17 +6,17 @@ export default {
 		slug: 'grubl',
 		version: '1.0.0',
 		orientation: 'portrait',
-		icon: './assets/images/logo.png',
+		icon: './assets/images/icon.png',
 		scheme: 'grubl',
-		userInterfaceStyle: 'automatic',
+		userInterfaceStyle: 'light',
 		newArchEnabled: true,
 		ios: {
 			supportsTablet: true,
 		},
 		android: {
 			adaptiveIcon: {
-				foregroundImage: './assets/images/logo.png',
-				backgroundColor: '#ffffff',
+				foregroundImage: './assets/images/adaptive-icon.png',
+				backgroundColor: '#FFF7E0',
 			},
 			edgeToEdgeEnabled: true,
 			package: 'com.lerej.grubl',
@@ -30,12 +30,18 @@ export default {
 			'expo-router',
 			'expo-font',
 			[
+				'expo-location',
+				{
+					locationWhenInUsePermission: 'grubl uses your location to find restaurants near you.',
+				},
+			],
+			[
 				'expo-splash-screen',
 				{
-					image: './assets/images/logo.png',
-					imageWidth: 300,
+					image: './assets/images/splash-icon.png',
+					imageWidth: 220,
 					resizeMode: 'contain',
-					backgroundColor: '#ffffff',
+					backgroundColor: '#FFF7E0',
 				},
 			],
 		],

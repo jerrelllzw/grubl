@@ -1,871 +1,279 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-	FlatList,
-	Linking,
-	Modal,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import LoadingDots from 'react-native-loading-dots';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Swiper, type SwiperCardRefType } from 'rn-swiper-list';
-import { Coordinates, fetchCoordinates, fetchPlaces, Place } from '../api/googlePlaces';
-import CircleButton from '../components/CircleButton';
-import GradientButton from '../components/GradientButton';
-import Tag from '../components/Tag';
-import { getPlaceEmoji, PRICE_MAP } from '../constants/googlePlaces';
-import { COLORS, FONTS, GRADIENTS, RADIUS, SHADOWS } from '../theme/tokens';
-import { handleError } from '../utils/errorHandler';
+import React, { useCallback, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+	Easing,
+	interpolate,
+	runOnJS,
+	useAnimatedStyle,
+	useSharedValue,
+	withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CardFace from '../components/CardFace';
+import HardButton from '../components/HardButton';
+import type { Restaurant } from '../data/restaurants';
+import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 
-type RouteParams = {
-	location: string;
-	coords?: Coordinates;
-	cravings: string[];
-	radius: number;
-	priceLevels: string[];
-	openNow: boolean;
-};
+const SWIPE_THRESHOLD = 90;
+const FLY_DISTANCE = 640;
 
-type RootStackParamList = {
-	Search: undefined;
-};
-
-const formatPlaceType = (type?: string): string =>
-	(type ?? '')
-		.split('_')
-		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-		.join(' ');
-
-const openInMaps = (place?: Place) => {
-	if (!place?.id) return;
-	const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-		place.name || ''
-	)}&query_place_id=${place.id}`;
-	Linking.openURL(mapsUrl);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                                 Place card                                 */
-/* -------------------------------------------------------------------------- */
-
-function PlaceCard({ place }: { place: Place }) {
-	const priceLabel = place.priceLevel ? PRICE_MAP[place.priceLevel] : undefined;
-
-	return (
-		<View style={styles.card}>
-			<LinearGradient
-				colors={GRADIENTS.brand}
-				start={{ x: 0, y: 0 }}
-				end={{ x: 1, y: 1 }}
-				style={styles.cardHero}
-			>
-				{place.rating !== undefined && (
-					<View style={styles.ratingBadge}>
-						<Ionicons name='star' size={14} color={COLORS.star} />
-						<Text style={styles.ratingText}>{place.rating.toFixed(1)}</Text>
-					</View>
-				)}
-				<Text style={styles.cardEmoji}>{getPlaceEmoji(place.primaryType)}</Text>
-			</LinearGradient>
-
-			<View style={styles.cardBody}>
-				<Text style={styles.cardName} numberOfLines={2}>
-					{place.name ?? 'Unknown spot'}
-				</Text>
-
-				<View style={styles.pillRow}>
-					{place.primaryType ? <Tag label={formatPlaceType(place.primaryType)} /> : null}
-					{priceLabel ? <Tag label={priceLabel} tone='neutral' /> : null}
-				</View>
-
-				<View style={styles.metaRow}>
-					{place.distance !== undefined && (
-						<View style={styles.metaItem}>
-							<Ionicons name='location-outline' size={16} color={COLORS.brand} />
-							<Text style={styles.metaText}>{place.distance} away</Text>
-						</View>
-					)}
-					{place.ratingCount !== undefined && (
-						<View style={styles.metaItem}>
-							<Ionicons name='people-outline' size={16} color={COLORS.brand} />
-							<Text style={styles.metaText}>
-								{place.ratingCount.toLocaleString()} review{place.ratingCount === 1 ? '' : 's'}
-							</Text>
-						</View>
-					)}
-				</View>
-			</View>
-		</View>
-	);
-}
-
-/* -------------------------------------------------------------------------- */
-/*                               Overlay labels                               */
-/* -------------------------------------------------------------------------- */
-
-const SwipeBadge = ({ label, color, rotate }: { label: string; color: string; rotate: string }) => (
-	<View style={[styles.swipeBadge, { borderColor: color, transform: [{ rotate }] }]}>
-		<Text style={[styles.swipeBadgeText, { color }]}>{label}</Text>
-	</View>
-);
-
-/* -------------------------------------------------------------------------- */
-/*                                Swipe screen                                */
-/* -------------------------------------------------------------------------- */
-
-export default function SwipeScreen() {
-	const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-	const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
-	const { location, coords: passedCoords, cravings, radius, priceLevels, openNow } = route.params;
-
-	const [places, setPlaces] = useState<Place[]>([]);
-	const [shortListedPlaces, setShortListedPlaces] = useState<Place[]>([]);
-	const [showShortlist, setShowShortlist] = useState(false);
-	const [loading, setLoading] = useState(true);
-	const [finished, setFinished] = useState(false);
+export default function SwipeScreen({
+	deck,
+	showRating,
+	onComplete,
+}: {
+	deck: Restaurant[];
+	showRating: boolean;
+	onComplete: (likes: Restaurant[]) => void;
+}) {
+	const insets = useSafeAreaInsets();
 	const [index, setIndex] = useState(0);
+	const likesRef = useRef<Restaurant[]>([]);
 
-	const swiperRef = useRef<SwiperCardRefType>(null);
+	const tx = useSharedValue(0);
+	const ty = useSharedValue(0);
+	const locked = useSharedValue(false);
 
-	useEffect(() => {
-		const load = async () => {
-			const startedAt = Date.now();
-			try {
-				// Use the exact coordinates when they came from "current location";
-				// otherwise geocode the typed address.
-				const coords = passedCoords ?? (await fetchCoordinates(location));
-				if (!coords) {
-					setPlaces([]);
-					return;
-				}
-				const placesList = await fetchPlaces(
-					coords.lat,
-					coords.lng,
-					cravings,
-					radius,
-					priceLevels,
-					openNow
-				);
-				setPlaces(placesList);
-			} catch (err) {
-				handleError(err, 'An error occurred while loading places.');
-				setPlaces([]);
-			} finally {
-				// Show the loader for a minimum beat so it doesn't flicker on fast loads.
-				const elapsed = Date.now() - startedAt;
-				const minDisplay = 1100;
-				if (elapsed < minDisplay) {
-					await new Promise((resolve) => setTimeout(resolve, minDisplay - elapsed));
-				}
-				setLoading(false);
+	// Advance after a card leaves the screen (from a drag-release or a button).
+	const advance = useCallback(
+		(dir: number) => {
+			if (dir > 0) likesRef.current = likesRef.current.concat(deck[index]);
+			tx.value = 0;
+			ty.value = 0;
+			locked.value = false;
+			const next = index + 1;
+			if (next >= deck.length) {
+				onComplete(likesRef.current);
+			} else {
+				setIndex(next);
 			}
-		};
-		load();
-	}, [location, passedCoords, cravings, radius, priceLevels, openNow]);
-
-	const addToShortlist = useCallback((place?: Place) => {
-		if (!place?.id) return;
-		setShortListedPlaces((prev) => (prev.some((p) => p.id === place.id) ? prev : [...prev, place]));
-		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-	}, []);
-
-	const removeFromShortlist = useCallback((id: string) => {
-		setShortListedPlaces((prev) => prev.filter((p) => p.id !== id));
-	}, []);
-
-	const handleMaps = useCallback(
-		(cardIndex: number) => {
-			Haptics.selectionAsync().catch(() => {});
-			openInMaps(places[cardIndex]);
 		},
-		[places]
+		[deck, index, onComplete, tx, ty, locked]
 	);
 
-	const handleShortlist = useCallback(
-		(cardIndex: number) => {
-			addToShortlist(places[cardIndex]);
+	const fling = useCallback(
+		(dir: number) => {
+			if (locked.value) return;
+			locked.value = true;
+			ty.value = withTiming(ty.value - 40, { duration: 300, easing: Easing.in(Easing.ease) });
+			tx.value = withTiming(dir * FLY_DISTANCE, { duration: 300, easing: Easing.in(Easing.ease) }, (finished) => {
+				if (finished) runOnJS(advance)(dir);
+			});
 		},
-		[places, addToShortlist]
+		[advance, tx, ty, locked]
 	);
 
-	const renderShortlistSheet = () => (
-		<Modal
-			visible={showShortlist}
-			transparent
-			animationType='slide'
-			onRequestClose={() => setShowShortlist(false)}
-			statusBarTranslucent
-		>
-			<Pressable style={styles.sheetBackdrop} onPress={() => setShowShortlist(false)} />
-			<SafeAreaView style={styles.sheetWrap} edges={['bottom']}>
-				<View style={styles.sheet}>
-					<View style={styles.sheetHandle} />
-					<View style={styles.sheetHeader}>
-						<Text style={styles.sheetTitle}>Your shortlist</Text>
-						<View style={styles.sheetCount}>
-							<Text style={styles.sheetCountText}>{shortListedPlaces.length}</Text>
-						</View>
-					</View>
+	const pan = Gesture.Pan()
+		.onUpdate((e) => {
+			if (locked.value) return;
+			tx.value = e.translationX;
+			ty.value = e.translationY;
+		})
+		.onEnd((e) => {
+			if (locked.value) return;
+			if (Math.abs(e.translationX) > SWIPE_THRESHOLD) {
+				const dir = e.translationX > 0 ? 1 : -1;
+				locked.value = true;
+				ty.value = withTiming(ty.value - 40, { duration: 300, easing: Easing.in(Easing.ease) });
+				tx.value = withTiming(dir * FLY_DISTANCE, { duration: 300, easing: Easing.in(Easing.ease) }, (finished) => {
+					if (finished) runOnJS(advance)(dir);
+				});
+			} else {
+				tx.value = withTiming(0, { duration: 300 });
+				ty.value = withTiming(0, { duration: 300 });
+			}
+		});
 
-					{shortListedPlaces.length === 0 ? (
-						<View style={styles.sheetEmpty}>
-							<Text style={styles.sheetEmptyEmoji}>🔖</Text>
-							<Text style={styles.sheetEmptyText}>
-								Swipe a place down to save it here for later.
-							</Text>
-						</View>
-					) : (
-						<FlatList
-							data={shortListedPlaces}
-							keyExtractor={(item) => item.id}
-							showsVerticalScrollIndicator={false}
-							contentContainerStyle={styles.sheetListContent}
-							renderItem={({ item }) => (
-								<View style={styles.sheetItem}>
-									<View style={styles.sheetItemEmoji}>
-										<Text style={styles.sheetItemEmojiText}>{getPlaceEmoji(item.primaryType)}</Text>
-									</View>
-									<View style={styles.sheetItemInfo}>
-										<Text style={styles.sheetItemName} numberOfLines={1}>
-											{item.name ?? 'Unknown spot'}
-										</Text>
-										<Text style={styles.sheetItemMeta} numberOfLines={1}>
-											{formatPlaceType(item.primaryType)}
-											{item.distance ? ` · ${item.distance}` : ''}
-										</Text>
-									</View>
-									<Pressable style={styles.sheetRemove} onPress={() => removeFromShortlist(item.id)}>
-										<Ionicons name='close' size={18} color={COLORS.muted} />
-									</Pressable>
-									<Pressable style={styles.sheetGo} onPress={() => openInMaps(item)}>
-										<Ionicons name='navigate' size={18} color={COLORS.onBrand} />
-									</Pressable>
-								</View>
-							)}
-						/>
-					)}
+	const topCardStyle = useAnimatedStyle(() => ({
+		transform: [
+			{ translateX: tx.value },
+			{ translateY: ty.value * 0.25 },
+			{ rotate: `${tx.value * 0.06}deg` },
+		],
+	}));
+	const likeStampStyle = useAnimatedStyle(() => ({
+		opacity: interpolate(tx.value, [0, SWIPE_THRESHOLD], [0, 1], 'clamp'),
+	}));
+	const nopeStampStyle = useAnimatedStyle(() => ({
+		opacity: interpolate(tx.value, [-SWIPE_THRESHOLD, 0], [1, 0], 'clamp'),
+	}));
 
-					<Pressable style={styles.sheetClose} onPress={() => setShowShortlist(false)}>
-						<Text style={styles.sheetCloseText}>Close</Text>
-					</Pressable>
-				</View>
-			</SafeAreaView>
-		</Modal>
-	);
+	const progress = `${Math.min(index + 1, deck.length)} / ${deck.length}`;
 
-	/* ----------------------------- Loading state ---------------------------- */
-	if (loading) {
-		return (
-			<SafeAreaView style={styles.centerScreen}>
-				<LinearGradient colors={GRADIENTS.brand} style={[styles.loadingOrb, SHADOWS.card]}>
-					<Text style={styles.loadingEmoji}>🍽️</Text>
-				</LinearGradient>
-				<View style={styles.loadingDots}>
-					<LoadingDots
-						colors={[COLORS.brand, COLORS.save, COLORS.go, COLORS.success]}
-						gap={6}
-						size={11}
-					/>
-				</View>
-				<Text style={styles.loadingTitle}>Finding tasty spots</Text>
-				<Text style={styles.loadingLocation} numberOfLines={2}>
-					near “{location}”
-				</Text>
-			</SafeAreaView>
-		);
-	}
-
-	/* ------------------------------ Empty state ----------------------------- */
-	if (!places.length) {
-		return (
-			<SafeAreaView style={styles.centerScreen}>
-				<Text style={styles.stateEmoji}>😕</Text>
-				<Text style={styles.stateTitle}>No spots found</Text>
-				<Text style={styles.stateBody}>
-					Try widening your radius or removing a filter or two.
-				</Text>
-				<GradientButton
-					title='Adjust search'
-					icon='options'
-					onPress={() => navigation.goBack()}
-					style={styles.stateButton}
-				/>
-			</SafeAreaView>
-		);
-	}
-
-	/* ---------------------------- Finished state ---------------------------- */
-	if (finished) {
-		return (
-			<SafeAreaView style={styles.centerScreen}>
-				<Text style={styles.stateEmoji}>🎉</Text>
-				<Text style={styles.stateTitle}>That&apos;s everyone!</Text>
-				<Text style={styles.stateBody}>You&apos;ve seen all the spots nearby.</Text>
-				{shortListedPlaces.length > 0 && (
-					<GradientButton
-						title={`View shortlist (${shortListedPlaces.length})`}
-						icon='bookmark'
-						colors={GRADIENTS.save}
-						onPress={() => setShowShortlist(true)}
-						style={styles.stateButton}
-					/>
-				)}
-				<Pressable style={styles.stateSecondary} onPress={() => navigation.goBack()}>
-					<Ionicons name='search' size={18} color={COLORS.brand} />
-					<Text style={styles.stateSecondaryText}>New search</Text>
-				</Pressable>
-				{renderShortlistSheet()}
-			</SafeAreaView>
-		);
-	}
-
-	/* ---------------------- Single result (no swiper) ----------------------- */
-	if (places.length === 1) {
-		const only = places[0];
-		return (
-			<GestureHandlerRootView style={styles.screen}>
-				<SafeAreaView style={styles.screen} edges={['top']}>
-					<Header
-						location={location}
-						progress='1 spot'
-						shortlistCount={shortListedPlaces.length}
-						onBack={() => navigation.goBack()}
-						onShortlist={() => setShowShortlist(true)}
-					/>
-					<View style={styles.cardArea}>
-						<PlaceCard place={only} />
-					</View>
-					<ActionRow
-						onSkip={() => setFinished(true)}
-						onSave={() => {
-							addToShortlist(only);
-							setFinished(true);
-						}}
-						onMaps={() => {
-							openInMaps(only);
-							setFinished(true);
-						}}
-					/>
-				</SafeAreaView>
-				{renderShortlistSheet()}
-			</GestureHandlerRootView>
-		);
-	}
-
-	/* ------------------------------ Swipe deck ------------------------------ */
-	const remaining = Math.max(places.length - index, 0);
+	// Render up to three cards, bottom-most first so the top card sits on top.
+	const offsets = [2, 1, 0].filter((o) => index + o < deck.length);
 
 	return (
-		<GestureHandlerRootView style={styles.screen}>
-			<SafeAreaView style={styles.screen} edges={['top']}>
-				<Header
-					location={location}
-					progress={`${remaining} of ${places.length} left`}
-					shortlistCount={shortListedPlaces.length}
-					onBack={() => navigation.goBack()}
-					onShortlist={() => setShowShortlist(true)}
-				/>
-
-				<View style={styles.cardArea}>
-					<Swiper
-						ref={swiperRef}
-						data={places}
-						cardStyle={styles.swiperCard}
-						renderCard={(place) => <PlaceCard place={place} />}
-						onIndexChange={setIndex}
-						onSwipeRight={handleMaps}
-						onSwipeBottom={handleShortlist}
-						onSwipedAll={() => setFinished(true)}
-						disableTopSwipe
-						overlayLabelContainerStyle={styles.overlayContainer}
-						OverlayLabelRight={() => (
-							<View style={[styles.overlay, styles.overlayLeftAlign]}>
-								<SwipeBadge label='EAT' color={COLORS.go} rotate='-14deg' />
-							</View>
-						)}
-						OverlayLabelLeft={() => (
-							<View style={[styles.overlay, styles.overlayRightAlign]}>
-								<SwipeBadge label='NOPE' color={COLORS.skip} rotate='14deg' />
-							</View>
-						)}
-						OverlayLabelBottom={() => (
-							<View style={[styles.overlay, styles.overlayBottomAlign]}>
-								<SwipeBadge label='SAVE' color={COLORS.save} rotate='-6deg' />
-							</View>
-						)}
-					/>
+		<View style={[styles.container, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 }]}>
+			<View style={styles.header}>
+				<Text style={styles.wordmark}>
+					grubl<Text style={styles.dot}>.</Text>
+				</Text>
+				<View style={styles.progressPill}>
+					<Text style={styles.progressText}>{progress}</Text>
 				</View>
-
-				<ActionRow
-					onSkip={() => swiperRef.current?.swipeLeft()}
-					onSave={() => swiperRef.current?.swipeBottom()}
-					onMaps={() => swiperRef.current?.swipeRight()}
-				/>
-			</SafeAreaView>
-			{renderShortlistSheet()}
-		</GestureHandlerRootView>
-	);
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              Shared sub-views                              */
-/* -------------------------------------------------------------------------- */
-
-function Header({
-	location,
-	progress,
-	shortlistCount,
-	onBack,
-	onShortlist,
-}: {
-	location: string;
-	progress: string;
-	shortlistCount: number;
-	onBack: () => void;
-	onShortlist: () => void;
-}) {
-	return (
-		<View style={styles.header}>
-			<Pressable style={styles.headerButton} onPress={onBack}>
-				<Ionicons name='chevron-back' size={24} color={COLORS.ink} />
-			</Pressable>
-			<View style={styles.headerCenter}>
-				<View style={styles.headerLocationRow}>
-					<Ionicons name='location' size={14} color={COLORS.brand} />
-					<Text style={styles.headerLocation} numberOfLines={1}>
-						{location}
-					</Text>
-				</View>
-				<Text style={styles.headerProgress}>{progress}</Text>
 			</View>
-			<Pressable style={styles.headerButton} onPress={onShortlist}>
-				<Ionicons name='bookmark' size={20} color={COLORS.save} />
-				{shortlistCount > 0 && (
-					<View style={styles.headerBadge}>
-						<Text style={styles.headerBadgeText}>{shortlistCount}</Text>
-					</View>
-				)}
-			</Pressable>
-		</View>
-	);
-}
 
-function ActionRow({
-	onSkip,
-	onSave,
-	onMaps,
-}: {
-	onSkip: () => void;
-	onSave: () => void;
-	onMaps: () => void;
-}) {
-	return (
-		<View style={styles.actions}>
-			<CircleButton icon='close' color={COLORS.skip} size={64} onPress={onSkip} />
-			<CircleButton icon='bookmark' color={COLORS.save} size={54} onPress={onSave} />
-			<CircleButton icon='navigate' color={COLORS.go} size={64} onPress={onMaps} />
+			<View style={styles.deck}>
+				{offsets.map((o) => {
+					const r = deck[index + o];
+					if (o !== 0) {
+						return (
+							<View
+								key={index + o}
+								style={[styles.cardPos, { transform: [{ translateY: o * 11 }, { scale: 1 - o * 0.045 }], zIndex: 10 - o }]}
+							>
+								<CardFace restaurant={r} showRating={showRating} />
+							</View>
+						);
+					}
+					return (
+						<GestureDetector key={index + o} gesture={pan}>
+							<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
+								<CardFace restaurant={r} showRating={showRating}>
+									<Animated.View style={[styles.stamp, styles.stampLeft, likeStampStyle]}>
+										<Text style={[styles.stampText, { color: COLORS.green }]}>YUM</Text>
+									</Animated.View>
+									<Animated.View style={[styles.stamp, styles.stampRight, nopeStampStyle]}>
+										<Text style={[styles.stampText, { color: COLORS.tomato }]}>NAH</Text>
+									</Animated.View>
+								</CardFace>
+							</Animated.View>
+						</GestureDetector>
+					);
+				})}
+			</View>
+
+			<View style={styles.actions}>
+				<HardButton
+					dx={4}
+					dy={4}
+					color={COLORS.ink}
+					radius={RADII.pill}
+					onPress={() => fling(-1)}
+					faceStyle={styles.nopeButton}
+				>
+					<Text style={styles.nopeGlyph}>✕</Text>
+				</HardButton>
+				<HardButton
+					dx={4}
+					dy={4}
+					color={COLORS.ink}
+					radius={RADII.pill}
+					onPress={() => fling(1)}
+					containerStyle={styles.yumContainer}
+					faceStyle={styles.yumButton}
+				>
+					<Text style={styles.yumText}>YUM ♥</Text>
+				</HardButton>
+			</View>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	screen: {
+	container: {
 		flex: 1,
-		backgroundColor: COLORS.bg,
+		backgroundColor: COLORS.cream,
 	},
-	centerScreen: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		padding: 36,
-		backgroundColor: COLORS.bg,
-	},
-
-	/* Header */
 	header: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: 12,
-		paddingHorizontal: 18,
-		paddingVertical: 8,
+		justifyContent: 'space-between',
+		paddingHorizontal: 24,
 	},
-	headerButton: {
-		width: 46,
-		height: 46,
-		borderRadius: 15,
-		backgroundColor: COLORS.surface,
-		alignItems: 'center',
-		justifyContent: 'center',
-		...SHADOWS.soft,
-	},
-	headerCenter: {
-		flex: 1,
-		alignItems: 'center',
-	},
-	headerLocationRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 4,
-		maxWidth: '100%',
-	},
-	headerLocation: {
-		fontFamily: FONTS.semibold,
-		fontSize: 14,
-		color: COLORS.ink,
-		flexShrink: 1,
-	},
-	headerProgress: {
-		fontFamily: FONTS.medium,
-		fontSize: 12,
-		color: COLORS.muted,
-		marginTop: 1,
-	},
-	headerBadge: {
-		position: 'absolute',
-		top: -4,
-		right: -4,
-		minWidth: 20,
-		height: 20,
-		borderRadius: 10,
-		paddingHorizontal: 5,
-		backgroundColor: COLORS.save,
-		alignItems: 'center',
-		justifyContent: 'center',
-		borderWidth: 2,
-		borderColor: COLORS.bg,
-	},
-	headerBadgeText: {
-		fontFamily: FONTS.bold,
-		fontSize: 10,
-		color: COLORS.onBrand,
-	},
-
-	/* Card */
-	cardArea: {
-		flex: 1,
-		marginHorizontal: 18,
-		marginTop: 4,
-		marginBottom: 10,
-	},
-	swiperCard: {
-		width: '100%',
-		height: '100%',
-		borderRadius: RADIUS.xl,
-		backgroundColor: COLORS.surface,
-		...SHADOWS.card,
-	},
-	card: {
-		flex: 1,
-		borderRadius: RADIUS.xl,
-		backgroundColor: COLORS.surface,
-		overflow: 'hidden',
-	},
-	cardHero: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	cardEmoji: {
-		fontSize: 132,
-	},
-	ratingBadge: {
-		position: 'absolute',
-		top: 16,
-		right: 16,
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 4,
-		backgroundColor: 'rgba(255,255,255,0.95)',
-		paddingHorizontal: 10,
-		paddingVertical: 5,
-		borderRadius: RADIUS.pill,
-	},
-	ratingText: {
-		fontFamily: FONTS.bold,
-		fontSize: 13,
-		color: COLORS.ink,
-	},
-	cardBody: {
-		paddingHorizontal: 22,
-		paddingVertical: 20,
-		gap: 12,
-		minHeight: 168,
-		justifyContent: 'center',
-	},
-	cardName: {
-		fontFamily: FONTS.extrabold,
-		fontSize: 26,
-		lineHeight: 31,
-		color: COLORS.ink,
-		textAlign: 'center',
-	},
-	pillRow: {
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 8,
-		justifyContent: 'center',
-	},
-	metaRow: {
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 16,
-		justifyContent: 'center',
-	},
-	metaItem: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 5,
-	},
-	metaText: {
-		fontFamily: FONTS.medium,
-		fontSize: 13,
-		color: COLORS.body,
-	},
-
-	/* Overlay labels */
-	overlayContainer: {
-		borderRadius: RADIUS.xl,
-	},
-	overlay: {
-		flex: 1,
-		padding: 30,
-	},
-	overlayLeftAlign: {
-		alignItems: 'flex-start',
-		justifyContent: 'flex-start',
-	},
-	overlayRightAlign: {
-		alignItems: 'flex-end',
-		justifyContent: 'flex-start',
-	},
-	overlayBottomAlign: {
-		alignItems: 'center',
-		justifyContent: 'flex-start',
-	},
-	swipeBadge: {
-		borderWidth: 4,
-		borderRadius: 14,
-		paddingHorizontal: 16,
-		paddingVertical: 8,
-		backgroundColor: 'rgba(255,255,255,0.85)',
-	},
-	swipeBadgeText: {
-		fontFamily: FONTS.extrabold,
-		fontSize: 30,
-		letterSpacing: 1,
-	},
-
-	/* Action row */
-	actions: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 26,
-		paddingBottom: 16,
-		paddingTop: 4,
-	},
-
-	/* Loading state */
-	loadingOrb: {
-		width: 120,
-		height: 120,
-		borderRadius: 60,
-		alignItems: 'center',
-		justifyContent: 'center',
-		marginBottom: 28,
-	},
-	loadingEmoji: {
-		fontSize: 60,
-	},
-	loadingDots: {
-		width: 70,
-		marginBottom: 24,
-	},
-	loadingTitle: {
-		fontFamily: FONTS.bold,
-		fontSize: 20,
-		color: COLORS.ink,
-	},
-	loadingLocation: {
-		fontFamily: FONTS.regular,
-		fontSize: 15,
-		color: COLORS.muted,
-		textAlign: 'center',
-		marginTop: 2,
-	},
-
-	/* Empty / finished states */
-	stateEmoji: {
-		fontSize: 72,
-		marginBottom: 12,
-	},
-	stateTitle: {
-		fontFamily: FONTS.extrabold,
-		fontSize: 26,
-		color: COLORS.ink,
-		textAlign: 'center',
-	},
-	stateBody: {
-		fontFamily: FONTS.regular,
-		fontSize: 15,
-		color: COLORS.muted,
-		textAlign: 'center',
-		marginTop: 8,
-		marginBottom: 28,
-		paddingHorizontal: 12,
-	},
-	stateButton: {
-		alignSelf: 'stretch',
-	},
-	stateSecondary: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 6,
-		paddingVertical: 14,
-		marginTop: 6,
-	},
-	stateSecondaryText: {
-		fontFamily: FONTS.semibold,
-		fontSize: 15,
-		color: COLORS.brand,
-	},
-
-	/* Shortlist sheet */
-	sheetBackdrop: {
-		...StyleSheet.absoluteFillObject,
-		backgroundColor: 'rgba(20, 12, 8, 0.5)',
-	},
-	sheetWrap: {
-		flex: 1,
-		justifyContent: 'flex-end',
-	},
-	sheet: {
-		backgroundColor: COLORS.bg,
-		borderTopLeftRadius: 28,
-		borderTopRightRadius: 28,
-		paddingHorizontal: 20,
-		paddingTop: 10,
-		paddingBottom: 14,
-		maxHeight: '78%',
-	},
-	sheetHandle: {
-		alignSelf: 'center',
-		width: 44,
-		height: 5,
-		borderRadius: 3,
-		backgroundColor: COLORS.hairline,
-		marginBottom: 14,
-	},
-	sheetHeader: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 10,
-		marginBottom: 12,
-	},
-	sheetTitle: {
-		fontFamily: FONTS.extrabold,
+	wordmark: {
+		fontFamily: FONTS.display,
 		fontSize: 22,
 		color: COLORS.ink,
 	},
-	sheetCount: {
-		minWidth: 26,
-		height: 26,
-		borderRadius: 13,
-		paddingHorizontal: 8,
-		backgroundColor: COLORS.brandSoft,
-		alignItems: 'center',
-		justifyContent: 'center',
+	dot: {
+		color: COLORS.tomato,
 	},
-	sheetCountText: {
+	progressPill: {
+		backgroundColor: COLORS.ink,
+		paddingVertical: 5,
+		paddingHorizontal: 12,
+		borderRadius: RADII.pill,
+	},
+	progressText: {
 		fontFamily: FONTS.bold,
-		fontSize: 13,
-		color: COLORS.brandDark,
+		fontSize: 14,
+		color: COLORS.cream,
 	},
-	sheetEmpty: {
-		alignItems: 'center',
-		paddingVertical: 48,
-		gap: 12,
+	deck: {
+		flex: 1,
+		position: 'relative',
+		marginTop: 8,
 	},
-	sheetEmptyEmoji: {
-		fontSize: 44,
+	cardPos: {
+		position: 'absolute',
+		top: 12,
+		left: 20,
+		right: 20,
+		bottom: 10,
 	},
-	sheetEmptyText: {
-		fontFamily: FONTS.regular,
-		fontSize: 15,
-		color: COLORS.muted,
-		textAlign: 'center',
-		paddingHorizontal: 24,
+	stamp: {
+		position: 'absolute',
+		top: 52,
+		borderWidth: 4,
+		borderRadius: 10,
+		paddingVertical: 2,
+		paddingHorizontal: 12,
+		backgroundColor: 'rgba(255,253,246,0.92)',
 	},
-	sheetListContent: {
-		gap: 10,
-		paddingBottom: 8,
+	stampLeft: {
+		left: 18,
+		transform: [{ rotate: '-12deg' }],
+		borderColor: COLORS.green,
 	},
-	sheetItem: {
+	stampRight: {
+		right: 18,
+		transform: [{ rotate: '12deg' }],
+		borderColor: COLORS.tomato,
+	},
+	stampText: {
+		fontFamily: FONTS.display,
+		fontSize: 32,
+	},
+	actions: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: 12,
-		backgroundColor: COLORS.surface,
-		borderRadius: RADIUS.md,
-		padding: 12,
-		...SHADOWS.soft,
+		gap: 16,
+		paddingHorizontal: 24,
+		paddingTop: 14,
 	},
-	sheetItemEmoji: {
-		width: 46,
-		height: 46,
-		borderRadius: 14,
-		backgroundColor: COLORS.brandSoft,
+	nopeButton: {
+		width: 64,
+		height: 64,
+		borderRadius: RADII.pill,
+		backgroundColor: COLORS.paper,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	sheetItemEmojiText: {
-		fontSize: 24,
+	nopeGlyph: {
+		fontSize: 26,
+		color: COLORS.ink,
+		lineHeight: 30,
 	},
-	sheetItemInfo: {
+	yumContainer: {
 		flex: 1,
 	},
-	sheetItemName: {
-		fontFamily: FONTS.semibold,
-		fontSize: 15,
-		color: COLORS.ink,
-	},
-	sheetItemMeta: {
-		fontFamily: FONTS.regular,
-		fontSize: 12,
-		color: COLORS.muted,
-		marginTop: 1,
-	},
-	sheetRemove: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
-		backgroundColor: COLORS.surfaceAlt,
+	yumButton: {
+		height: 64,
+		borderRadius: RADII.pill,
+		backgroundColor: COLORS.tomato,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	sheetGo: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
-		backgroundColor: COLORS.go,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	sheetClose: {
-		marginTop: 12,
-		paddingVertical: 14,
-		alignItems: 'center',
-	},
-	sheetCloseText: {
-		fontFamily: FONTS.semibold,
-		fontSize: 15,
-		color: COLORS.body,
+	yumText: {
+		fontFamily: FONTS.display,
+		fontSize: 20,
+		color: COLORS.cream,
 	},
 });

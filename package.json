@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@eva-design/eva": "^2.2.0",
+    "@expo-google-fonts/archivo-black": "^0.4.1",
     "@expo-google-fonts/poppins": "^0.4.1",
+    "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-community/slider": "4.5.6",
     "@react-navigation/native": "^7.1.6",

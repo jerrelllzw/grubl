@@ -1,87 +1,42 @@
-// Central design tokens for Grubl's custom (non-UI-Kitten) styling.
-// Keep these in sync with app/theme.json, which feeds the same palette to UI Kitten.
+// Design tokens for grubl — the "playful & bold" direction (option 3a).
+// Chunky type, 3px ink borders, hard offset shadows (no blur), sticker panels.
 
 export const COLORS = {
-	// Brand
-	brand: '#FF6B35',
-	brandDark: '#E85221',
-	brandSoft: '#FFF2EC',
-
-	// Surfaces
-	bg: '#FFF7F0',
-	surface: '#FFFFFF',
-	surfaceAlt: '#FBF1E9',
-	hairline: '#F0E3D8',
-
-	// Text
-	ink: '#241B16',
-	body: '#5E5048',
-	muted: 'rgba(36, 27, 22, 0.45)',
-	onBrand: '#FFFFFF',
-
-	// Swipe semantics
-	go: '#3D8BFF', // swipe right → open in Maps
-	skip: '#FF4D5E', // swipe left → skip
-	save: '#8B5CF6', // swipe down → shortlist
-
-	// Functional
-	success: '#1FBF7A',
-	star: '#FFB400',
+	cream: '#FFF7E0', // app background
+	paper: '#FFFDF6', // card / panel surface
+	ink: '#1A1A1A', // text, borders, hard shadows
+	tomato: '#FF5A3C', // primary accent (brand, YUM button, NAH stamp)
+	yolk: '#FFD43B', // secondary accent (Swipe Again button)
+	green: '#2FA84F', // YUM stamp
+	muted: '#5A5347', // secondary text
 } as const;
 
-// Signature warm gradients (tuples so expo-linear-gradient's typed `colors` is happy).
-export const GRADIENTS = {
-	brand: ['#FF8A4B', '#FF4D6D'] as const,
-	go: ['#5AA0FF', '#2D6EF0'] as const,
-	save: ['#A78BFA', '#7C4DFF'] as const,
-	dusk: ['#FFB199', '#FF6B6B'] as const,
-};
-
+// Google Fonts loaded via expo-font.
 export const FONTS = {
-	regular: 'Poppins_400Regular',
-	medium: 'Poppins_500Medium',
-	semibold: 'Poppins_600SemiBold',
-	bold: 'Poppins_700Bold',
-	extrabold: 'Poppins_800ExtraBold',
+	display: 'ArchivoBlack_400Regular', // single-weight display face
+	regular: 'SpaceGrotesk_400Regular',
+	medium: 'SpaceGrotesk_500Medium',
+	semibold: 'SpaceGrotesk_600SemiBold',
+	bold: 'SpaceGrotesk_700Bold',
 } as const;
 
-export const RADIUS = {
-	sm: 12,
-	md: 18,
-	lg: 24,
-	xl: 32,
+export const RADII = {
+	card: 24,
+	sticker: 16,
+	cta: 18,
 	pill: 999,
+	chip: 999,
 } as const;
 
-export const SPACING = {
-	xs: 6,
-	sm: 10,
-	md: 16,
-	lg: 24,
-	xl: 36,
+// Hard offset shadows have no blur. On native we recreate them with a second
+// absolutely-positioned layer offset behind the element (see CardFace/HardButton).
+export const HARD_SHADOW = {
+	card: { dx: 7, dy: 7, color: COLORS.ink },
+	cardTomato: { dx: 7, dy: 7, color: COLORS.tomato },
+	sticker: { dx: 5, dy: 5, color: COLORS.ink },
+	button: { dx: 4, dy: 4, color: COLORS.ink },
+	cta: { dx: 6, dy: 6, color: COLORS.tomato },
+	again: { dx: 5, dy: 5, color: COLORS.ink },
 } as const;
 
-// Reusable elevation/shadow presets (iOS shadow + Android elevation).
-export const SHADOWS = {
-	card: {
-		shadowColor: '#7A2E00',
-		shadowOffset: { width: 0, height: 12 },
-		shadowOpacity: 0.18,
-		shadowRadius: 24,
-		elevation: 10,
-	},
-	soft: {
-		shadowColor: '#7A2E00',
-		shadowOffset: { width: 0, height: 6 },
-		shadowOpacity: 0.12,
-		shadowRadius: 12,
-		elevation: 5,
-	},
-	button: {
-		shadowColor: '#FF4D6D',
-		shadowOffset: { width: 0, height: 8 },
-		shadowOpacity: 0.35,
-		shadowRadius: 16,
-		elevation: 8,
-	},
-} as const;
+export const BORDER = 3; // signature 3px ink border
