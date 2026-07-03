@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { metaLine, type Restaurant } from '../data/restaurants';
 import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 import StripePhoto from './StripePhoto';
@@ -37,14 +37,8 @@ export default function CardFace({
 			/>
 			{/* bordered card */}
 			<View style={[StyleSheet.absoluteFillObject, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: COLORS.ink, backgroundColor: COLORS.paper, overflow: 'hidden' }]}>
-				{restaurant.photoUri ? (
-					<Image source={{ uri: restaurant.photoUri }} style={[StyleSheet.absoluteFillObject, { borderRadius: cardRadius }]} resizeMode="cover" />
-				) : (
-					<>
-						<StripePhoto hue={restaurant.hue} radius={cardRadius} />
-						{showCaption && <Text style={styles.caption}>[photo: {restaurant.photoLabel}]</Text>}
-					</>
-				)}
+				<StripePhoto hue={restaurant.hue} radius={cardRadius} />
+				{showCaption && <Text style={styles.caption}>[photo: {restaurant.photoLabel}]</Text>}
 
 				{/* info sticker panel */}
 				<View style={styles.stickerWrap}>

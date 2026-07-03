@@ -20,8 +20,6 @@ export interface Place {
 	priceLevel?: string;
 	primaryType: string;
 	distance?: string;
-	/** Places API photo resource name; turn into a URL via buildPhotoUri. */
-	photoName?: string;
 }
 
 // Straight-line distance between two points, in metres.
@@ -41,6 +39,11 @@ const distanceInMetres = (point1: Coordinates, point2: Coordinates): number => {
 const formatDistance = (metres: number): string =>
 	metres < 1000 ? `${Math.round(metres)}m` : `${(metres / 1000).toFixed(1)}km`;
 
+// NOTE: restaurant photos are intentionally not fetched — the Places "photos"
+// field and the Place Photo media endpoint are separately billed. Cards use the
+// striped placeholder instead. Re-add `places.photos` to the field mask + a
+// media-URL helper if that changes.
+
 // Turns the chosen cravings into a single natural-language query. Text Search
 // matches on cuisine words, so this surfaces more relevant places than the
 // exact `primaryType` matching that Nearby Search is limited to.
@@ -50,11 +53,6 @@ const buildFoodQuery = (cravings: string[]): string => {
 		.filter((term): term is string => Boolean(term));
 	return terms.length ? terms.join(', ') : 'restaurants and places to eat';
 };
-
-/** Builds a fetchable image URL from a Places photo resource name. */
-export function buildPhotoUri(photoName: string, maxWidthPx = 900): string {
-	return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&key=${API_KEY}`;
-}
 
 // Geocoding
 export async function fetchCoordinates(address: string): Promise<Coordinates | null> {
@@ -124,7 +122,6 @@ export async function fetchPlaces(
 			'places.priceLevel',
 			'places.userRatingCount',
 			'places.primaryType',
-			'places.photos',
 			'nextPageToken',
 		].join(','),
 	};
@@ -176,7 +173,6 @@ export async function fetchPlaces(
 					priceLevel: place.priceLevel ?? undefined,
 					primaryType: place.primaryType ?? undefined,
 					distance: coords ? formatDistance(distanceInMetres(coords, origin)) : undefined,
-					photoName: place.photos?.[0]?.name ?? undefined,
 				});
 			}
 

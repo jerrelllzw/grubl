@@ -3,7 +3,6 @@
 // bundled mock deck so the app still runs end-to-end.
 
 import {
-	buildPhotoUri,
 	fetchCoordinates,
 	fetchPlaces,
 	hasApiKey,
@@ -22,10 +21,8 @@ export type Restaurant = {
 	ratingCount?: number;
 	/** Hue (0–360) tinting the striped placeholder when there's no photo. */
 	hue: number;
-	/** Caption shown on the placeholder, e.g. the signature dish or cuisine. */
+	/** Caption shown on the striped placeholder, e.g. the signature dish or cuisine. */
 	photoLabel: string;
-	/** Real photo URL when available; otherwise the striped placeholder shows. */
-	photoUri?: string;
 };
 
 export type SearchQuery = {
@@ -58,7 +55,6 @@ function placeToRestaurant(place: Place): Restaurant {
 		ratingCount: place.ratingCount,
 		hue: hueFrom(place.primaryType || place.name || place.id),
 		photoLabel: `${getPlaceEmoji(place.primaryType)} ${cuisine}`,
-		photoUri: place.photoName ? buildPhotoUri(place.photoName) : undefined,
 	};
 }
 
