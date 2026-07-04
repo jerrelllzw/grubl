@@ -56,6 +56,14 @@ export default function SearchScreen({
 		setCoords(null); // typed text no longer matches the resolved GPS coords
 	};
 
+	const clearLocation = () => {
+		suppressAutocomplete.current = true; // don't re-open the dropdown as the field empties
+		setLocation('');
+		setCoords(null);
+		clearSuggestions();
+		setTimeout(() => (suppressAutocomplete.current = false), 300);
+	};
+
 	const toggleCraving = (key: string) =>
 		setCravings((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
@@ -138,57 +146,73 @@ export default function SearchScreen({
 				{/* Location */}
 				<View style={styles.locationSection}>
 					<Text style={styles.label}>LOCATION</Text>
-					<View style={styles.locationRow}>
-						<TextInput
-							style={styles.input}
-							placeholder="Where are you eating?"
-							placeholderTextColor="rgba(90,83,71,0.6)"
-							value={location}
-							onChangeText={onChangeLocation}
-							onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-							accessibilityLabel="Location"
-						/>
-						<Pressable
-							style={styles.gpsButton}
-							onPress={useCurrentLocationPress}
-							disabled={isLocating}
-							accessibilityRole="button"
-							accessibilityLabel="Use my current location"
-						>
-							{isLocating ? (
-								<ActivityIndicator size="small" color={COLORS.ink} />
-							) : (
-								<Ionicons name="locate" size={22} color={COLORS.ink} />
-							)}
-						</Pressable>
-					</View>
-
-					{showSuggestions && suggestions.length > 0 && (
-						<View style={styles.dropdown}>
-							{suggestions.slice(0, 5).map((item, i) => (
-								<Pressable
-									key={`${item.label}-${i}`}
-									style={styles.suggestion}
-									accessibilityRole="button"
-									accessibilityLabel={item.label}
-									onPress={() => {
-										suppressAutocomplete.current = true;
-										setLocation(item.label);
-										setCoords(item.coords); // Photon gives coords inline — no geocode needed
-										clearSuggestions();
-										Keyboard.dismiss();
-										setTimeout(() => (suppressAutocomplete.current = false), 500);
-									}}
-								>
-									<Ionicons name="location-outline" size={16} color={COLORS.tomato} />
-									<Text style={styles.suggestionText} numberOfLines={1}>
-										{item.label}
-									</Text>
-								</Pressable>
-							))}
-							<Text style={styles.attribution}>Locations © OpenStreetMap</Text>
+					{/* Anchor keeps the floating dropdown positioned to the row, not the section. */}
+					<View style={styles.locationAnchor}>
+						<View style={styles.locationRow}>
+							<View style={styles.inputWrap}>
+								<TextInput
+									style={styles.input}
+									placeholder="Where are you eating?"
+									placeholderTextColor="rgba(90,83,71,0.6)"
+									value={location}
+									onChangeText={onChangeLocation}
+									onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+									accessibilityLabel="Location"
+								/>
+								{location.length > 0 && (
+									<Pressable
+										style={styles.clearButton}
+										onPress={clearLocation}
+										hitSlop={8}
+										accessibilityRole="button"
+										accessibilityLabel="Clear location"
+									>
+										<Ionicons name="close-circle" size={20} color="rgba(90,83,71,0.7)" />
+									</Pressable>
+								)}
+							</View>
+							<Pressable
+								style={styles.gpsButton}
+								onPress={useCurrentLocationPress}
+								disabled={isLocating}
+								accessibilityRole="button"
+								accessibilityLabel="Use my current location"
+							>
+								{isLocating ? (
+									<ActivityIndicator size="small" color={COLORS.ink} />
+								) : (
+									<Ionicons name="locate" size={22} color={COLORS.ink} />
+								)}
+							</Pressable>
 						</View>
-					)}
+
+						{showSuggestions && suggestions.length > 0 && (
+							<View style={styles.dropdown}>
+								{suggestions.slice(0, 5).map((item, i) => (
+									<Pressable
+										key={`${item.label}-${i}`}
+										style={styles.suggestion}
+										accessibilityRole="button"
+										accessibilityLabel={item.label}
+										onPress={() => {
+											suppressAutocomplete.current = true;
+											setLocation(item.label);
+											setCoords(item.coords); // Photon gives coords inline — no geocode needed
+											clearSuggestions();
+											Keyboard.dismiss();
+											setTimeout(() => (suppressAutocomplete.current = false), 500);
+										}}
+									>
+										<Ionicons name="location-outline" size={16} color={COLORS.tomato} />
+										<Text style={styles.suggestionText} numberOfLines={1}>
+											{item.label}
+										</Text>
+									</Pressable>
+								))}
+								<Text style={styles.attribution}>Locations © OpenStreetMap</Text>
+							</View>
+						)}
+					</View>
 				</View>
 
 				{/* Radius */}
@@ -330,21 +354,39 @@ const styles = StyleSheet.create({
 	locationSection: {
 		zIndex: 30,
 	},
+	locationAnchor: {
+		position: 'relative',
+		zIndex: 30,
+	},
 	locationRow: {
 		flexDirection: 'row',
 		gap: 10,
 	},
-	input: {
+	inputWrap: {
 		flex: 1,
+		position: 'relative',
+		justifyContent: 'center',
+	},
+	input: {
+		width: '100%',
 		height: 54,
 		backgroundColor: COLORS.paper,
 		borderWidth: BORDER,
 		borderColor: COLORS.ink,
 		borderRadius: RADII.sticker,
-		paddingHorizontal: 16,
+		paddingLeft: 16,
+		paddingRight: 44, // room for the clear button
 		fontFamily: FONTS.semibold,
 		fontSize: 16,
 		color: COLORS.ink,
+	},
+	clearButton: {
+		position: 'absolute',
+		right: 12,
+		width: 24,
+		height: 24,
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 	gpsButton: {
 		width: 54,
@@ -357,7 +399,13 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	dropdown: {
-		marginTop: 8,
+		// Float over the sections below instead of pushing them down.
+		position: 'absolute',
+		top: 60, // just under the 54px input row
+		left: 0,
+		right: 0,
+		zIndex: 40,
+		elevation: 8, // Android stacking (zIndex alone isn't enough)
 		backgroundColor: COLORS.paper,
 		borderWidth: BORDER,
 		borderColor: COLORS.ink,

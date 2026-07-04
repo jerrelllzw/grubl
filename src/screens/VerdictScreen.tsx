@@ -11,33 +11,55 @@ import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 
 export default function VerdictScreen({
 	winner,
-	likes,
+	shortlist,
 	showRating,
-	onReroll,
 	onPick,
 	onAgain,
 	onNewSearch,
 }: {
-	winner: Restaurant | null;
-	likes: Restaurant[];
+	winner: Restaurant | null; // null → the user still has to choose from the shortlist
+	shortlist: Restaurant[];
 	showRating: boolean;
-	onReroll: () => void;
 	onPick: (r: Restaurant) => void;
 	onAgain: () => void;
 	onNewSearch: () => void;
 }) {
 	const insets = useSafeAreaInsets();
-	const others = winner ? likes.filter((r) => r.id !== winner.id) : [];
-
-	const reroll = () => {
-		Haptics.selectionAsync().catch(() => {});
-		onReroll();
-	};
+	// Everything on the shortlist that isn't already the pick.
+	const others = winner ? shortlist.filter((r) => r.id !== winner.id) : shortlist;
 
 	const pick = (r: Restaurant) => {
 		Haptics.selectionAsync().catch(() => {});
 		onPick(r);
 	};
+
+	const shortlistRows = (
+		<View style={styles.shortlist}>
+			{others.map((r) => (
+				<Pressable
+					key={r.id}
+					style={styles.row}
+					onPress={() => pick(r)}
+					accessibilityRole="button"
+					accessibilityLabel={`Pick ${r.name}`}
+				>
+					<View style={styles.swatch}>
+						<StripePhoto hue={r.hue} radius={RADII.sticker} />
+						<Text style={styles.swatchEmoji}>{r.emoji}</Text>
+					</View>
+					<View style={styles.rowText}>
+						<Text style={styles.rowName} numberOfLines={1}>
+							{r.name}
+						</Text>
+						<Text style={styles.rowMeta} numberOfLines={1}>
+							{metaLine(r, showRating)}
+						</Text>
+					</View>
+					<Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
+				</Pressable>
+			))}
+		</View>
+	);
 
 	return (
 		<ScrollView
@@ -49,6 +71,7 @@ export default function VerdictScreen({
 			showsVerticalScrollIndicator={false}
 		>
 			{winner ? (
+				// A pick is locked in — either swiped-right decisively or tapped below.
 				<>
 					<View style={styles.headlineWrap}>
 						<Text style={styles.headline}>
@@ -69,10 +92,6 @@ export default function VerdictScreen({
 						/>
 					</View>
 
-					<Text style={styles.caption}>
-						Picked from your {likes.length} {likes.length === 1 ? 'yum' : 'yums'}.
-					</Text>
-
 					<HardButton
 						dx={6}
 						dy={6}
@@ -88,47 +107,24 @@ export default function VerdictScreen({
 
 					{others.length > 0 && (
 						<>
-							<HardButton
-								dx={5}
-								dy={5}
-								color={COLORS.ink}
-								radius={RADII.sticker}
-								onPress={reroll}
-								accessibilityLabel="Pick another from your shortlist"
-								containerStyle={styles.rerollContainer}
-								faceStyle={styles.rerollFace}
-							>
-								<Text style={styles.rerollText}>🎲 PICK ANOTHER</Text>
-							</HardButton>
-
-							<Text style={styles.shortlistLabel}>OR TAP ONE OF YOUR {others.length} OTHER YUMS</Text>
-							<View style={styles.shortlist}>
-								{others.map((r) => (
-									<Pressable
-										key={r.id}
-										style={styles.row}
-										onPress={() => pick(r)}
-										accessibilityRole="button"
-										accessibilityLabel={`Make ${r.name} the pick`}
-									>
-										<View style={styles.swatch}>
-											<StripePhoto hue={r.hue} radius={RADII.sticker} />
-											<Text style={styles.swatchEmoji}>{r.emoji}</Text>
-										</View>
-										<View style={styles.rowText}>
-											<Text style={styles.rowName} numberOfLines={1}>
-												{r.name}
-											</Text>
-											<Text style={styles.rowMeta} numberOfLines={1}>
-												{metaLine(r, showRating)}
-											</Text>
-										</View>
-										<Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
-									</Pressable>
-								))}
-							</View>
+							<Text style={styles.shortlistLabel}>
+								CHANGED YOUR MIND? TAP ANOTHER OF YOUR {others.length}
+							</Text>
+							{shortlistRows}
 						</>
 					)}
+				</>
+			) : shortlist.length > 0 ? (
+				// No outright pick — the user chooses from their shortlist.
+				<>
+					<View style={styles.headlineWrap}>
+						<Text style={styles.headline}>
+							YOUR{'\n'}
+							<Text style={styles.headlineName}>SHORTLIST</Text>
+						</Text>
+					</View>
+					<Text style={styles.chooseBody}>Tap the one you want to eat.</Text>
+					{shortlistRows}
 				</>
 			) : (
 				<>
@@ -178,16 +174,9 @@ const styles = StyleSheet.create({
 		maxWidth: 300,
 		height: 280,
 	},
-	caption: {
-		marginTop: 16,
-		fontFamily: FONTS.semibold,
-		fontSize: 15,
-		color: COLORS.muted,
-		textAlign: 'center',
-	},
 	mapsContainer: {
 		width: '100%',
-		marginTop: 22,
+		marginTop: 24,
 	},
 	mapsFace: {
 		width: '100%',
@@ -202,22 +191,13 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		color: COLORS.cream,
 	},
-	rerollContainer: {
-		width: '100%',
-		marginTop: 14,
-	},
-	rerollFace: {
-		width: '100%',
-		paddingVertical: 16,
-		alignItems: 'center',
-		backgroundColor: COLORS.yolk,
-		borderWidth: BORDER,
-		borderColor: COLORS.ink,
-	},
-	rerollText: {
-		fontFamily: FONTS.display,
-		fontSize: 18,
-		color: COLORS.ink,
+	chooseBody: {
+		marginTop: 16,
+		marginBottom: 4,
+		fontFamily: FONTS.medium,
+		fontSize: 16,
+		color: COLORS.muted,
+		textAlign: 'center',
 	},
 	shortlistLabel: {
 		alignSelf: 'flex-start',
@@ -231,6 +211,7 @@ const styles = StyleSheet.create({
 	shortlist: {
 		width: '100%',
 		gap: 10,
+		marginTop: 20,
 	},
 	row: {
 		flexDirection: 'row',

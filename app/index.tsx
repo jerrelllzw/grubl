@@ -12,14 +12,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import {
-	pickWinner,
-	rerollWinner,
-	searchRestaurants,
-	type Restaurant,
-	type SearchQuery,
-	type WinnerStrategy,
-} from '../src/data/restaurants';
+import { searchRestaurants, type Restaurant, type SearchQuery } from '../src/data/restaurants';
 import IntroScreen from '../src/screens/IntroScreen';
 import SearchScreen from '../src/screens/SearchScreen';
 import { EmptyScreen, LoadingScreen } from '../src/screens/StatusScreen';
@@ -29,7 +22,6 @@ import { COLORS } from '../src/theme/tokens';
 
 // Behavior knobs — the prototype exposed these as tweaks; keep them here so a
 // settings surface (or the future API) can drive them later.
-const WINNER_STRATEGY: WinnerStrategy = 'surprise me';
 const SHOW_RATING = true;
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -50,8 +42,8 @@ export default function Index() {
 	const [deck, setDeck] = useState<Restaurant[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [emptyReason, setEmptyReason] = useState<'location' | 'no-results'>('no-results');
-	const [winner, setWinner] = useState<Restaurant | null>(null);
-	const [likes, setLikes] = useState<Restaurant[]>([]);
+	const [winner, setWinner] = useState<Restaurant | null>(null); // null → let the user choose
+	const [shortlist, setShortlist] = useState<Restaurant[]>([]); // the "maybe" pile (swipe down)
 	const [runId, setRunId] = useState(0); // remounts the deck for a fresh swipe run
 
 	useEffect(() => {
@@ -75,25 +67,29 @@ export default function Index() {
 		}
 	}, []);
 
-	const handleComplete = useCallback((liked: Restaurant[]) => {
-		setLikes(liked);
-		setWinner(pickWinner(liked, WINNER_STRATEGY));
+	// Right swipe — the user picked this place outright, so it's the verdict.
+	const handleDecide = useCallback((chosen: Restaurant, maybes: Restaurant[]) => {
+		setShortlist(maybes);
+		setWinner(chosen);
 		setScreen('result');
 	}, []);
 
-	// Re-roll a different pick from the existing likes — no re-swipe needed.
-	const handleReroll = useCallback(() => {
-		setWinner((current) => (current ? rerollWinner(likes, current.id) : pickWinner(likes, WINNER_STRATEGY)));
-	}, [likes]);
+	// Deck exhausted or "Done" pressed — no outright pick, so let the user choose
+	// from their shortlist on the verdict screen.
+	const handleComplete = useCallback((maybes: Restaurant[]) => {
+		setShortlist(maybes);
+		setWinner(null);
+		setScreen('result');
+	}, []);
 
-	// Promote a specific liked place to the pick (tapped from the shortlist).
+	// Promote a specific shortlisted place to the pick (tapped from the shortlist).
 	const handlePick = useCallback((r: Restaurant) => setWinner(r), []);
 
 	const handleAgain = useCallback(() => {
 		// Re-swipe the same deck without another API round-trip.
 		setRunId((id) => id + 1);
 		setWinner(null);
-		setLikes([]);
+		setShortlist([]);
 		setScreen('swipe');
 	}, []);
 
@@ -118,15 +114,20 @@ export default function Index() {
 						) : deck.length === 0 ? (
 							<EmptyScreen reason={emptyReason} onAdjust={handleNewSearch} />
 						) : (
-							<SwipeScreen key={runId} deck={deck} showRating={SHOW_RATING} onComplete={handleComplete} />
+							<SwipeScreen
+								key={runId}
+								deck={deck}
+								showRating={SHOW_RATING}
+								onDecide={handleDecide}
+								onComplete={handleComplete}
+							/>
 						))}
 
 					{screen === 'result' && (
 						<VerdictScreen
 							winner={winner}
-							likes={likes}
+							shortlist={shortlist}
 							showRating={SHOW_RATING}
-							onReroll={handleReroll}
 							onPick={handlePick}
 							onAgain={handleAgain}
 							onNewSearch={handleNewSearch}

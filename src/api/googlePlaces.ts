@@ -37,7 +37,7 @@ const distanceInMetres = (point1: Coordinates, point2: Coordinates): number => {
 };
 
 const formatDistance = (metres: number): string =>
-	metres < 1000 ? `${Math.round(metres)}m` : `${(metres / 1000).toFixed(1)}km`;
+	metres < 1000 ? `${Math.round(metres)} m` : `${(metres / 1000).toFixed(1)} km`;
 
 // NOTE: restaurant photos are intentionally not fetched — the Places "photos"
 // field and the Place Photo media endpoint are separately billed. Cards use the

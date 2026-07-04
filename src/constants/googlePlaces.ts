@@ -121,12 +121,12 @@ export const PRICE_MAP: Record<string, string> = {
 export const PRICE_KEYS = Object.keys(PRICE_MAP);
 
 // Radius chips shown on the intro, mapped to metres for the API's locationBias.
-export const RADII_OPTIONS = ['0.5 mi', '1 mi', '2 mi', '5 mi'] as const;
-export const DEFAULT_RADIUS: (typeof RADII_OPTIONS)[number] = '1 mi';
+export const RADII_OPTIONS = ['1 km', '2 km', '5 km', '10 km'] as const;
+export const DEFAULT_RADIUS: (typeof RADII_OPTIONS)[number] = '2 km';
 
 export const RADIUS_METRES: Record<string, number> = {
-	'0.5 mi': 800,
-	'1 mi': 1600,
-	'2 mi': 3200,
-	'5 mi': 8000,
+	'1 km': 1000,
+	'2 km': 2000,
+	'5 km': 5000,
+	'10 km': 10000,
 };
