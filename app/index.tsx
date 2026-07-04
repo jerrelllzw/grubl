@@ -43,7 +43,7 @@ export default function Index() {
 	const [loading, setLoading] = useState(false);
 	const [emptyReason, setEmptyReason] = useState<'location' | 'no-results'>('no-results');
 	const [winner, setWinner] = useState<Restaurant | null>(null); // null → let the user choose
-	const [shortlist, setShortlist] = useState<Restaurant[]>([]); // the "maybe" pile (swipe down)
+	const [shortlist, setShortlist] = useState<Restaurant[]>([]); // the "yum" pile (swipe right)
 	const [runId, setRunId] = useState(0); // remounts the deck for a fresh swipe run
 
 	useEffect(() => {
@@ -67,15 +67,8 @@ export default function Index() {
 		}
 	}, []);
 
-	// Right swipe — the user picked this place outright, so it's the verdict.
-	const handleDecide = useCallback((chosen: Restaurant, maybes: Restaurant[]) => {
-		setShortlist(maybes);
-		setWinner(chosen);
-		setScreen('result');
-	}, []);
-
-	// Deck exhausted or "Done" pressed — no outright pick, so let the user choose
-	// from their shortlist on the verdict screen.
+	// Deck exhausted or "Done" pressed — no pick yet, so the verdict screen lets
+	// the user spin the wheel or tap a place from their shortlist.
 	const handleComplete = useCallback((maybes: Restaurant[]) => {
 		setShortlist(maybes);
 		setWinner(null);
@@ -118,7 +111,6 @@ export default function Index() {
 								key={runId}
 								deck={deck}
 								showRating={SHOW_RATING}
-								onDecide={handleDecide}
 								onComplete={handleComplete}
 							/>
 						))}

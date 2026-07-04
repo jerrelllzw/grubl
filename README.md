@@ -8,10 +8,13 @@ Set your location and preferences, then swipe through nearby places:
 - **Swipe left (NAH)** to skip it.
 - **Undo** rewinds your last swipe if you slipped.
 
-When the deck runs out, Grubl picks one spot from your shortlist as the verdict.
-From there you can **open it in Google Maps**, hit **Pick another** to re-roll a
-different one of your yums, or **tap any place in the shortlist** to make it the
-pick instead.
+When the deck runs out (or you tap **Done**), Grubl shows your shortlist. Hit
+**Spin the wheel** to let Grubl pick one for you, or tap a place yourself. From
+the verdict you can **open it in Google Maps**, or tap any other place in the
+shortlist to make it the pick instead.
+
+> Grubl deliberately doesn't ask what you're craving — deciding for you is the
+> whole point. Set a location and go.
 
 > Places are shown as coloured cards with a cuisine emoji rather than photos —
 > the Google Places Photo endpoint is billed separately and intentionally left

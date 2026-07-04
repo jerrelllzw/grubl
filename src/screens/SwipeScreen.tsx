@@ -21,20 +21,18 @@ const SWIPE_THRESHOLD = 90;
 const FLY_DISTANCE = 640;
 const EASE = Easing.in(Easing.ease);
 
-// A committed swipe that keeps you on the deck: skip it, or shortlist it as a
-// "maybe". A right swipe is decisive (leaves the deck), so it isn't recorded here.
+// Every card ends up in one of two piles: skipped, or shortlisted as a "yum".
+// Grubl doesn't ask you to pick the winner here — that's the wheel's job later —
+// so a right swipe just adds to the shortlist and keeps you on the deck.
 type Move = 'no' | 'shortlist';
 
 export default function SwipeScreen({
 	deck,
 	showRating,
-	onDecide,
 	onComplete,
 }: {
 	deck: Restaurant[];
 	showRating: boolean;
-	/** Right swipe — the user picked this place outright. Carries the shortlist so far. */
-	onDecide: (chosen: Restaurant, shortlist: Restaurant[]) => void;
 	/** Deck exhausted or "Done" pressed — hand back the shortlist to choose from. */
 	onComplete: (shortlist: Restaurant[]) => void;
 }) {
@@ -48,7 +46,7 @@ export default function SwipeScreen({
 	const ty = useSharedValue(0);
 	const locked = useSharedValue(false);
 
-	// Advance after a non-decisive card leaves the screen (drag-release or button).
+	// Advance once a card has flown off the screen (drag-release or button).
 	const commit = useCallback(
 		(move: Move) => {
 			if (move === 'shortlist') {
@@ -67,15 +65,8 @@ export default function SwipeScreen({
 		[deck, index, onComplete, tx, ty, locked]
 	);
 
-	// Right swipe — decisive. Leave the deck with this place as the verdict.
-	const decide = useCallback(() => {
-		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-		onDecide(deck[index], shortlistRef.current);
-	}, [deck, index, onDecide]);
-
 	// Rewind the last committed move: step back a card and drop it from the
-	// shortlist if that's where it went. (Decisive right swipes leave the deck, so
-	// there's nothing here to undo them.)
+	// shortlist if that's where it went.
 	const undo = useCallback(() => {
 		if (locked.value || index === 0) return;
 		const last = historyRef.current.pop();
@@ -86,13 +77,8 @@ export default function SwipeScreen({
 		Haptics.selectionAsync().catch(() => {});
 		setIndex(index - 1);
 		// Slide the returning card back in from the side it flew off toward.
-		if (last === 'shortlist') {
-			tx.value = 0;
-			ty.value = FLY_DISTANCE;
-		} else {
-			tx.value = -FLY_DISTANCE;
-			ty.value = 0;
-		}
+		tx.value = last === 'shortlist' ? FLY_DISTANCE : -FLY_DISTANCE;
+		ty.value = 0;
 		tx.value = withTiming(0, { duration: 300 });
 		ty.value = withTiming(0, { duration: 300 });
 	}, [index, tx, ty, locked]);
@@ -100,26 +86,15 @@ export default function SwipeScreen({
 	// Fling the top card off-screen, then run the matching handler. Used by the
 	// action buttons; the pan gesture mirrors this inline on its worklet thread.
 	const fling = useCallback(
-		(dir: 'no' | 'shortlist' | 'yes') => {
+		(dir: Move) => {
 			if (locked.value) return;
 			locked.value = true;
-			if (dir === 'shortlist') {
-				ty.value = withTiming(FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
-					if (f) runOnJS(commit)('shortlist');
-				});
-			} else if (dir === 'yes') {
-				ty.value = withTiming(ty.value - 40, { duration: 300, easing: EASE });
-				tx.value = withTiming(FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
-					if (f) runOnJS(decide)();
-				});
-			} else {
-				ty.value = withTiming(ty.value - 40, { duration: 300, easing: EASE });
-				tx.value = withTiming(-FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
-					if (f) runOnJS(commit)('no');
-				});
-			}
+			ty.value = withTiming(ty.value - 40, { duration: 300, easing: EASE });
+			tx.value = withTiming(dir === 'shortlist' ? FLY_DISTANCE : -FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
+				if (f) runOnJS(commit)(dir);
+			});
 		},
-		[commit, decide, tx, ty, locked]
+		[commit, tx, ty, locked]
 	);
 
 	const handleDone = useCallback(() => {
@@ -136,29 +111,16 @@ export default function SwipeScreen({
 		.onEnd((e) => {
 			if (locked.value) return;
 			const dx = e.translationX;
-			const dy = e.translationY;
-			// A downward drag that beats the horizontal one → shortlist ("maybe").
-			if (dy > SWIPE_THRESHOLD && dy > Math.abs(dx)) {
-				locked.value = true;
-				ty.value = withTiming(FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
-					if (f) runOnJS(commit)('shortlist');
-				});
-			} else if (Math.abs(dx) > SWIPE_THRESHOLD) {
+			if (Math.abs(dx) > SWIPE_THRESHOLD) {
 				locked.value = true;
 				ty.value = withTiming(ty.value - 40, { duration: 300, easing: EASE });
-				if (dx > 0) {
-					// Right → decisive pick.
-					tx.value = withTiming(FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
-						if (f) runOnJS(decide)();
-					});
-				} else {
-					// Left → skip.
-					tx.value = withTiming(-FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
-						if (f) runOnJS(commit)('no');
-					});
-				}
+				// Right → yum (shortlist); left → nah (skip).
+				const dir: Move = dx > 0 ? 'shortlist' : 'no';
+				tx.value = withTiming(dx > 0 ? FLY_DISTANCE : -FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
+					if (f) runOnJS(commit)(dir);
+				});
 			} else {
-				// Not far enough in any direction — spring back.
+				// Not far enough either way — spring back.
 				tx.value = withTiming(0, { duration: 300 });
 				ty.value = withTiming(0, { duration: 300 });
 			}
@@ -171,16 +133,11 @@ export default function SwipeScreen({
 			{ rotate: `${tx.value * 0.06}deg` },
 		],
 	}));
-	// Stamps light up for whichever axis is winning, so a mostly-down drag doesn't
-	// also flash YES/NAH and vice versa.
-	const yesStampStyle = useAnimatedStyle(() => ({
-		opacity: Math.abs(tx.value) >= Math.abs(ty.value) ? interpolate(tx.value, [0, SWIPE_THRESHOLD], [0, 1], 'clamp') : 0,
+	const yumStampStyle = useAnimatedStyle(() => ({
+		opacity: interpolate(tx.value, [0, SWIPE_THRESHOLD], [0, 1], 'clamp'),
 	}));
 	const nopeStampStyle = useAnimatedStyle(() => ({
-		opacity: Math.abs(tx.value) >= Math.abs(ty.value) ? interpolate(tx.value, [-SWIPE_THRESHOLD, 0], [1, 0], 'clamp') : 0,
-	}));
-	const maybeStampStyle = useAnimatedStyle(() => ({
-		opacity: ty.value > Math.abs(tx.value) ? interpolate(ty.value, [0, SWIPE_THRESHOLD], [0, 1], 'clamp') : 0,
+		opacity: interpolate(tx.value, [-SWIPE_THRESHOLD, 0], [1, 0], 'clamp'),
 	}));
 
 	const progress = `${Math.min(index + 1, deck.length)} / ${deck.length}`;
@@ -195,17 +152,19 @@ export default function SwipeScreen({
 					grubl<Text style={styles.dot}>.</Text>
 				</Text>
 				<View style={styles.headerRight}>
-					{shortlistCount > 0 && (
-						<Pressable
-							style={styles.doneButton}
-							onPress={handleDone}
-							hitSlop={6}
-							accessibilityRole="button"
-							accessibilityLabel={`Done — choose from your ${shortlistCount} shortlisted`}
-						>
-							<Text style={styles.doneText}>DONE · {shortlistCount}</Text>
-						</Pressable>
-					)}
+					<Pressable
+						style={styles.doneButton}
+						onPress={handleDone}
+						hitSlop={6}
+						accessibilityRole="button"
+						accessibilityLabel={
+							shortlistCount > 0
+								? `Done — choose from your ${shortlistCount} shortlisted`
+								: 'Done — stop swiping'
+						}
+					>
+						<Text style={styles.doneText}>{shortlistCount > 0 ? `DONE · ${shortlistCount}` : 'DONE'}</Text>
+					</Pressable>
 					<View style={styles.progressPill}>
 						<Text style={styles.progressText}>{progress}</Text>
 					</View>
@@ -229,17 +188,12 @@ export default function SwipeScreen({
 						<GestureDetector key={index + o} gesture={pan}>
 							<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
 								<CardFace restaurant={r} showRating={showRating}>
-									<Animated.View style={[styles.stamp, styles.stampLeft, yesStampStyle]}>
-										<Text style={[styles.stampText, { color: COLORS.green }]}>YES</Text>
+									<Animated.View style={[styles.stamp, styles.stampLeft, yumStampStyle]}>
+										<Text style={[styles.stampText, { color: COLORS.green }]}>YUM</Text>
 									</Animated.View>
 									<Animated.View style={[styles.stamp, styles.stampRight, nopeStampStyle]}>
 										<Text style={[styles.stampText, { color: COLORS.tomato }]}>NAH</Text>
 									</Animated.View>
-									<View style={styles.maybeWrap} pointerEvents="none">
-										<Animated.View style={[styles.stamp, styles.stampMaybe, maybeStampStyle]}>
-											<Text style={[styles.stampText, { color: COLORS.ink }]}>MAYBE</Text>
-										</Animated.View>
-									</View>
 								</CardFace>
 							</Animated.View>
 						</GestureDetector>
@@ -266,7 +220,7 @@ export default function SwipeScreen({
 					color={COLORS.ink}
 					radius={RADII.pill}
 					onPress={() => fling('no')}
-					accessibilityLabel="No — skip this place"
+					accessibilityLabel="Nah — skip this place"
 					faceStyle={styles.nopeButton}
 				>
 					<Text style={styles.nopeGlyph}>✕</Text>
@@ -277,22 +231,11 @@ export default function SwipeScreen({
 					color={COLORS.ink}
 					radius={RADII.pill}
 					onPress={() => fling('shortlist')}
-					accessibilityLabel="Maybe — add to your shortlist"
-					faceStyle={styles.maybeButton}
+					accessibilityLabel="Yum — add to your shortlist"
+					containerStyle={styles.yumContainer}
+					faceStyle={styles.yumButton}
 				>
-					<Ionicons name="bookmark-outline" size={22} color={COLORS.ink} />
-				</HardButton>
-				<HardButton
-					dx={4}
-					dy={4}
-					color={COLORS.ink}
-					radius={RADII.pill}
-					onPress={() => fling('yes')}
-					accessibilityLabel="Yes — eat here, decide now"
-					containerStyle={styles.yesContainer}
-					faceStyle={styles.yesButton}
-				>
-					<Text style={styles.yesText}>YES ♥</Text>
+					<Text style={styles.yumText}>YUM ♥</Text>
 				</HardButton>
 			</View>
 		</View>
@@ -361,6 +304,7 @@ const styles = StyleSheet.create({
 	},
 	stamp: {
 		position: 'absolute',
+		top: 52,
 		borderWidth: 4,
 		borderRadius: 10,
 		paddingVertical: 2,
@@ -368,28 +312,14 @@ const styles = StyleSheet.create({
 		backgroundColor: 'rgba(255,253,246,0.92)',
 	},
 	stampLeft: {
-		top: 52,
 		left: 18,
 		transform: [{ rotate: '-12deg' }],
 		borderColor: COLORS.green,
 	},
 	stampRight: {
-		top: 52,
 		right: 18,
 		transform: [{ rotate: '12deg' }],
 		borderColor: COLORS.tomato,
-	},
-	maybeWrap: {
-		position: 'absolute',
-		top: 44,
-		left: 0,
-		right: 0,
-		alignItems: 'center',
-	},
-	stampMaybe: {
-		position: 'relative',
-		borderColor: COLORS.ink,
-		transform: [{ rotate: '-4deg' }],
 	},
 	stampText: {
 		fontFamily: FONTS.display,
@@ -427,20 +357,10 @@ const styles = StyleSheet.create({
 		color: COLORS.ink,
 		lineHeight: 28,
 	},
-	maybeButton: {
-		width: 60,
-		height: 60,
-		borderRadius: RADII.pill,
-		backgroundColor: COLORS.yolk,
-		borderWidth: BORDER,
-		borderColor: COLORS.ink,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	yesContainer: {
+	yumContainer: {
 		flex: 1,
 	},
-	yesButton: {
+	yumButton: {
 		height: 60,
 		borderRadius: RADII.pill,
 		backgroundColor: COLORS.tomato,
@@ -449,7 +369,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	yesText: {
+	yumText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
 		color: COLORS.cream,

@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchAutoComplete, type Coordinates, type Suggestion } from '../api/googlePlaces';
 import HardButton from '../components/HardButton';
-import { CRAVINGS, DEFAULT_RADIUS, PRICE_KEYS, PRICE_MAP, RADII_OPTIONS } from '../constants/googlePlaces';
+import { DEFAULT_RADIUS, PRICE_KEYS, PRICE_MAP, RADII_OPTIONS } from '../constants/googlePlaces';
 import type { SearchQuery } from '../data/restaurants';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
 import { handleError } from '../utils/errorHandler';
@@ -39,7 +39,6 @@ export default function SearchScreen({
 	const suppressAutocomplete = useRef(false);
 
 	const [radius, setRadius] = useState(initial?.radius ?? DEFAULT_RADIUS);
-	const [cravings, setCravings] = useState<string[]>(initial?.cravings ?? []);
 	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? PRICE_KEYS);
 	const [openNow, setOpenNow] = useState(initial?.openNow ?? true);
 
@@ -63,9 +62,6 @@ export default function SearchScreen({
 		clearSuggestions();
 		setTimeout(() => (suppressAutocomplete.current = false), 300);
 	};
-
-	const toggleCraving = (key: string) =>
-		setCravings((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
 	const togglePrice = (key: string) =>
 		setPriceLevels((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
@@ -99,7 +95,6 @@ export default function SearchScreen({
 			location: location.trim(),
 			coords: coords ?? undefined,
 			radius,
-			cravings,
 			priceLevels,
 			openNow,
 		});
@@ -231,29 +226,6 @@ export default function SearchScreen({
 									accessibilityLabel={`Within ${r}`}
 								>
 									<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>{r}</Text>
-								</Pressable>
-							);
-						})}
-					</View>
-				</View>
-
-				{/* Craving */}
-				<View style={styles.section}>
-					<Text style={styles.label}>CRAVING · {cravings.length ? `${cravings.length} PICKED` : 'ANYTHING'}</Text>
-					<View style={styles.chipWrap}>
-						{CRAVINGS.map((c) => {
-							const active = cravings.includes(c.key);
-							return (
-								<Pressable
-									key={c.key}
-									onPress={() => toggleCraving(c.key)}
-									style={[styles.chip, active ? styles.chipActive : styles.chipInactive]}
-									accessibilityRole="button"
-									accessibilityState={{ selected: active }}
-									accessibilityLabel={c.label}
-								>
-									<Text style={styles.chipEmoji}>{c.emoji}</Text>
-									<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>{c.label}</Text>
 								</Pressable>
 							);
 						})}
@@ -441,16 +413,6 @@ const styles = StyleSheet.create({
 		flexWrap: 'wrap',
 		gap: 8,
 	},
-	chip: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 6,
-		borderRadius: RADII.chip,
-		borderWidth: BORDER,
-		borderColor: COLORS.ink,
-		paddingVertical: 9,
-		paddingHorizontal: 14,
-	},
 	priceChip: {
 		minWidth: 56,
 		alignItems: 'center',
@@ -465,9 +427,6 @@ const styles = StyleSheet.create({
 	},
 	chipInactive: {
 		backgroundColor: COLORS.paper,
-	},
-	chipEmoji: {
-		fontSize: 15,
 	},
 	chipText: {
 		fontFamily: FONTS.bold,

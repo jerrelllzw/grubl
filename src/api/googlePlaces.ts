@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { CRAVING_BY_KEY } from '../constants/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
@@ -44,15 +43,9 @@ const formatDistance = (metres: number): string =>
 // striped placeholder instead. Re-add `places.photos` to the field mask + a
 // media-URL helper if that changes.
 
-// Turns the chosen cravings into a single natural-language query. Text Search
-// matches on cuisine words, so this surfaces more relevant places than the
-// exact `primaryType` matching that Nearby Search is limited to.
-const buildFoodQuery = (cravings: string[]): string => {
-	const terms = cravings
-		.map((key) => CRAVING_BY_KEY[key]?.term)
-		.filter((term): term is string => Boolean(term));
-	return terms.length ? terms.join(', ') : 'restaurants and places to eat';
-};
+// Grubl deliberately doesn't ask what you're craving — the whole point is that it
+// decides for you — so the search is always the broad "anything to eat nearby".
+const FOOD_QUERY = 'restaurants and places to eat';
 
 // Location lookups (autocomplete + geocoding) use Photon — Komoot's free,
 // key-less search-as-you-type service over OpenStreetMap data. Photon returns
@@ -143,7 +136,6 @@ const MAX_PAGES = 3; // Text Search returns up to 20 per page → up to 60 place
 export async function fetchPlaces(
 	latitude: number,
 	longitude: number,
-	cravings: string[],
 	radius: number,
 	priceLevels: string[],
 	openNow: boolean
@@ -165,7 +157,7 @@ export async function fetchPlaces(
 	};
 
 	const body: Record<string, any> = {
-		textQuery: buildFoodQuery(cravings),
+		textQuery: FOOD_QUERY,
 		locationBias: {
 			circle: {
 				center: { latitude, longitude },

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
@@ -28,18 +28,57 @@ export default function VerdictScreen({
 	// Everything on the shortlist that isn't already the pick.
 	const others = winner ? shortlist.filter((r) => r.id !== winner.id) : shortlist;
 
+	// Spin the wheel — grubl makes the call for you. We flick a highlight down the
+	// shortlist, decelerating like a slot machine, then lock in wherever it lands.
+	const [spinIndex, setSpinIndex] = useState<number | null>(null);
+	const spinning = spinIndex !== null;
+	const spinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => {
+		return () => {
+			if (spinTimer.current !== null) clearTimeout(spinTimer.current);
+		};
+	}, []);
+
+	const spin = () => {
+		if (spinning || shortlist.length < 2) return;
+		const totalTicks = 22 + Math.floor(Math.random() * shortlist.length);
+		let count = 0;
+		const step = () => {
+			const current = count % shortlist.length;
+			setSpinIndex(current);
+			Haptics.selectionAsync().catch(() => {});
+			count += 1;
+			if (count < totalTicks) {
+				// Ease-out: gaps between ticks stretch as the wheel settles.
+				const t = count / totalTicks;
+				spinTimer.current = setTimeout(step, 45 + t * t * 300);
+			} else {
+				const landed = (count - 1) % shortlist.length;
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+				spinTimer.current = setTimeout(() => {
+					setSpinIndex(null);
+					onPick(shortlist[landed]);
+				}, 450);
+			}
+		};
+		step();
+	};
+
 	const pick = (r: Restaurant) => {
+		if (spinning) return;
 		Haptics.selectionAsync().catch(() => {});
 		onPick(r);
 	};
 
-	const shortlistRows = (
+	const renderRows = (list: Restaurant[], highlightIdx: number | null) => (
 		<View style={styles.shortlist}>
-			{others.map((r) => (
+			{list.map((r, i) => (
 				<Pressable
 					key={r.id}
-					style={styles.row}
+					style={[styles.row, highlightIdx === i && styles.rowActive]}
 					onPress={() => pick(r)}
+					disabled={spinning}
 					accessibilityRole="button"
 					accessibilityLabel={`Pick ${r.name}`}
 				>
@@ -71,7 +110,7 @@ export default function VerdictScreen({
 			showsVerticalScrollIndicator={false}
 		>
 			{winner ? (
-				// A pick is locked in — either swiped-right decisively or tapped below.
+				// A pick is locked in — spun for, or tapped from the shortlist.
 				<>
 					<View style={styles.headlineWrap}>
 						<Text style={styles.headline}>
@@ -110,12 +149,12 @@ export default function VerdictScreen({
 							<Text style={styles.shortlistLabel}>
 								CHANGED YOUR MIND? TAP ANOTHER OF YOUR {others.length}
 							</Text>
-							{shortlistRows}
+							{renderRows(others, null)}
 						</>
 					)}
 				</>
 			) : shortlist.length > 0 ? (
-				// No outright pick — the user chooses from their shortlist.
+				// No pick yet — spin the wheel, or tap one yourself.
 				<>
 					<View style={styles.headlineWrap}>
 						<Text style={styles.headline}>
@@ -123,8 +162,30 @@ export default function VerdictScreen({
 							<Text style={styles.headlineName}>SHORTLIST</Text>
 						</Text>
 					</View>
-					<Text style={styles.chooseBody}>Tap the one you want to eat.</Text>
-					{shortlistRows}
+
+					{shortlist.length >= 2 ? (
+						<>
+							<Text style={styles.chooseBody}>Can’t decide? Let grubl call it.</Text>
+							<HardButton
+								dx={6}
+								dy={6}
+								color={COLORS.ink}
+								radius={RADII.cta}
+								onPress={spin}
+								disabled={spinning}
+								accessibilityLabel="Spin the wheel — let grubl pick for you"
+								containerStyle={styles.spinContainer}
+								faceStyle={styles.spinFace}
+							>
+								<Text style={styles.spinText}>{spinning ? 'SPINNING…' : 'SPIN THE WHEEL 🎲'}</Text>
+							</HardButton>
+							<Text style={styles.orTap}>or tap one yourself</Text>
+						</>
+					) : (
+						<Text style={styles.chooseBody}>Only one made the cut. Tap it.</Text>
+					)}
+
+					{renderRows(shortlist, spinIndex)}
 				</>
 			) : (
 				<>
@@ -193,9 +254,32 @@ const styles = StyleSheet.create({
 	},
 	chooseBody: {
 		marginTop: 16,
-		marginBottom: 4,
 		fontFamily: FONTS.medium,
 		fontSize: 16,
+		color: COLORS.muted,
+		textAlign: 'center',
+	},
+	spinContainer: {
+		width: '100%',
+		marginTop: 18,
+	},
+	spinFace: {
+		width: '100%',
+		paddingVertical: 18,
+		alignItems: 'center',
+		backgroundColor: COLORS.yolk,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+	},
+	spinText: {
+		fontFamily: FONTS.display,
+		fontSize: 20,
+		color: COLORS.ink,
+	},
+	orTap: {
+		marginTop: 12,
+		fontFamily: FONTS.medium,
+		fontSize: 13,
 		color: COLORS.muted,
 		textAlign: 'center',
 	},
@@ -222,6 +306,9 @@ const styles = StyleSheet.create({
 		borderColor: COLORS.ink,
 		borderRadius: RADII.sticker,
 		padding: 10,
+	},
+	rowActive: {
+		backgroundColor: COLORS.yolk,
 	},
 	swatch: {
 		width: 46,

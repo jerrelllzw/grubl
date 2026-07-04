@@ -29,7 +29,6 @@ export type SearchQuery = {
 	location: string;
 	coords?: Coordinates;
 	radius: string; // one of RADII_OPTIONS
-	cravings: string[];
 	priceLevels: string[];
 	openNow: boolean;
 };
@@ -86,7 +85,6 @@ export async function searchRestaurants(query: SearchQuery): Promise<SearchOutco
 	const places = await fetchPlaces(
 		coords.lat,
 		coords.lng,
-		query.cravings,
 		radiusMetres,
 		query.priceLevels,
 		query.openNow
