@@ -39,11 +39,12 @@ export default function SearchScreen({
 	const suppressAutocomplete = useRef(false);
 
 	const [radius, setRadius] = useState(initial?.radius ?? DEFAULT_RADIUS);
-	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? PRICE_KEYS);
+	// Empty = "any price" (no constraint). An explicit ANY chip owns that state so
+	// the user never has to reason about "all off means all on".
+	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? []);
 	const [openNow, setOpenNow] = useState(initial?.openNow ?? true);
 
-	// Both "none" and "all" prices mean no price constraint — say so plainly.
-	const priceIsAny = priceLevels.length === 0 || priceLevels.length === PRICE_KEYS.length;
+	const priceIsAny = priceLevels.length === 0;
 
 	const clearSuggestions = () => {
 		setSuggestions([]);
@@ -65,6 +66,9 @@ export default function SearchScreen({
 
 	const togglePrice = (key: string) =>
 		setPriceLevels((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+
+	// The ANY chip clears every specific price back to "no constraint".
+	const setAnyPrice = () => setPriceLevels([]);
 
 	const resolveCurrentLocation = useCurrentLocation((label, resolved) => {
 		setLocation(label);
@@ -141,44 +145,48 @@ export default function SearchScreen({
 				{/* Location */}
 				<View style={styles.locationSection}>
 					<Text style={styles.label}>LOCATION</Text>
-					{/* Anchor keeps the floating dropdown positioned to the row, not the section. */}
+
+					{/* GPS is the fast path for a "just tell me where to eat" app — lead with it. */}
+					<Pressable
+						style={styles.gpsPrimary}
+						onPress={useCurrentLocationPress}
+						disabled={isLocating}
+						accessibilityRole="button"
+						accessibilityLabel="Use my current location"
+					>
+						{isLocating ? (
+							<ActivityIndicator size="small" color={COLORS.ink} />
+						) : (
+							<Ionicons name="locate" size={20} color={COLORS.ink} />
+						)}
+						<Text style={styles.gpsPrimaryText}>{isLocating ? 'LOCATING…' : 'USE MY LOCATION'}</Text>
+					</Pressable>
+
+					<Text style={styles.orType}>or type an address</Text>
+
+					{/* Anchor keeps the floating dropdown positioned to the input, not the section. */}
 					<View style={styles.locationAnchor}>
-						<View style={styles.locationRow}>
-							<View style={styles.inputWrap}>
-								<TextInput
-									style={styles.input}
-									placeholder="Where are you eating?"
-									placeholderTextColor="rgba(90,83,71,0.6)"
-									value={location}
-									onChangeText={onChangeLocation}
-									onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-									accessibilityLabel="Location"
-								/>
-								{location.length > 0 && (
-									<Pressable
-										style={styles.clearButton}
-										onPress={clearLocation}
-										hitSlop={8}
-										accessibilityRole="button"
-										accessibilityLabel="Clear location"
-									>
-										<Ionicons name="close-circle" size={20} color="rgba(90,83,71,0.7)" />
-									</Pressable>
-								)}
-							</View>
-							<Pressable
-								style={styles.gpsButton}
-								onPress={useCurrentLocationPress}
-								disabled={isLocating}
-								accessibilityRole="button"
-								accessibilityLabel="Use my current location"
-							>
-								{isLocating ? (
-									<ActivityIndicator size="small" color={COLORS.ink} />
-								) : (
-									<Ionicons name="locate" size={22} color={COLORS.ink} />
-								)}
-							</Pressable>
+						<View style={styles.inputWrap}>
+							<TextInput
+								style={styles.input}
+								placeholder="Where are you eating?"
+								placeholderTextColor="rgba(90,83,71,0.6)"
+								value={location}
+								onChangeText={onChangeLocation}
+								onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+								accessibilityLabel="Location"
+							/>
+							{location.length > 0 && (
+								<Pressable
+									style={styles.clearButton}
+									onPress={clearLocation}
+									hitSlop={8}
+									accessibilityRole="button"
+									accessibilityLabel="Clear location"
+								>
+									<Ionicons name="close-circle" size={20} color="rgba(90,83,71,0.7)" />
+								</Pressable>
+							)}
 						</View>
 
 						{showSuggestions && suggestions.length > 0 && (
@@ -234,9 +242,18 @@ export default function SearchScreen({
 
 				{/* Price */}
 				<View style={styles.section}>
-					<Text style={styles.label}>PRICE · {priceIsAny ? 'ANY' : `${priceLevels.length} PICKED`}</Text>
+					<Text style={styles.label}>PRICE</Text>
 					<View style={styles.chipWrap}>
-						{PRICE_KEYS.map((key) => {
+						<Pressable
+								onPress={setAnyPrice}
+								style={[styles.priceChip, priceIsAny ? styles.chipActive : styles.chipInactive]}
+								accessibilityRole="button"
+								accessibilityState={{ selected: priceIsAny }}
+								accessibilityLabel="Any price"
+							>
+								<Text style={[styles.chipText, priceIsAny ? styles.chipTextActive : styles.chipTextInactive]}>ANY</Text>
+							</Pressable>
+							{PRICE_KEYS.map((key) => {
 							const active = priceLevels.includes(key);
 							return (
 								<Pressable
@@ -330,12 +347,32 @@ const styles = StyleSheet.create({
 		position: 'relative',
 		zIndex: 30,
 	},
-	locationRow: {
+	gpsPrimary: {
 		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
 		gap: 10,
+		height: 54,
+		backgroundColor: COLORS.yolk,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		borderRadius: RADII.sticker,
+	},
+	gpsPrimaryText: {
+		fontFamily: FONTS.bold,
+		fontSize: 15,
+		letterSpacing: 0.5,
+		color: COLORS.ink,
+	},
+	orType: {
+		marginTop: 12,
+		marginBottom: 10,
+		fontFamily: FONTS.medium,
+		fontSize: 13,
+		color: COLORS.muted,
 	},
 	inputWrap: {
-		flex: 1,
+		width: '100%',
 		position: 'relative',
 		justifyContent: 'center',
 	},
@@ -357,16 +394,6 @@ const styles = StyleSheet.create({
 		right: 12,
 		width: 24,
 		height: 24,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	gpsButton: {
-		width: 54,
-		height: 54,
-		backgroundColor: COLORS.yolk,
-		borderWidth: BORDER,
-		borderColor: COLORS.ink,
-		borderRadius: RADII.sticker,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},

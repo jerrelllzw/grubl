@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { metaLine, type Restaurant } from '../data/restaurants';
 import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 import StripePhoto from './StripePhoto';
@@ -11,28 +12,29 @@ import StripePhoto from './StripePhoto';
 
 export default function CardFace({
 	restaurant,
-	showRating = true,
 	cardRadius = RADII.card,
 	shadow = { dx: 7, dy: 7, color: COLORS.ink },
 	nameSize = 23,
 	metaSize = 15,
 	emojiSize = 96,
+	onInfo,
 	children,
 }: {
 	restaurant: Restaurant;
-	showRating?: boolean;
 	cardRadius?: number;
 	shadow?: { dx: number; dy: number; color: string };
 	nameSize?: number;
 	metaSize?: number;
 	emojiSize?: number;
+	/** When set, shows an ⓘ button that opens the detail sheet for this place. */
+	onInfo?: () => void;
 	children?: React.ReactNode;
 }) {
 	return (
 		<View
 			style={styles.root}
 			accessible
-			accessibilityLabel={`${restaurant.name}. ${metaLine(restaurant, showRating)}`}
+			accessibilityLabel={`${restaurant.name}. ${metaLine(restaurant)}`}
 		>
 			{/* hard offset shadow */}
 			<View
@@ -44,6 +46,18 @@ export default function CardFace({
 			{/* bordered card */}
 			<View style={[StyleSheet.absoluteFillObject, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: COLORS.ink, backgroundColor: COLORS.paper, overflow: 'hidden' }]}>
 				<StripePhoto hue={restaurant.hue} radius={cardRadius} />
+
+				{onInfo && (
+					<Pressable
+						style={styles.infoButton}
+						onPress={onInfo}
+						hitSlop={8}
+						accessibilityRole="button"
+						accessibilityLabel={`More about ${restaurant.name}`}
+					>
+						<Ionicons name="information" size={22} color={COLORS.ink} />
+					</Pressable>
+				)}
 
 				{/* emoji stand-in for a photo */}
 				<View style={styles.emojiWrap} pointerEvents="none">
@@ -58,7 +72,7 @@ export default function CardFace({
 							{restaurant.name}
 						</Text>
 						<Text style={[styles.meta, { fontSize: metaSize }]} numberOfLines={1}>
-							{metaLine(restaurant, showRating)}
+							{metaLine(restaurant)}
 						</Text>
 					</View>
 				</View>
@@ -82,6 +96,20 @@ const styles = StyleSheet.create({
 	},
 	emoji: {
 		textAlign: 'center',
+	},
+	infoButton: {
+		position: 'absolute',
+		top: 14,
+		right: 14,
+		zIndex: 5,
+		width: 38,
+		height: 38,
+		borderRadius: 999,
+		backgroundColor: COLORS.paper,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 	stickerWrap: {
 		position: 'absolute',

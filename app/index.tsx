@@ -20,10 +20,6 @@ import SwipeScreen from '../src/screens/SwipeScreen';
 import VerdictScreen from '../src/screens/VerdictScreen';
 import { COLORS } from '../src/theme/tokens';
 
-// Behavior knobs — the prototype exposed these as tweaks; keep them here so a
-// settings surface (or the future API) can drive them later.
-const SHOW_RATING = true;
-
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type Screen = 'intro' | 'search' | 'swipe' | 'result';
@@ -41,7 +37,7 @@ export default function Index() {
 	const [query, setQuery] = useState<SearchQuery | null>(null);
 	const [deck, setDeck] = useState<Restaurant[]>([]);
 	const [loading, setLoading] = useState(false);
-	const [emptyReason, setEmptyReason] = useState<'location' | 'no-results'>('no-results');
+	const [emptyReason, setEmptyReason] = useState<'location' | 'no-results' | 'error'>('no-results');
 	const [winner, setWinner] = useState<Restaurant | null>(null); // null → let the user choose
 	const [shortlist, setShortlist] = useState<Restaurant[]>([]); // the "yum" pile (swipe right)
 	const [runId, setRunId] = useState(0); // remounts the deck for a fresh swipe run
@@ -59,13 +55,18 @@ export default function Index() {
 		setRunId((id) => id + 1);
 		setScreen('swipe');
 		try {
-			const { deck: found, locationResolved } = await searchRestaurants(q);
+			const { deck: found, status } = await searchRestaurants(q);
 			setDeck(found);
-			setEmptyReason(locationResolved ? 'no-results' : 'location');
+			setEmptyReason(status === 'error' ? 'error' : status === 'no-location' ? 'location' : 'no-results');
 		} finally {
 			setLoading(false);
 		}
 	}, []);
+
+	// Re-run the last search — the "TRY AGAIN" action on the connectivity-error screen.
+	const handleRetry = useCallback(() => {
+		if (query) handleSearch(query);
+	}, [query, handleSearch]);
 
 	// Deck exhausted or "Done" pressed — no pick yet, so the verdict screen lets
 	// the user spin the wheel or tap a place from their shortlist.
@@ -105,12 +106,12 @@ export default function Index() {
 						(loading ? (
 							<LoadingScreen location={query?.location ?? ''} />
 						) : deck.length === 0 ? (
-							<EmptyScreen reason={emptyReason} onAdjust={handleNewSearch} />
+							<EmptyScreen reason={emptyReason} onAdjust={handleNewSearch} onRetry={handleRetry} />
 						) : (
 							<SwipeScreen
 								key={runId}
 								deck={deck}
-								showRating={SHOW_RATING}
+								onBack={handleNewSearch}
 								onComplete={handleComplete}
 							/>
 						))}
@@ -119,7 +120,7 @@ export default function Index() {
 						<VerdictScreen
 							winner={winner}
 							shortlist={shortlist}
-							showRating={SHOW_RATING}
+							deck={deck}
 							onPick={handlePick}
 							onAgain={handleAgain}
 							onNewSearch={handleNewSearch}

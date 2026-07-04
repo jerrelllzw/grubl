@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import HardButton from '../components/HardButton';
 import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 
@@ -21,31 +21,59 @@ export function LoadingScreen({ location }: { location: string }) {
 export function EmptyScreen({
 	reason = 'no-results',
 	onAdjust,
+	onRetry,
 }: {
-	reason?: 'location' | 'no-results';
+	reason?: 'location' | 'no-results' | 'error';
 	onAdjust: () => void;
+	/** Re-runs the last search; used by the connectivity-error variant. */
+	onRetry?: () => void;
 }) {
+	const isError = reason === 'error';
 	const isLocation = reason === 'location';
+
+	const headline = isError ? 'NO\nSIGNAL.' : isLocation ? 'WHERE’S\nTHAT?' : 'TOUGH\nLUCK.';
+	const body = isError
+		? 'Couldn’t reach the kitchen.\nCheck your connection and\ntry again.'
+		: isLocation
+			? 'We couldn’t find that place.\nCheck the spelling or tap the\nlocation button to use GPS.'
+			: 'Nothing matched your search.\nWiden the radius or drop a filter.';
+
 	return (
 		<View style={styles.center}>
-			<Text style={styles.headline}>{isLocation ? 'WHERE’S\nTHAT?' : 'TOUGH\nLUCK.'}</Text>
-			<Text style={styles.body}>
-				{isLocation
-					? 'We couldn’t find that place.\nCheck the spelling or tap the\nlocation button to use GPS.'
-					: 'Nothing matched your search.\nWiden the radius or drop a filter.'}
-			</Text>
-			<HardButton
-				dx={5}
-				dy={5}
-				color={COLORS.ink}
-				radius={RADII.sticker}
-				onPress={onAdjust}
-				accessibilityLabel="Adjust search"
-				containerStyle={styles.button}
-				faceStyle={styles.buttonFace}
-			>
-				<Text style={styles.buttonText}>ADJUST SEARCH</Text>
-			</HardButton>
+			<Text style={styles.headline}>{headline}</Text>
+			<Text style={styles.body}>{body}</Text>
+			{isError && onRetry ? (
+				<HardButton
+					dx={5}
+					dy={5}
+					color={COLORS.ink}
+					radius={RADII.sticker}
+					onPress={onRetry}
+					accessibilityLabel="Try the search again"
+					containerStyle={styles.button}
+					faceStyle={styles.buttonFace}
+				>
+					<Text style={styles.buttonText}>TRY AGAIN</Text>
+				</HardButton>
+			) : (
+				<HardButton
+					dx={5}
+					dy={5}
+					color={COLORS.ink}
+					radius={RADII.sticker}
+					onPress={onAdjust}
+					accessibilityLabel="Adjust search"
+					containerStyle={styles.button}
+					faceStyle={styles.buttonFace}
+				>
+					<Text style={styles.buttonText}>ADJUST SEARCH</Text>
+				</HardButton>
+			)}
+			{isError && (
+				<Pressable onPress={onAdjust} style={styles.secondaryLink} hitSlop={8} accessibilityRole="button" accessibilityLabel="Adjust search">
+					<Text style={styles.secondaryText}>Adjust search</Text>
+				</Pressable>
+			)}
 		</View>
 	);
 }
@@ -113,5 +141,15 @@ const styles = StyleSheet.create({
 		fontFamily: FONTS.display,
 		fontSize: 18,
 		color: COLORS.ink,
+	},
+	secondaryLink: {
+		marginTop: 18,
+		paddingVertical: 6,
+	},
+	secondaryText: {
+		fontFamily: FONTS.semibold,
+		fontSize: 15,
+		color: COLORS.muted,
+		textDecorationLine: 'underline',
 	},
 });

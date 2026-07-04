@@ -19,6 +19,7 @@ export interface Place {
 	priceLevel?: string;
 	primaryType: string;
 	distance?: string;
+	address?: string;
 }
 
 // Straight-line distance between two points, in metres.
@@ -44,8 +45,8 @@ const formatDistance = (metres: number): string =>
 // media-URL helper if that changes.
 
 // Grubl deliberately doesn't ask what you're craving — the whole point is that it
-// decides for you — so the search is always the broad "anything to eat nearby".
-const FOOD_QUERY = 'restaurants and places to eat';
+// decides for you — so the search is always the broad "food nearby".
+const FOOD_QUERY = 'food';
 
 // Location lookups (autocomplete + geocoding) use Photon — Komoot's free,
 // key-less search-as-you-type service over OpenStreetMap data. Photon returns
@@ -87,9 +88,11 @@ export async function fetchCoordinates(address: string): Promise<Coordinates | n
 		const suggestion = photonToSuggestion(response.data?.features?.[0]);
 		return suggestion?.coords ?? null;
 	} catch (error: any) {
-		// Log in dev only; the empty "WHERE'S THAT?" screen is the user-facing message.
+		// A network/geocoder failure is not the same as "place not found" (which
+		// returns null above): rethrow so the caller can show a connectivity error
+		// instead of the misleading "WHERE'S THAT?" screen.
 		handleError(error);
-		return null;
+		throw error;
 	}
 }
 
@@ -129,7 +132,12 @@ const ALL_PRICE_LEVELS = [
 	'PRICE_LEVEL_VERY_EXPENSIVE',
 ];
 
-const MAX_PAGES = 3; // Text Search returns up to 20 per page → up to 60 places.
+// A short, decisive deck: too many cards fatigues the swiper and pressures them to
+// grind through everything, and relevance-ranked results this far down are weaker
+// anyway. Cap the deck and stop paging once we've filled it. One page (20) usually
+// covers it; a second is a safety top-up when the radius filter trims the first.
+const DECK_LIMIT = 15;
+const MAX_PAGES = 2; // Text Search returns up to 20 per page.
 
 // Text Search. Builds a deeper, more relevant deck than Nearby Search: it ranks
 // by relevance to the craving, filters price/open-now server-side, and paginates.
@@ -144,6 +152,8 @@ export async function fetchPlaces(
 	const headers = {
 		'Content-Type': 'application/json',
 		'X-Goog-Api-Key': API_KEY,
+		// formattedAddress is a "Pro" field — no extra cost here since rating /
+		// priceLevel / userRatingCount already put this call in the Enterprise SKU.
 		'X-Goog-FieldMask': [
 			'places.displayName',
 			'places.rating',
@@ -152,6 +162,7 @@ export async function fetchPlaces(
 			'places.priceLevel',
 			'places.userRatingCount',
 			'places.primaryType',
+			'places.formattedAddress',
 			'nextPageToken',
 		].join(','),
 	};
@@ -203,15 +214,18 @@ export async function fetchPlaces(
 					priceLevel: place.priceLevel ?? undefined,
 					primaryType: place.primaryType ?? undefined,
 					distance: coords ? formatDistance(distanceInMetres(coords, origin)) : undefined,
+					address: place.formattedAddress ?? undefined,
 				});
 			}
 
 			pageToken = response.data.nextPageToken;
-			if (!pageToken) break;
+			if (!pageToken || places.length >= DECK_LIMIT) break;
 		}
-		return places;
+		return places.slice(0, DECK_LIMIT);
 	} catch (error: any) {
-		handleError(error, 'Failed to fetch places.');
-		return [];
+		// Rethrow so searchRestaurants can show a distinct "couldn't reach the
+		// kitchen" state rather than a false "nothing matched your search".
+		handleError(error);
+		throw error;
 	}
 }

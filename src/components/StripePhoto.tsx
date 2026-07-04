@@ -2,9 +2,8 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
-// Placeholder "photo": diagonal two-tone stripes tinted by the restaurant's hue,
-// mirroring the prototype's repeating-linear-gradient(45deg, ...). Swap this for
-// a real <Image> once the API provides photography.
+// Placeholder "photo": diagonal two-tone stripes tinted by the restaurant's hue.
+// Swap for a real <Image> once the API provides photography.
 
 function hslToHex(h: number, s: number, l: number): string {
 	s /= 100;

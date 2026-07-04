@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
+import DetailSheet from '../components/DetailSheet';
 import HardButton from '../components/HardButton';
 import type { Restaurant } from '../data/restaurants';
 import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
@@ -28,17 +29,19 @@ type Move = 'no' | 'shortlist';
 
 export default function SwipeScreen({
 	deck,
-	showRating,
+	onBack,
 	onComplete,
 }: {
 	deck: Restaurant[];
-	showRating: boolean;
+	/** Back to the search screen to change filters. */
+	onBack: () => void;
 	/** Deck exhausted or "Done" pressed — hand back the shortlist to choose from. */
 	onComplete: (shortlist: Restaurant[]) => void;
 }) {
 	const insets = useSafeAreaInsets();
 	const [index, setIndex] = useState(0);
 	const [shortlistCount, setShortlistCount] = useState(0);
+	const [detail, setDetail] = useState<Restaurant | null>(null); // place shown in the detail sheet
 	const shortlistRef = useRef<Restaurant[]>([]);
 	const historyRef = useRef<Move[]>([]); // each committed move, for undo
 
@@ -148,26 +151,40 @@ export default function SwipeScreen({
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 }]}>
 			<View style={styles.header}>
-				<Text style={styles.wordmark}>
-					grubl<Text style={styles.dot}>.</Text>
-				</Text>
-				<View style={styles.headerRight}>
+				<View style={styles.headerLeft}>
 					<Pressable
-						style={styles.doneButton}
-						onPress={handleDone}
-						hitSlop={6}
+						style={styles.backButton}
+						onPress={onBack}
+						hitSlop={8}
 						accessibilityRole="button"
+						accessibilityLabel="Back to search"
+					>
+						<Ionicons name="chevron-back" size={22} color={COLORS.ink} />
+					</Pressable>
+					<Text style={styles.wordmark}>
+						grubl<Text style={styles.dot}>.</Text>
+					</Text>
+				</View>
+				<View style={styles.headerRight}>
+					<Text style={styles.progressText}>{progress}</Text>
+					<HardButton
+						dx={3}
+						dy={3}
+						color={COLORS.ink}
+						radius={RADII.pill}
+						onPress={handleDone}
 						accessibilityLabel={
 							shortlistCount > 0
-								? `Done — choose from your ${shortlistCount} shortlisted`
+								? `Choose from your ${shortlistCount} shortlisted`
 								: 'Done — stop swiping'
 						}
+						faceStyle={[styles.chooseFace, shortlistCount > 0 ? styles.chooseFaceReady : styles.chooseFaceIdle]}
 					>
-						<Text style={styles.doneText}>{shortlistCount > 0 ? `DONE · ${shortlistCount}` : 'DONE'}</Text>
-					</Pressable>
-					<View style={styles.progressPill}>
-						<Text style={styles.progressText}>{progress}</Text>
-					</View>
+						<View style={styles.chooseInner}>
+							<Text style={styles.chooseText}>{shortlistCount > 0 ? `CHOOSE · ${shortlistCount}` : 'DONE'}</Text>
+							{shortlistCount > 0 && <Ionicons name="arrow-forward" size={15} color={COLORS.ink} />}
+						</View>
+					</HardButton>
 				</View>
 			</View>
 
@@ -180,14 +197,14 @@ export default function SwipeScreen({
 								key={index + o}
 								style={[styles.cardPos, { transform: [{ translateY: o * 11 }, { scale: 1 - o * 0.045 }], zIndex: 10 - o }]}
 							>
-								<CardFace restaurant={r} showRating={showRating} />
+								<CardFace restaurant={r} />
 							</View>
 						);
 					}
 					return (
 						<GestureDetector key={index + o} gesture={pan}>
 							<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
-								<CardFace restaurant={r} showRating={showRating}>
+								<CardFace restaurant={r} onInfo={() => setDetail(r)}>
 									<Animated.View style={[styles.stamp, styles.stampLeft, yumStampStyle]}>
 										<Text style={[styles.stampText, { color: COLORS.green }]}>YUM</Text>
 									</Animated.View>
@@ -238,6 +255,12 @@ export default function SwipeScreen({
 					<Text style={styles.yumText}>YUM ♥</Text>
 				</HardButton>
 			</View>
+
+			<DetailSheet
+				restaurant={detail}
+				visible={detail !== null}
+				onClose={() => setDetail(null)}
+			/>
 		</View>
 	);
 }
@@ -253,6 +276,21 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		paddingHorizontal: 24,
 	},
+	headerLeft: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 10,
+	},
+	backButton: {
+		width: 40,
+		height: 40,
+		borderRadius: RADII.pill,
+		backgroundColor: COLORS.paper,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
 	wordmark: {
 		fontFamily: FONTS.display,
 		fontSize: 22,
@@ -264,31 +302,37 @@ const styles = StyleSheet.create({
 	headerRight: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: 8,
+		gap: 10,
 	},
-	doneButton: {
-		backgroundColor: COLORS.yolk,
+	chooseFace: {
 		borderWidth: BORDER,
 		borderColor: COLORS.ink,
-		paddingVertical: 4,
-		paddingHorizontal: 12,
+		paddingVertical: 8,
+		paddingHorizontal: 14,
 		borderRadius: RADII.pill,
 	},
-	doneText: {
+	// Idle (nothing shortlisted yet) reads as a quiet "done"; once there are picks
+	// it flips to the yolk accent + arrow so the way to the payoff is obvious.
+	chooseFaceIdle: {
+		backgroundColor: COLORS.paper,
+	},
+	chooseFaceReady: {
+		backgroundColor: COLORS.yolk,
+	},
+	chooseInner: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 6,
+	},
+	chooseText: {
 		fontFamily: FONTS.bold,
 		fontSize: 13,
 		color: COLORS.ink,
 	},
-	progressPill: {
-		backgroundColor: COLORS.ink,
-		paddingVertical: 5,
-		paddingHorizontal: 12,
-		borderRadius: RADII.pill,
-	},
 	progressText: {
-		fontFamily: FONTS.bold,
+		fontFamily: FONTS.semibold,
 		fontSize: 14,
-		color: COLORS.cream,
+		color: COLORS.muted,
 	},
 	deck: {
 		flex: 1,

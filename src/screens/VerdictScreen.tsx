@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
+import DetailSheet from '../components/DetailSheet';
 import HardButton from '../components/HardButton';
 import StripePhoto from '../components/StripePhoto';
 import { mapsUrl, metaLine, type Restaurant } from '../data/restaurants';
@@ -12,14 +13,14 @@ import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 export default function VerdictScreen({
 	winner,
 	shortlist,
-	showRating,
+	deck,
 	onPick,
 	onAgain,
 	onNewSearch,
 }: {
 	winner: Restaurant | null; // null → the user still has to choose from the shortlist
 	shortlist: Restaurant[];
-	showRating: boolean;
+	deck: Restaurant[]; // the full swiped deck — lets grubl pick even with an empty shortlist
 	onPick: (r: Restaurant) => void;
 	onAgain: () => void;
 	onNewSearch: () => void;
@@ -27,6 +28,8 @@ export default function VerdictScreen({
 	const insets = useSafeAreaInsets();
 	// Everything on the shortlist that isn't already the pick.
 	const others = winner ? shortlist.filter((r) => r.id !== winner.id) : shortlist;
+
+	const [detail, setDetail] = useState<Restaurant | null>(null); // place shown in the detail sheet
 
 	// Spin the wheel — grubl makes the call for you. We flick a highlight down the
 	// shortlist, decelerating like a slot machine, then lock in wherever it lands.
@@ -71,6 +74,15 @@ export default function VerdictScreen({
 		onPick(r);
 	};
 
+	// The "decide for me" promise, honoured even when nothing was shortlisted:
+	// pick a random place from everything we showed.
+	const surprise = () => {
+		if (deck.length === 0) return;
+		const choice = deck[Math.floor(Math.random() * deck.length)];
+		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+		onPick(choice);
+	};
+
 	const renderRows = (list: Restaurant[], highlightIdx: number | null) => (
 		<View style={styles.shortlist}>
 			{list.map((r, i) => (
@@ -91,16 +103,26 @@ export default function VerdictScreen({
 							{r.name}
 						</Text>
 						<Text style={styles.rowMeta} numberOfLines={1}>
-							{metaLine(r, showRating)}
+							{metaLine(r)}
 						</Text>
 					</View>
-					<Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
+					<Pressable
+						style={styles.rowInfo}
+						onPress={() => setDetail(r)}
+						disabled={spinning}
+						hitSlop={8}
+						accessibilityRole="button"
+						accessibilityLabel={`More about ${r.name}`}
+					>
+						<Ionicons name="information" size={18} color={COLORS.ink} />
+					</Pressable>
 				</Pressable>
 			))}
 		</View>
 	);
 
 	return (
+		<View style={styles.wrap}>
 		<ScrollView
 			style={styles.scroll}
 			contentContainerStyle={[
@@ -122,12 +144,12 @@ export default function VerdictScreen({
 					<View style={styles.winnerCard}>
 						<CardFace
 							restaurant={winner}
-							showRating={showRating}
 							cardRadius={22}
 							shadow={{ dx: 7, dy: 7, color: COLORS.tomato }}
 							nameSize={20}
 							metaSize={14}
 							emojiSize={84}
+							onInfo={() => setDetail(winner)}
 						/>
 					</View>
 
@@ -190,7 +212,21 @@ export default function VerdictScreen({
 			) : (
 				<>
 					<Text style={styles.toughHeadline}>TOUGH{'\n'}CROWD.</Text>
-					<Text style={styles.toughBody}>You said nah to everything.{'\n'}Hunger will change your mind.</Text>
+					<Text style={styles.toughBody}>You said nah to everything.{'\n'}Still gotta eat, though.</Text>
+					{deck.length > 0 && (
+						<HardButton
+							dx={6}
+							dy={6}
+							color={COLORS.ink}
+							radius={RADII.cta}
+							onPress={surprise}
+							accessibilityLabel="Pick one anyway — let grubl choose from everything nearby"
+							containerStyle={styles.surpriseContainer}
+							faceStyle={styles.surpriseFace}
+						>
+							<Text style={styles.surpriseText}>PICK ONE ANYWAY 🎲</Text>
+						</HardButton>
+					)}
 				</>
 			)}
 
@@ -204,10 +240,43 @@ export default function VerdictScreen({
 				</Pressable>
 			</View>
 		</ScrollView>
+
+			<Pressable
+				style={[styles.backButton, { top: insets.top + 12 }]}
+				onPress={onAgain}
+				hitSlop={8}
+				accessibilityRole="button"
+				accessibilityLabel="Back to swiping"
+			>
+				<Ionicons name="chevron-back" size={22} color={COLORS.ink} />
+			</Pressable>
+
+			<DetailSheet
+				restaurant={detail}
+				visible={detail !== null}
+				onClose={() => setDetail(null)}
+			/>
+		</View>
 	);
 }
 
 const styles = StyleSheet.create({
+	wrap: {
+		flex: 1,
+		backgroundColor: COLORS.cream,
+	},
+	backButton: {
+		position: 'absolute',
+		left: 20,
+		width: 40,
+		height: 40,
+		borderRadius: RADII.pill,
+		backgroundColor: COLORS.paper,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
 	scroll: {
 		flex: 1,
 		backgroundColor: COLORS.cream,
@@ -337,6 +406,16 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		color: COLORS.muted,
 	},
+	rowInfo: {
+		width: 34,
+		height: 34,
+		borderRadius: RADII.pill,
+		borderWidth: 2,
+		borderColor: COLORS.ink,
+		backgroundColor: COLORS.cream,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
 	toughHeadline: {
 		marginTop: 40,
 		fontFamily: FONTS.display,
@@ -351,6 +430,23 @@ const styles = StyleSheet.create({
 		fontSize: 17,
 		color: COLORS.muted,
 		textAlign: 'center',
+	},
+	surpriseContainer: {
+		width: '100%',
+		marginTop: 28,
+	},
+	surpriseFace: {
+		width: '100%',
+		paddingVertical: 18,
+		alignItems: 'center',
+		backgroundColor: COLORS.yolk,
+		borderWidth: BORDER,
+		borderColor: COLORS.ink,
+	},
+	surpriseText: {
+		fontFamily: FONTS.display,
+		fontSize: 20,
+		color: COLORS.ink,
 	},
 	footer: {
 		flexDirection: 'row',

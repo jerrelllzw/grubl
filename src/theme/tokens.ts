@@ -28,15 +28,4 @@ export const RADII = {
 	chip: 999,
 } as const;
 
-// Hard offset shadows have no blur. On native we recreate them with a second
-// absolutely-positioned layer offset behind the element (see CardFace/HardButton).
-export const HARD_SHADOW = {
-	card: { dx: 7, dy: 7, color: COLORS.ink },
-	cardTomato: { dx: 7, dy: 7, color: COLORS.tomato },
-	sticker: { dx: 5, dy: 5, color: COLORS.ink },
-	button: { dx: 4, dy: 4, color: COLORS.ink },
-	cta: { dx: 6, dy: 6, color: COLORS.tomato },
-	again: { dx: 5, dy: 5, color: COLORS.ink },
-} as const;
-
 export const BORDER = 3; // signature 3px ink border
