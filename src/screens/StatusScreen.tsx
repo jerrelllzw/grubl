@@ -7,7 +7,7 @@ export function LoadingScreen({ location }: { location: string }) {
 	return (
 		<View style={styles.center}>
 			<Text style={styles.wordmark}>
-				grubl<Text style={styles.dot}>.</Text>
+				Grubl<Text style={styles.dot}>.</Text>
 			</Text>
 			<ActivityIndicator size="large" color={COLORS.tomato} style={styles.spinner} />
 			<Text style={styles.loadingTitle}>SNIFFING OUT SPOTS</Text>
@@ -46,7 +46,7 @@ export function EmptyScreen({
 				<HardButton
 					dx={5}
 					dy={5}
-					color={COLORS.ink}
+					color={COLORS.shadow}
 					radius={RADII.sticker}
 					onPress={onRetry}
 					accessibilityLabel="Try the search again"
@@ -59,7 +59,7 @@ export function EmptyScreen({
 				<HardButton
 					dx={5}
 					dy={5}
-					color={COLORS.ink}
+					color={COLORS.shadow}
 					radius={RADII.sticker}
 					onPress={onAdjust}
 					accessibilityLabel="Adjust search"

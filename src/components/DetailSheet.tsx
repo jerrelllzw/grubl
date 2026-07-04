@@ -68,7 +68,7 @@ export default function DetailSheet({
 						<HardButton
 							dx={6}
 							dy={6}
-							color={COLORS.tomato}
+							color={COLORS.shadow}
 							radius={RADII.cta}
 							onPress={() => Linking.openURL(mapsUrl(restaurant))}
 							accessibilityLabel={`Open ${restaurant.name} in Maps`}
@@ -175,9 +175,9 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.ink,
+		backgroundColor: COLORS.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: COLORS.brassDeep,
 	},
 	mapsText: {
 		fontFamily: FONTS.display,

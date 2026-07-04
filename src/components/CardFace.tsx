@@ -13,7 +13,7 @@ import StripePhoto from './StripePhoto';
 export default function CardFace({
 	restaurant,
 	cardRadius = RADII.card,
-	shadow = { dx: 7, dy: 7, color: COLORS.ink },
+	shadow = { dx: 7, dy: 7, color: COLORS.shadow },
 	nameSize = 23,
 	metaSize = 15,
 	emojiSize = 96,
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
 		transform: [{ rotate: '-1deg' }],
 	},
 	stickerShadow: {
-		backgroundColor: COLORS.ink,
+		backgroundColor: COLORS.shadow,
 		borderRadius: RADII.sticker,
 		transform: [{ translateX: 5 }, { translateY: 5 }],
 	},

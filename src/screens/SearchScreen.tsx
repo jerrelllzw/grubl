@@ -97,7 +97,7 @@ export default function SearchScreen({
 
 	const handleFind = () => {
 		if (!location.trim()) {
-			setError('Tell grubl where you are to start swiping.');
+			setError('Tell Grubl where you are to start swiping.');
 			return;
 		}
 		Keyboard.dismiss();
@@ -176,7 +176,7 @@ export default function SearchScreen({
 							<TextInput
 								style={styles.input}
 								placeholder="Where are you eating?"
-								placeholderTextColor="rgba(90,83,71,0.6)"
+								placeholderTextColor={COLORS.muted}
 								value={location}
 								onChangeText={onChangeLocation}
 								onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
@@ -190,7 +190,7 @@ export default function SearchScreen({
 									accessibilityRole="button"
 									accessibilityLabel="Clear location"
 								>
-									<Ionicons name="close-circle" size={20} color="rgba(90,83,71,0.7)" />
+									<Ionicons name="close-circle" size={20} color={COLORS.muted} />
 								</Pressable>
 							)}
 						</View>
@@ -303,7 +303,7 @@ export default function SearchScreen({
 			</ScrollView>
 
 			<View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-				<HardButton dx={6} dy={6} color={COLORS.tomato} radius={RADII.cta} onPress={handleFind} accessibilityLabel="Find food" faceStyle={styles.ctaFace}>
+				<HardButton dx={6} dy={6} color={COLORS.shadow} radius={RADII.cta} onPress={handleFind} accessibilityLabel="Find food" faceStyle={styles.ctaFace}>
 					<Text style={styles.ctaText}>FIND FOOD →</Text>
 				</HardButton>
 			</View>
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 13,
 		borderBottomWidth: 1,
-		borderBottomColor: 'rgba(26,26,26,0.1)',
+		borderBottomColor: COLORS.line,
 	},
 	suggestionText: {
 		flex: 1,
@@ -553,15 +553,15 @@ const styles = StyleSheet.create({
 		paddingTop: 12,
 		backgroundColor: COLORS.cream,
 		borderTopWidth: 1,
-		borderTopColor: 'rgba(26,26,26,0.1)',
+		borderTopColor: COLORS.line,
 	},
 	ctaFace: {
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.ink,
+		backgroundColor: COLORS.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: COLORS.brassDeep,
 	},
 	ctaText: {
 		fontFamily: FONTS.display,

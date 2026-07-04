@@ -9,14 +9,14 @@ export default function IntroScreen({ onStart }: { onStart: () => void }) {
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
 			<Text style={styles.wordmark}>
-				grubl<Text style={styles.dot}>.</Text>
+				Grubl<Text style={styles.dot}>.</Text>
 			</Text>
 			<Text style={styles.tagline}>Stop scrolling menus.{'\n'}Swipe. Eat. Done.</Text>
 
 			<HardButton
 				dx={6}
 				dy={6}
-				color={COLORS.tomato}
+				color={COLORS.shadow}
 				radius={RADII.cta}
 				onPress={onStart}
 				accessibilityLabel="Start — set up a food search"
@@ -62,9 +62,9 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 20,
 		alignItems: 'center',
-		backgroundColor: COLORS.ink,
+		backgroundColor: COLORS.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: COLORS.brassDeep,
 	},
 	ctaText: {
 		fontFamily: FONTS.display,

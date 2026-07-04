@@ -173,7 +173,7 @@ export default function SwipeScreen({
 						<Ionicons name="chevron-back" size={22} color={COLORS.ink} />
 					</Pressable>
 					<Text style={styles.wordmark}>
-						grubl<Text style={styles.dot}>.</Text>
+						Grubl<Text style={styles.dot}>.</Text>
 					</Text>
 				</View>
 				<View style={styles.headerRight}>
@@ -181,7 +181,7 @@ export default function SwipeScreen({
 					<HardButton
 						dx={3}
 						dy={3}
-						color={COLORS.ink}
+						color={COLORS.shadow}
 						radius={RADII.pill}
 						onPress={handleDone}
 						accessibilityLabel={
@@ -220,7 +220,7 @@ export default function SwipeScreen({
 										<Text style={[styles.stampText, { color: COLORS.green }]}>YUM</Text>
 									</Animated.View>
 									<Animated.View style={[styles.stamp, styles.stampRight, nopeStampStyle]}>
-										<Text style={[styles.stampText, { color: COLORS.tomato }]}>NAH</Text>
+										<Text style={[styles.stampText, { color: COLORS.rose }]}>NAH</Text>
 									</Animated.View>
 								</CardFace>
 							</Animated.View>
@@ -233,7 +233,7 @@ export default function SwipeScreen({
 				<HardButton
 					dx={4}
 					dy={4}
-					color={COLORS.ink}
+					color={COLORS.shadow}
 					radius={RADII.pill}
 					onPress={undo}
 					disabled={moveCount === 0}
@@ -245,7 +245,7 @@ export default function SwipeScreen({
 				<HardButton
 					dx={4}
 					dy={4}
-					color={COLORS.ink}
+					color={COLORS.shadow}
 					radius={RADII.pill}
 					onPress={() => fling('no')}
 					accessibilityLabel="Nah — skip this place"
@@ -256,7 +256,7 @@ export default function SwipeScreen({
 				<HardButton
 					dx={4}
 					dy={4}
-					color={COLORS.ink}
+					color={COLORS.shadow}
 					radius={RADII.pill}
 					onPress={() => fling('shortlist')}
 					accessibilityLabel="Yum — add to your shortlist"
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
 	stampRight: {
 		right: 18,
 		transform: [{ rotate: '12deg' }],
-		borderColor: COLORS.tomato,
+		borderColor: COLORS.rose,
 	},
 	stampText: {
 		fontFamily: FONTS.display,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
 	yumButton: {
 		height: 60,
 		borderRadius: RADII.pill,
-		backgroundColor: COLORS.tomato,
+		backgroundColor: COLORS.jade,
 		borderWidth: BORDER,
 		borderColor: COLORS.ink,
 		alignItems: 'center',

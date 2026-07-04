@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
 import DetailSheet from '../components/DetailSheet';
 import HardButton from '../components/HardButton';
+import SlotReel from '../components/SlotReel';
 import StripePhoto from '../components/StripePhoto';
 import { mapsUrl, metaLine, type Restaurant } from '../data/restaurants';
 import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
@@ -35,41 +36,15 @@ export default function VerdictScreen({
 
 	const [detail, setDetail] = useState<Restaurant | null>(null); // place shown in the detail sheet
 
-	// Spin the wheel — grubl makes the call for you. We flick a highlight down the
-	// shortlist, decelerating like a slot machine, then lock in wherever it lands.
-	const [spinIndex, setSpinIndex] = useState<number | null>(null);
-	const spinning = spinIndex !== null;
-	const spinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-	useEffect(() => {
-		return () => {
-			if (spinTimer.current !== null) clearTimeout(spinTimer.current);
-		};
-	}, []);
+	// Spin the wheel — Grubl makes the call. The shortlist rolls past a fixed window
+	// like a slot machine (see SlotReel) and decelerates onto the pick.
+	const [spinTarget, setSpinTarget] = useState<number | null>(null);
+	const spinning = spinTarget !== null;
 
 	const spin = () => {
 		if (spinning || shortlist.length < 2) return;
-		const totalTicks = 22 + Math.floor(Math.random() * shortlist.length);
-		let count = 0;
-		const step = () => {
-			const current = count % shortlist.length;
-			setSpinIndex(current);
-			Haptics.selectionAsync().catch(() => {});
-			count += 1;
-			if (count < totalTicks) {
-				// Ease-out: gaps between ticks stretch as the wheel settles.
-				const t = count / totalTicks;
-				spinTimer.current = setTimeout(step, 45 + t * t * 300);
-			} else {
-				const landed = (count - 1) % shortlist.length;
-				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-				spinTimer.current = setTimeout(() => {
-					setSpinIndex(null);
-					onPick(shortlist[landed]);
-				}, 450);
-			}
-		};
-		step();
+		Haptics.selectionAsync().catch(() => {});
+		setSpinTarget(Math.floor(Math.random() * shortlist.length));
 	};
 
 	const pick = (r: Restaurant) => {
@@ -87,12 +62,12 @@ export default function VerdictScreen({
 		onPick(choice);
 	};
 
-	const renderRows = (list: Restaurant[], highlightIdx: number | null) => (
+	const renderRows = (list: Restaurant[]) => (
 		<View style={styles.shortlist}>
-			{list.map((r, i) => (
+			{list.map((r) => (
 				<Pressable
 					key={r.id}
-					style={[styles.row, highlightIdx === i && styles.rowActive]}
+					style={styles.row}
 					onPress={() => pick(r)}
 					disabled={spinning}
 					accessibilityRole="button"
@@ -160,7 +135,7 @@ export default function VerdictScreen({
 					<HardButton
 						dx={6}
 						dy={6}
-						color={COLORS.tomato}
+						color={COLORS.shadow}
 						radius={RADII.cta}
 						onPress={() => Linking.openURL(mapsUrl(winner))}
 						accessibilityLabel={`Open ${winner.name} in Maps`}
@@ -175,7 +150,7 @@ export default function VerdictScreen({
 							<Text style={styles.shortlistLabel}>
 								CHANGED YOUR MIND? TAP ANOTHER OF YOUR {others.length}
 							</Text>
-							{renderRows(others, null)}
+							{renderRows(others)}
 						</>
 					)}
 
@@ -185,7 +160,7 @@ export default function VerdictScreen({
 							style={styles.reshuffle}
 							hitSlop={8}
 							accessibilityRole="button"
-							accessibilityLabel="Spin again — let grubl re-pick from your shortlist"
+							accessibilityLabel="Spin again — let Grubl re-pick from your shortlist"
 						>
 							<Text style={styles.reshuffleText}>↻ Spin again</Text>
 						</Pressable>
@@ -203,27 +178,46 @@ export default function VerdictScreen({
 
 					{shortlist.length >= 2 ? (
 						<>
-							<Text style={styles.chooseBody}>Can’t decide? Let grubl call it.</Text>
+							<Text style={styles.chooseBody}>
+								{spinning ? 'Rolling…' : 'Can’t decide? Let Grubl call it.'}
+							</Text>
 							<HardButton
 								dx={6}
 								dy={6}
-								color={COLORS.ink}
+								color={COLORS.shadow}
 								radius={RADII.cta}
 								onPress={spin}
 								disabled={spinning}
-								accessibilityLabel="Spin the wheel — let grubl pick for you"
+								accessibilityLabel="Spin the wheel — let Grubl pick for you"
 								containerStyle={styles.spinContainer}
 								faceStyle={styles.spinFace}
 							>
-								<Text style={styles.spinText}>{spinning ? 'SPINNING…' : 'SPIN THE WHEEL 🎲'}</Text>
+								<Text style={styles.spinText}>{spinning ? 'SPINNING…' : 'SPIN THE WHEEL'}</Text>
 							</HardButton>
-							<Text style={styles.orTap}>or tap one yourself</Text>
+
+							{spinning && spinTarget !== null ? (
+								<SlotReel
+									items={shortlist}
+									targetIndex={spinTarget}
+									onSettle={() => {
+										const chosen = shortlist[spinTarget];
+										setSpinTarget(null);
+										onPick(chosen);
+									}}
+								/>
+							) : (
+								<>
+									<Text style={styles.orTap}>or tap one yourself</Text>
+									{renderRows(shortlist)}
+								</>
+							)}
 						</>
 					) : (
-						<Text style={styles.chooseBody}>Only one made the cut. Tap it.</Text>
+						<>
+							<Text style={styles.chooseBody}>Only one made the cut. Tap it.</Text>
+							{renderRows(shortlist)}
+						</>
 					)}
-
-					{renderRows(shortlist, spinIndex)}
 				</>
 			) : (
 				<>
@@ -233,14 +227,14 @@ export default function VerdictScreen({
 						<HardButton
 							dx={6}
 							dy={6}
-							color={COLORS.ink}
+							color={COLORS.shadow}
 							radius={RADII.cta}
 							onPress={surprise}
-							accessibilityLabel="Pick one anyway — let grubl choose from everything nearby"
+							accessibilityLabel="Pick one anyway — let Grubl choose from everything nearby"
 							containerStyle={styles.surpriseContainer}
 							faceStyle={styles.surpriseFace}
 						>
-							<Text style={styles.surpriseText}>PICK ONE ANYWAY 🎲</Text>
+							<Text style={styles.surpriseText}>PICK ONE ANYWAY</Text>
 						</HardButton>
 					)}
 				</>
@@ -328,9 +322,9 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.ink,
+		backgroundColor: COLORS.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: COLORS.brassDeep,
 	},
 	mapsText: {
 		fontFamily: FONTS.display,
@@ -352,14 +346,14 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.yolk,
+		backgroundColor: COLORS.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: COLORS.brassDeep,
 	},
 	spinText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
-		color: COLORS.ink,
+		color: COLORS.ground,
 	},
 	orTap: {
 		marginTop: 12,
@@ -401,9 +395,6 @@ const styles = StyleSheet.create({
 		borderColor: COLORS.ink,
 		borderRadius: RADII.sticker,
 		padding: 10,
-	},
-	rowActive: {
-		backgroundColor: COLORS.yolk,
 	},
 	swatch: {
 		width: 46,
@@ -465,14 +456,14 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.yolk,
+		backgroundColor: COLORS.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: COLORS.brassDeep,
 	},
 	surpriseText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
-		color: COLORS.ink,
+		color: COLORS.ground,
 	},
 	footer: {
 		flexDirection: 'row',
