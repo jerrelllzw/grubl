@@ -18,11 +18,22 @@ import SearchScreen from '../src/screens/SearchScreen';
 import { EmptyScreen, LoadingScreen } from '../src/screens/StatusScreen';
 import SwipeScreen from '../src/screens/SwipeScreen';
 import VerdictScreen from '../src/screens/VerdictScreen';
-import { COLORS } from '../src/theme/tokens';
+import { ThemeProvider, useTheme } from '../src/theme/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type Screen = 'intro' | 'search' | 'swipe' | 'result';
+
+// Themed shell: status-bar icons + app background track the live theme.
+function ThemedRoot({ children }: { children: React.ReactNode }) {
+	const { scheme, colors } = useTheme();
+	return (
+		<>
+			<StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+			<View style={{ flex: 1, backgroundColor: colors.cream }}>{children}</View>
+		</>
+	);
+}
 
 export default function Index() {
 	const [fontsLoaded, fontError] = useFonts({
@@ -110,8 +121,8 @@ export default function Index() {
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
 			<SafeAreaProvider>
-				<StatusBar style="dark" />
-				<View style={{ flex: 1, backgroundColor: COLORS.cream }}>
+				<ThemeProvider>
+					<ThemedRoot>
 					{screen === 'intro' && <IntroScreen onStart={handleStart} />}
 
 					{screen === 'search' && (
@@ -146,7 +157,8 @@ export default function Index() {
 							onNewSearch={handleNewSearch}
 						/>
 					)}
-				</View>
+					</ThemedRoot>
+				</ThemeProvider>
 			</SafeAreaProvider>
 		</GestureHandlerRootView>
 	);

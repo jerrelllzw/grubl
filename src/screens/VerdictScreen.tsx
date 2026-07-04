@@ -9,7 +9,8 @@ import HardButton from '../components/HardButton';
 import SlotReel from '../components/SlotReel';
 import StripePhoto from '../components/StripePhoto';
 import { mapsUrl, metaLine, type Restaurant } from '../data/restaurants';
-import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
+import { useColors, useThemedStyles } from '../theme/theme';
+import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 
 export default function VerdictScreen({
 	winner,
@@ -31,6 +32,8 @@ export default function VerdictScreen({
 	onNewSearch: () => void;
 }) {
 	const insets = useSafeAreaInsets();
+	const c = useColors();
+	const styles = useThemedStyles(makeStyles);
 	// Everything on the shortlist that isn't already the pick.
 	const others = winner ? shortlist.filter((r) => r.id !== winner.id) : shortlist;
 
@@ -93,7 +96,7 @@ export default function VerdictScreen({
 						accessibilityRole="button"
 						accessibilityLabel={`More about ${r.name}`}
 					>
-						<Ionicons name="information" size={18} color={COLORS.ink} />
+						<Ionicons name="information" size={18} color={c.ink} />
 					</Pressable>
 				</Pressable>
 			))}
@@ -124,7 +127,7 @@ export default function VerdictScreen({
 						<CardFace
 							restaurant={winner}
 							cardRadius={22}
-							shadow={{ dx: 7, dy: 7, color: COLORS.tomato }}
+							shadow={{ dx: 7, dy: 7, color: c.tomato }}
 							nameSize={20}
 							metaSize={14}
 							emojiSize={84}
@@ -135,7 +138,7 @@ export default function VerdictScreen({
 					<HardButton
 						dx={6}
 						dy={6}
-						color={COLORS.shadow}
+						color={c.shadow}
 						radius={RADII.cta}
 						onPress={() => Linking.openURL(mapsUrl(winner))}
 						accessibilityLabel={`Open ${winner.name} in Maps`}
@@ -184,7 +187,7 @@ export default function VerdictScreen({
 							<HardButton
 								dx={6}
 								dy={6}
-								color={COLORS.shadow}
+								color={c.shadow}
 								radius={RADII.cta}
 								onPress={spin}
 								disabled={spinning}
@@ -227,7 +230,7 @@ export default function VerdictScreen({
 						<HardButton
 							dx={6}
 							dy={6}
-							color={COLORS.shadow}
+							color={c.shadow}
 							radius={RADII.cta}
 							onPress={surprise}
 							accessibilityLabel="Pick one anyway — let Grubl choose from everything nearby"
@@ -258,7 +261,7 @@ export default function VerdictScreen({
 				accessibilityRole="button"
 				accessibilityLabel="Back to swiping"
 			>
-				<Ionicons name="chevron-back" size={22} color={COLORS.ink} />
+				<Ionicons name="chevron-back" size={22} color={c.ink} />
 			</Pressable>
 
 			<DetailSheet
@@ -270,10 +273,10 @@ export default function VerdictScreen({
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) => StyleSheet.create({
 	wrap: {
 		flex: 1,
-		backgroundColor: COLORS.cream,
+		backgroundColor: c.cream,
 	},
 	backButton: {
 		position: 'absolute',
@@ -281,15 +284,15 @@ const styles = StyleSheet.create({
 		width: 40,
 		height: 40,
 		borderRadius: RADII.pill,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	scroll: {
 		flex: 1,
-		backgroundColor: COLORS.cream,
+		backgroundColor: c.cream,
 	},
 	container: {
 		paddingHorizontal: 28,
@@ -302,11 +305,11 @@ const styles = StyleSheet.create({
 		fontFamily: FONTS.display,
 		fontSize: 38,
 		lineHeight: 38,
-		color: COLORS.ink,
+		color: c.ink,
 		textAlign: 'center',
 	},
 	headlineName: {
-		color: COLORS.tomato,
+		color: c.tomato,
 	},
 	winnerCard: {
 		marginTop: 24,
@@ -322,20 +325,20 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.brass,
+		backgroundColor: c.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.brassDeep,
+		borderColor: c.brassDeep,
 	},
 	mapsText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
-		color: COLORS.cream,
+		color: c.onAccent,
 	},
 	chooseBody: {
 		marginTop: 16,
 		fontFamily: FONTS.medium,
 		fontSize: 16,
-		color: COLORS.muted,
+		color: c.muted,
 		textAlign: 'center',
 	},
 	spinContainer: {
@@ -346,20 +349,20 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.brass,
+		backgroundColor: c.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.brassDeep,
+		borderColor: c.brassDeep,
 	},
 	spinText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
-		color: COLORS.ground,
+		color: c.onAccent,
 	},
 	orTap: {
 		marginTop: 12,
 		fontFamily: FONTS.medium,
 		fontSize: 13,
-		color: COLORS.muted,
+		color: c.muted,
 		textAlign: 'center',
 	},
 	shortlistLabel: {
@@ -369,7 +372,7 @@ const styles = StyleSheet.create({
 		fontFamily: FONTS.bold,
 		fontSize: 12,
 		letterSpacing: 1.2,
-		color: COLORS.muted,
+		color: c.muted,
 	},
 	reshuffle: {
 		marginTop: 24,
@@ -378,7 +381,7 @@ const styles = StyleSheet.create({
 	reshuffleText: {
 		fontFamily: FONTS.bold,
 		fontSize: 15,
-		color: COLORS.ink,
+		color: c.ink,
 		textDecorationLine: 'underline',
 	},
 	shortlist: {
@@ -390,9 +393,9 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 12,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		borderRadius: RADII.sticker,
 		padding: 10,
 	},
@@ -401,7 +404,7 @@ const styles = StyleSheet.create({
 		height: 46,
 		borderRadius: RADII.sticker,
 		borderWidth: 2,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		overflow: 'hidden',
 		alignItems: 'center',
 		justifyContent: 'center',
@@ -415,21 +418,21 @@ const styles = StyleSheet.create({
 	rowName: {
 		fontFamily: FONTS.display,
 		fontSize: 16,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	rowMeta: {
 		marginTop: 3,
 		fontFamily: FONTS.semibold,
 		fontSize: 12,
-		color: COLORS.muted,
+		color: c.muted,
 	},
 	rowInfo: {
 		width: 34,
 		height: 34,
 		borderRadius: RADII.pill,
 		borderWidth: 2,
-		borderColor: COLORS.ink,
-		backgroundColor: COLORS.cream,
+		borderColor: c.ink,
+		backgroundColor: c.cream,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
@@ -438,14 +441,14 @@ const styles = StyleSheet.create({
 		fontFamily: FONTS.display,
 		fontSize: 38,
 		lineHeight: 38 * 1.05,
-		color: COLORS.ink,
+		color: c.ink,
 		textAlign: 'center',
 	},
 	toughBody: {
 		marginTop: 14,
 		fontFamily: FONTS.medium,
 		fontSize: 17,
-		color: COLORS.muted,
+		color: c.muted,
 		textAlign: 'center',
 	},
 	surpriseContainer: {
@@ -456,14 +459,14 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.brass,
+		backgroundColor: c.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.brassDeep,
+		borderColor: c.brassDeep,
 	},
 	surpriseText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
-		color: COLORS.ground,
+		color: c.onAccent,
 	},
 	footer: {
 		flexDirection: 'row',
@@ -477,12 +480,12 @@ const styles = StyleSheet.create({
 	linkText: {
 		fontFamily: FONTS.semibold,
 		fontSize: 15,
-		color: COLORS.muted,
+		color: c.muted,
 		textDecorationLine: 'underline',
 	},
 	linkDivider: {
 		fontFamily: FONTS.semibold,
 		fontSize: 15,
-		color: COLORS.muted,
+		color: c.muted,
 	},
 });

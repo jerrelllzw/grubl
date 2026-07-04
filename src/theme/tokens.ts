@@ -1,19 +1,22 @@
 // Design tokens for Grubl.
 //
-// Two palettes behind one active export. Screens import { COLORS } and never
-// hardcode, so switching the default (or adding a runtime toggle later) is a
-// one-line change. LIGHT is the shipping default — a warm, food-first theme;
-// DARK is the jewel "night mode", kept in sync for when we wire it up.
+// Two palettes behind a runtime theme. Screens read colours through `useColors()`
+// (see theme.tsx) and build styles with `useThemedStyles`, so flipping light↔dark
+// re-themes every surface live. `COLORS` below stays exported as the LIGHT default
+// for the rare non-React caller and for type/shape reference.
 //
 // Token roles (used consistently across screens):
-//   cream/ground = background · paper/panel = surface
+//   cream/ground = background · paper/panel = surface   (these flip with the theme)
 //   ink = text + hairline outlines · muted = secondary text
-//   brass/tomato = PRIMARY accent (CTAs, wordmark dot)
-//   jade/green = yes / YUM · stone = quiet no / skip
-//   yolk = secondary accent · shadow = hard offset · line = divider
-//   Text that sits *on* an accent uses `cream` (so it flips with the theme).
+//   brass/tomato = PRIMARY accent (persimmon — CTAs, wordmark dot)
+//   jade/green = yes / YUM · rose = no / NAH · yolk/amber = secondary (honey)
+//   shadow = hard offset · line = divider · stone = quiet no
+//   onAccent = text/icon on a SATURATED accent (persimmon/jade/berry) — light, both themes
+//   onWarm   = text/icon on the LIGHT honey accent (yolk) — dark, both themes
+// onAccent/onWarm deliberately do NOT flip: an accent is legible on the same ink
+// regardless of the surrounding ground, so buttons never invert into mud.
 
-type Palette = {
+export type Palette = {
 	cream: string;
 	paper: string;
 	ground: string;
@@ -33,10 +36,12 @@ type Palette = {
 	stone: string;
 	shadow: string;
 	line: string;
+	onAccent: string;
+	onWarm: string;
 };
 
 // Light — food-first. Warm cream, espresso ink, persimmon leads (the appetite
-// colour); basil = yes, stone = quiet no, honey/amber = secondary.
+// colour); basil = yes, berry = no, honey = secondary.
 const LIGHT: Palette = {
 	cream: '#FBF4E6',
 	paper: '#FFFDF8',
@@ -57,34 +62,41 @@ const LIGHT: Palette = {
 	stone: '#B9AE9C', // quiet no / skip
 	shadow: '#3A2A1E', // warm dark hard offset on cream
 	line: 'rgba(42,28,20,0.12)',
+	onAccent: '#FFF7EC', // warm white — text on persimmon/jade/berry
+	onWarm: '#2A1C14', // espresso — text on honey
 };
 
-// Dark — jewel "night mode" (Spin-to-Win, grown up). Kept for a later toggle.
+// Dark — food-first "night". Same brand, after dark: warm near-black ground, cream
+// ink, persimmon still leads. Not a jewel/casino palette — the light theme's twin.
 const DARK: Palette = {
-	cream: '#26141A',
-	paper: '#33191F',
-	ground: '#26141A',
-	panel: '#33191F',
-	ink: '#F3ECE0',
-	muted: '#A99DAE',
-	brass: '#CBA75A',
-	brassDeep: '#A5822F',
-	tomato: '#CBA75A',
-	amethyst: '#8B6FB8',
-	yolk: '#8B6FB8',
-	rose: '#DB7391',
-	jade: '#46AE8F',
-	green: '#46AE8F',
-	amber: '#E19A54',
-	teal: '#4194AE',
-	stone: '#8A7E8C',
-	shadow: '#160A0E',
-	line: '#3E2A30',
+	cream: '#181310', // ground — warm near-black espresso
+	paper: '#241C16', // surface — lifted warm brown-black
+	ground: '#181310',
+	panel: '#241C16',
+	ink: '#F3E9D9', // warm cream — text + hairline outlines
+	muted: '#9E9080',
+	brass: '#EA5A34', // persimmon — a touch brighter for the dark ground
+	brassDeep: '#B23A16',
+	tomato: '#EA5A34',
+	amethyst: '#A98BD8',
+	yolk: '#E9A23B', // honey holds up on dark
+	rose: '#E06B82', // berry — brighter
+	jade: '#35B884', // basil — brighter
+	green: '#35B884',
+	amber: '#E9A23B',
+	teal: '#4FA6C0',
+	stone: '#6E6559',
+	shadow: '#0B0705', // near-black hard offset reads on the dark ground
+	line: 'rgba(243,233,217,0.14)',
+	onAccent: '#FFF7EC', // same as light — accents sit at the same brightness
+	onWarm: '#2A1C14',
 };
 
 export const PALETTES = { light: LIGHT, dark: DARK };
+export type ThemeName = keyof typeof PALETTES;
 
-// Active theme. Flip to PALETTES.dark (or thread a provider) to switch.
+// Active LIGHT default for non-React callers / shape reference. In components,
+// prefer `useColors()` so the value tracks the live theme.
 export const COLORS: Palette = PALETTES.light;
 
 // Google Fonts loaded via expo-font.

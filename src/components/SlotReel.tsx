@@ -12,7 +12,8 @@ import Animated, {
 	withTiming,
 } from 'react-native-reanimated';
 import { metaLine, type Restaurant } from '../data/restaurants';
-import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
+import { useThemedStyles } from '../theme/theme';
+import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 import StripePhoto from './StripePhoto';
 
 // A slot-machine reel with a cozy landing: the shortlist rolls past a fixed
@@ -36,6 +37,7 @@ export default function SlotReel({
 	targetIndex: number;
 	onSettle: () => void;
 }) {
+	const styles = useThemedStyles(makeStyles);
 	const y = useSharedValue(0);
 	const pop = useSharedValue(0); // frame pulse on land
 	const spark = useSharedValue(0); // sparkle + ring flourish, 0→1
@@ -141,15 +143,15 @@ export default function SlotReel({
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) => StyleSheet.create({
 	window: {
 		width: '100%',
 		height: WINDOW_H,
 		marginTop: 20,
 		borderRadius: RADII.sticker,
-		backgroundColor: COLORS.ground,
+		backgroundColor: c.ground,
 		borderWidth: BORDER,
-		borderColor: COLORS.line,
+		borderColor: c.line,
 		overflow: 'hidden',
 	},
 	item: {
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		gap: 12,
 		paddingHorizontal: 10,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderRadius: RADII.sticker,
 	},
 	swatch: {
@@ -167,7 +169,7 @@ const styles = StyleSheet.create({
 		height: 42,
 		borderRadius: RADII.sticker,
 		borderWidth: 2,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		overflow: 'hidden',
 		alignItems: 'center',
 		justifyContent: 'center',
@@ -181,13 +183,13 @@ const styles = StyleSheet.create({
 	name: {
 		fontFamily: FONTS.display,
 		fontSize: 16,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	meta: {
 		marginTop: 3,
 		fontFamily: FONTS.semibold,
 		fontSize: 12,
-		color: COLORS.muted,
+		color: c.muted,
 	},
 	frame: {
 		position: 'absolute',
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
 		height: ITEM_H,
 		borderRadius: RADII.sticker,
 		borderWidth: 2.5,
-		borderColor: COLORS.brass,
+		borderColor: c.brass,
 	},
 	ring: {
 		position: 'absolute',
@@ -207,7 +209,7 @@ const styles = StyleSheet.create({
 		height: ITEM_H,
 		borderRadius: RADII.sticker,
 		borderWidth: 2.5,
-		borderColor: COLORS.brass,
+		borderColor: c.brass,
 	},
 	sparkLayer: {
 		position: 'absolute',
@@ -221,7 +223,7 @@ const styles = StyleSheet.create({
 		gap: 26,
 	},
 	spark: {
-		color: COLORS.brass,
+		color: c.brass,
 	},
 	sparkSm: {
 		fontSize: 13,

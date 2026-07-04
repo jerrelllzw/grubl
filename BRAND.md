@@ -18,7 +18,11 @@ paralysis — it deliberately never asks what you're craving.
   decisive full-stop: "decided. done.").
 - Never "gruble" / "grubble" (pronunciation drifts to *ruble*, loses "grub").
 - In running copy it's **Grubl** (capitalized, no dot needed mid-sentence).
-- The icon may use a lowercase `g.` monogram — that pairing is intentional.
+- **App icon:** a lowercase **`g.`** monogram — a cream mark on a full-bleed
+  **persimmon** tile (the appetite colour leads; stands out on a home screen). The
+  chip-square dot echoes the wordmark's full-stop. Monochrome by design so it holds
+  up at 40px. Android adaptive uses the same cream mark on a persimmon background;
+  the splash flips it (persimmon mark on the cream ground).
 
 ## Voice
 
@@ -47,6 +51,12 @@ appetite colour) leads; food, not games.
 | `amber` / `teal` / `amethyst` / `stone` | — | reserved hues (segments / future) |
 | `shadow` | `#3A2A1E` | warm dark hard offset |
 | `line` | `rgba(42,28,20,.12)` | subtle divider |
+| `onAccent` | `#FFF7EC` | text/icon on a **saturated** accent (persimmon/basil/berry) |
+| `onWarm` | `#2A1C14` | text/icon on the **light** honey accent |
+
+`onAccent` / `onWarm` are **theme-stable** (identical in light and dark): an accent
+sits at the same brightness in both themes, so button text stays legible instead of
+inverting into mud when the ground flips.
 
 **Semantic rules (no colour does two jobs):**
 - **Persimmon = the hero.** Primary CTAs (Feed Me, Find Food, Spin, Open in Maps)
@@ -55,11 +65,18 @@ appetite colour) leads; food, not games.
 - **Berry (`rose`) = no** — NAH stamp / skip.
 - **Honey (`yolk`) = secondary** — "use my location", undo, adjust-search.
 
-**Theming:** two palettes (`LIGHT`, `DARK`) sit behind one `COLORS` export in
-`tokens.ts`; screens never hardcode. The **dark jewel "night mode"** is kept in
-sync there for a later toggle — switch with `PALETTES.dark`. Legacy names
+**Theming:** two palettes (`LIGHT`, `DARK`) in `tokens.ts` sit behind a runtime
+theme (`src/theme/theme.tsx`). Screens read colours via `useColors()` and build
+styles with `useThemedStyles(makeStyles)` — never hardcode — so a flip re-themes
+every surface live. **Dark is a true food-first "night", not a jewel/casino look:**
+warm near-black ground, cream ink, **persimmon still leads**. Legacy names
 (`cream`→ground, `paper`→panel, `tomato`→primary, `yolk`→secondary, `green`→jade)
 are aliases; prefer the semantic names in new code.
+
+**The toggle** follows the OS colour scheme until the user flips it (a sun/moon
+`ThemeToggle` on the Intro and Search screens), which pins an explicit override for
+the session. The override is in-memory — a cold start re-follows the system — until
+we add a KV store for persistence.
 
 ## Typography
 
@@ -84,15 +101,19 @@ hue, with the **cuisine emoji** standing in for a photo. A deliberate identity
 
 ## Theme
 
-**Light default** (food-first). Dark jewel **night mode** lives in `tokens.ts`,
-ready to wire up later.
+**Light default** (food-first), with a **dark food-first night mode** wired to a
+runtime toggle (follows the OS scheme, user can override). Both palettes live in
+`tokens.ts`.
 
 ## Still open
 
 - [x] **Slot-reel spin** — built, with a cozy landing (overshoot settle + sparkle flourish).
 - [x] **Primary** — persimmon `#D8481F`.
 - [x] **NAH colour** — berry `#C6455F`.
-- [ ] **App icon + splash** — cream splash now matches the old art; revisit the
-      icon to match the persimmon/refined mark.
-- [ ] **Wire the dark night-mode toggle** + refine its ground.
+- [x] **App icon + splash** — cream `g.` monogram on a persimmon tile; adaptive +
+      splash + favicon regenerated to match.
+- [x] **Dark night-mode toggle** — wired (`useColors`/`useThemedStyles` + `ThemeToggle`);
+      dark is now a food-first twin (persimmon-led), not the old jewel look.
+- [ ] **Persist the theme override** — currently in-memory; add a KV store so it
+      survives a cold start instead of re-following the system.
 - [ ] **Name legal/availability check** — Grubl vs Grubhub (trademark), domain, store.

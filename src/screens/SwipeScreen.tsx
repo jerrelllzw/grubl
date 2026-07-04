@@ -16,7 +16,8 @@ import CardFace from '../components/CardFace';
 import DetailSheet from '../components/DetailSheet';
 import HardButton from '../components/HardButton';
 import type { Restaurant } from '../data/restaurants';
-import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
+import { useColors, useThemedStyles } from '../theme/theme';
+import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 
 const SWIPE_THRESHOLD = 90;
 const FLY_DISTANCE = 640;
@@ -45,6 +46,8 @@ export default function SwipeScreen({
 	onComplete: (shortlist: Restaurant[], atIndex: number) => void;
 }) {
 	const insets = useSafeAreaInsets();
+	const c = useColors();
+	const styles = useThemedStyles(makeStyles);
 	const [index, setIndex] = useState(initialIndex);
 	const [shortlistCount, setShortlistCount] = useState(initialShortlist.length);
 	// Moves made *this session* — bounds undo so a resumed deck can't rewind past
@@ -170,7 +173,7 @@ export default function SwipeScreen({
 						accessibilityRole="button"
 						accessibilityLabel="Back to search"
 					>
-						<Ionicons name="chevron-back" size={22} color={COLORS.ink} />
+						<Ionicons name="chevron-back" size={22} color={c.ink} />
 					</Pressable>
 					<Text style={styles.wordmark}>
 						Grubl<Text style={styles.dot}>.</Text>
@@ -181,7 +184,7 @@ export default function SwipeScreen({
 					<HardButton
 						dx={3}
 						dy={3}
-						color={COLORS.shadow}
+						color={c.shadow}
 						radius={RADII.pill}
 						onPress={handleDone}
 						accessibilityLabel={
@@ -192,8 +195,10 @@ export default function SwipeScreen({
 						faceStyle={[styles.chooseFace, shortlistCount > 0 ? styles.chooseFaceReady : styles.chooseFaceIdle]}
 					>
 						<View style={styles.chooseInner}>
-							<Text style={styles.chooseText}>{shortlistCount > 0 ? `CHOOSE · ${shortlistCount}` : 'DONE'}</Text>
-							{shortlistCount > 0 && <Ionicons name="arrow-forward" size={15} color={COLORS.ink} />}
+							<Text style={[styles.chooseText, shortlistCount > 0 && styles.chooseTextReady]}>
+								{shortlistCount > 0 ? `CHOOSE · ${shortlistCount}` : 'DONE'}
+							</Text>
+							{shortlistCount > 0 && <Ionicons name="arrow-forward" size={15} color={c.onWarm} />}
 						</View>
 					</HardButton>
 				</View>
@@ -217,10 +222,10 @@ export default function SwipeScreen({
 							<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
 								<CardFace restaurant={r} onInfo={() => setDetail(r)}>
 									<Animated.View style={[styles.stamp, styles.stampLeft, yumStampStyle]}>
-										<Text style={[styles.stampText, { color: COLORS.green }]}>YUM</Text>
+										<Text style={[styles.stampText, { color: c.green }]}>YUM</Text>
 									</Animated.View>
 									<Animated.View style={[styles.stamp, styles.stampRight, nopeStampStyle]}>
-										<Text style={[styles.stampText, { color: COLORS.rose }]}>NAH</Text>
+										<Text style={[styles.stampText, { color: c.rose }]}>NAH</Text>
 									</Animated.View>
 								</CardFace>
 							</Animated.View>
@@ -233,19 +238,19 @@ export default function SwipeScreen({
 				<HardButton
 					dx={4}
 					dy={4}
-					color={COLORS.shadow}
+					color={c.shadow}
 					radius={RADII.pill}
 					onPress={undo}
 					disabled={moveCount === 0}
 					accessibilityLabel="Undo last swipe"
 					faceStyle={styles.undoButton}
 				>
-					<Ionicons name="arrow-undo" size={20} color={COLORS.ink} />
+					<Ionicons name="arrow-undo" size={20} color={c.onWarm} />
 				</HardButton>
 				<HardButton
 					dx={4}
 					dy={4}
-					color={COLORS.shadow}
+					color={c.shadow}
 					radius={RADII.pill}
 					onPress={() => fling('no')}
 					accessibilityLabel="Nah — skip this place"
@@ -256,7 +261,7 @@ export default function SwipeScreen({
 				<HardButton
 					dx={4}
 					dy={4}
-					color={COLORS.shadow}
+					color={c.shadow}
 					radius={RADII.pill}
 					onPress={() => fling('shortlist')}
 					accessibilityLabel="Yum — add to your shortlist"
@@ -276,10 +281,10 @@ export default function SwipeScreen({
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) => StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: COLORS.cream,
+		backgroundColor: c.cream,
 	},
 	header: {
 		flexDirection: 'row',
@@ -296,19 +301,19 @@ const styles = StyleSheet.create({
 		width: 40,
 		height: 40,
 		borderRadius: RADII.pill,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	wordmark: {
 		fontFamily: FONTS.display,
 		fontSize: 22,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	dot: {
-		color: COLORS.tomato,
+		color: c.tomato,
 	},
 	headerRight: {
 		flexDirection: 'row',
@@ -317,7 +322,7 @@ const styles = StyleSheet.create({
 	},
 	chooseFace: {
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		paddingVertical: 8,
 		paddingHorizontal: 14,
 		borderRadius: RADII.pill,
@@ -325,10 +330,10 @@ const styles = StyleSheet.create({
 	// Idle (nothing shortlisted yet) reads as a quiet "done"; once there are picks
 	// it flips to the yolk accent + arrow so the way to the payoff is obvious.
 	chooseFaceIdle: {
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 	},
 	chooseFaceReady: {
-		backgroundColor: COLORS.yolk,
+		backgroundColor: c.yolk,
 	},
 	chooseInner: {
 		flexDirection: 'row',
@@ -338,12 +343,16 @@ const styles = StyleSheet.create({
 	chooseText: {
 		fontFamily: FONTS.bold,
 		fontSize: 13,
-		color: COLORS.ink,
+		color: c.ink,
+	},
+	// On the yolk "ready" face the label sits on a light accent, so it stays dark.
+	chooseTextReady: {
+		color: c.onWarm,
 	},
 	progressText: {
 		fontFamily: FONTS.semibold,
 		fontSize: 14,
-		color: COLORS.muted,
+		color: c.muted,
 	},
 	deck: {
 		flex: 1,
@@ -369,12 +378,12 @@ const styles = StyleSheet.create({
 	stampLeft: {
 		left: 18,
 		transform: [{ rotate: '-12deg' }],
-		borderColor: COLORS.green,
+		borderColor: c.green,
 	},
 	stampRight: {
 		right: 18,
 		transform: [{ rotate: '12deg' }],
-		borderColor: COLORS.rose,
+		borderColor: c.rose,
 	},
 	stampText: {
 		fontFamily: FONTS.display,
@@ -391,9 +400,9 @@ const styles = StyleSheet.create({
 		width: 52,
 		height: 52,
 		borderRadius: RADII.pill,
-		backgroundColor: COLORS.yolk,
+		backgroundColor: c.yolk,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
@@ -401,15 +410,15 @@ const styles = StyleSheet.create({
 		width: 60,
 		height: 60,
 		borderRadius: RADII.pill,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	nopeGlyph: {
 		fontSize: 24,
-		color: COLORS.ink,
+		color: c.ink,
 		lineHeight: 28,
 	},
 	yumContainer: {
@@ -418,15 +427,15 @@ const styles = StyleSheet.create({
 	yumButton: {
 		height: 60,
 		borderRadius: RADII.pill,
-		backgroundColor: COLORS.jade,
+		backgroundColor: c.jade,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	yumText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
-		color: COLORS.cream,
+		color: c.onAccent,
 	},
 });

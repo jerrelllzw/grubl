@@ -3,7 +3,8 @@ import React from 'react';
 import { Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { mapsUrl, metaLine, type Restaurant } from '../data/restaurants';
-import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
+import { useColors, useThemedStyles } from '../theme/theme';
+import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 import HardButton from './HardButton';
 import StripePhoto from './StripePhoto';
 
@@ -21,6 +22,8 @@ export default function DetailSheet({
 	onClose: () => void;
 }) {
 	const insets = useSafeAreaInsets();
+	const c = useColors();
+	const styles = useThemedStyles(makeStyles);
 
 	return (
 		<Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
@@ -54,13 +57,13 @@ export default function DetailSheet({
 								accessibilityRole="button"
 								accessibilityLabel="Close"
 							>
-								<Ionicons name="close" size={22} color={COLORS.ink} />
+								<Ionicons name="close" size={22} color={c.ink} />
 							</Pressable>
 						</View>
 
 						{restaurant.address ? (
 							<View style={styles.infoRow}>
-								<Ionicons name="location-outline" size={18} color={COLORS.tomato} />
+								<Ionicons name="location-outline" size={18} color={c.tomato} />
 								<Text style={styles.infoText}>{restaurant.address}</Text>
 							</View>
 						) : null}
@@ -68,7 +71,7 @@ export default function DetailSheet({
 						<HardButton
 							dx={6}
 							dy={6}
-							color={COLORS.shadow}
+							color={c.shadow}
 							radius={RADII.cta}
 							onPress={() => Linking.openURL(mapsUrl(restaurant))}
 							accessibilityLabel={`Open ${restaurant.name} in Maps`}
@@ -84,7 +87,7 @@ export default function DetailSheet({
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) => StyleSheet.create({
 	backdrop: {
 		...StyleSheet.absoluteFillObject,
 		backgroundColor: 'rgba(26,26,26,0.45)',
@@ -94,9 +97,9 @@ const styles = StyleSheet.create({
 		left: 0,
 		right: 0,
 		bottom: 0,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderTopWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		borderTopLeftRadius: RADII.card,
 		borderTopRightRadius: RADII.card,
 		paddingHorizontal: 24,
@@ -107,7 +110,7 @@ const styles = StyleSheet.create({
 		width: 44,
 		height: 5,
 		borderRadius: 999,
-		backgroundColor: COLORS.ink,
+		backgroundColor: c.ink,
 		opacity: 0.25,
 		marginBottom: 18,
 	},
@@ -121,7 +124,7 @@ const styles = StyleSheet.create({
 		height: 60,
 		borderRadius: RADII.sticker,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		overflow: 'hidden',
 		alignItems: 'center',
 		justifyContent: 'center',
@@ -135,21 +138,21 @@ const styles = StyleSheet.create({
 	name: {
 		fontFamily: FONTS.display,
 		fontSize: 22,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	meta: {
 		marginTop: 4,
 		fontFamily: FONTS.semibold,
 		fontSize: 13,
-		color: COLORS.muted,
+		color: c.muted,
 	},
 	close: {
 		width: 36,
 		height: 36,
 		borderRadius: 999,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
-		backgroundColor: COLORS.cream,
+		borderColor: c.ink,
+		backgroundColor: c.cream,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
 		fontFamily: FONTS.medium,
 		fontSize: 15,
 		lineHeight: 15 * 1.35,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	mapsContainer: {
 		width: '100%',
@@ -175,13 +178,13 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.brass,
+		backgroundColor: c.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.brassDeep,
+		borderColor: c.brassDeep,
 	},
 	mapsText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
-		color: COLORS.cream,
+		color: c.onAccent,
 	},
 });

@@ -16,7 +16,7 @@ export default {
 		android: {
 			adaptiveIcon: {
 				foregroundImage: './assets/images/adaptive-icon.png',
-				backgroundColor: '#FBF4E6',
+				backgroundColor: '#D8481F',
 			},
 			edgeToEdgeEnabled: true,
 			package: 'com.lerej.grubl',

@@ -1,15 +1,18 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import HardButton from '../components/HardButton';
-import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
+import { useColors, useThemedStyles } from '../theme/theme';
+import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 
 export function LoadingScreen({ location }: { location: string }) {
+	const c = useColors();
+	const styles = useThemedStyles(makeStyles);
 	return (
 		<View style={styles.center}>
 			<Text style={styles.wordmark}>
 				Grubl<Text style={styles.dot}>.</Text>
 			</Text>
-			<ActivityIndicator size="large" color={COLORS.tomato} style={styles.spinner} />
+			<ActivityIndicator size="large" color={c.tomato} style={styles.spinner} />
 			<Text style={styles.loadingTitle}>SNIFFING OUT SPOTS</Text>
 			<Text style={styles.loadingSub} numberOfLines={2}>
 				near {location}
@@ -28,6 +31,8 @@ export function EmptyScreen({
 	/** Re-runs the last search; used by the connectivity-error variant. */
 	onRetry?: () => void;
 }) {
+	const c = useColors();
+	const styles = useThemedStyles(makeStyles);
 	const isError = reason === 'error';
 	const isLocation = reason === 'location';
 
@@ -46,7 +51,7 @@ export function EmptyScreen({
 				<HardButton
 					dx={5}
 					dy={5}
-					color={COLORS.shadow}
+					color={c.shadow}
 					radius={RADII.sticker}
 					onPress={onRetry}
 					accessibilityLabel="Try the search again"
@@ -59,7 +64,7 @@ export function EmptyScreen({
 				<HardButton
 					dx={5}
 					dy={5}
-					color={COLORS.shadow}
+					color={c.shadow}
 					radius={RADII.sticker}
 					onPress={onAdjust}
 					accessibilityLabel="Adjust search"
@@ -78,10 +83,10 @@ export function EmptyScreen({
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) => StyleSheet.create({
 	center: {
 		flex: 1,
-		backgroundColor: COLORS.cream,
+		backgroundColor: c.cream,
 		alignItems: 'center',
 		justifyContent: 'center',
 		padding: 36,
@@ -89,11 +94,11 @@ const styles = StyleSheet.create({
 	wordmark: {
 		fontFamily: FONTS.display,
 		fontSize: 52,
-		color: COLORS.ink,
+		color: c.ink,
 		letterSpacing: -1,
 	},
 	dot: {
-		color: COLORS.tomato,
+		color: c.tomato,
 	},
 	spinner: {
 		marginTop: 26,
@@ -103,27 +108,27 @@ const styles = StyleSheet.create({
 		fontFamily: FONTS.bold,
 		fontSize: 15,
 		letterSpacing: 1.5,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	loadingSub: {
 		marginTop: 6,
 		fontFamily: FONTS.medium,
 		fontSize: 15,
-		color: COLORS.muted,
+		color: c.muted,
 		textAlign: 'center',
 	},
 	headline: {
 		fontFamily: FONTS.display,
 		fontSize: 44,
 		lineHeight: 44,
-		color: COLORS.ink,
+		color: c.ink,
 		textAlign: 'center',
 	},
 	body: {
 		marginTop: 16,
 		fontFamily: FONTS.medium,
 		fontSize: 17,
-		color: COLORS.muted,
+		color: c.muted,
 		textAlign: 'center',
 	},
 	button: {
@@ -133,14 +138,14 @@ const styles = StyleSheet.create({
 		paddingVertical: 16,
 		paddingHorizontal: 28,
 		alignItems: 'center',
-		backgroundColor: COLORS.yolk,
+		backgroundColor: c.yolk,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 	},
 	buttonText: {
 		fontFamily: FONTS.display,
 		fontSize: 18,
-		color: COLORS.ink,
+		color: c.onWarm,
 	},
 	secondaryLink: {
 		marginTop: 18,
@@ -149,7 +154,7 @@ const styles = StyleSheet.create({
 	secondaryText: {
 		fontFamily: FONTS.semibold,
 		fontSize: 15,
-		color: COLORS.muted,
+		color: c.muted,
 		textDecorationLine: 'underline',
 	},
 });

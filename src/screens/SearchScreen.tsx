@@ -13,10 +13,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchAutoComplete, type Coordinates, type Suggestion } from '../api/googlePlaces';
 import HardButton from '../components/HardButton';
+import ThemeToggle from '../components/ThemeToggle';
 import { DEFAULT_RADIUS, PRICE_KEYS, PRICE_MAP, RADII_OPTIONS } from '../constants/googlePlaces';
 import type { SearchQuery } from '../data/restaurants';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
-import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
+import { useColors, useThemedStyles } from '../theme/theme';
+import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 
 export default function SearchScreen({
 	initial,
@@ -28,6 +30,8 @@ export default function SearchScreen({
 	onSearch: (query: SearchQuery) => void;
 }) {
 	const insets = useSafeAreaInsets();
+	const c = useColors();
+	const styles = useThemedStyles(makeStyles);
 
 	// Seed from the last search so tweaking one filter doesn't mean re-entering all.
 	const [location, setLocation] = useState(initial?.location ?? '');
@@ -126,16 +130,19 @@ export default function SearchScreen({
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 14 }]}>
 			<View style={styles.header}>
-				<Pressable
-					style={styles.backButton}
-					onPress={onBack}
-					hitSlop={8}
-					accessibilityRole="button"
-					accessibilityLabel="Back"
-				>
-					<Ionicons name="chevron-back" size={24} color={COLORS.ink} />
-				</Pressable>
-				<Text style={styles.title}>WHAT SOUNDS GOOD?</Text>
+				<View style={styles.headerLeft}>
+					<Pressable
+						style={styles.backButton}
+						onPress={onBack}
+						hitSlop={8}
+						accessibilityRole="button"
+						accessibilityLabel="Back"
+					>
+						<Ionicons name="chevron-back" size={24} color={c.ink} />
+					</Pressable>
+					<Text style={styles.title}>WHAT SOUNDS GOOD?</Text>
+				</View>
+				<ThemeToggle />
 			</View>
 
 			<ScrollView
@@ -161,9 +168,9 @@ export default function SearchScreen({
 						accessibilityLabel="Use my current location"
 					>
 						{isLocating ? (
-							<ActivityIndicator size="small" color={COLORS.ink} />
+							<ActivityIndicator size="small" color={c.onWarm} />
 						) : (
-							<Ionicons name="locate" size={20} color={COLORS.ink} />
+							<Ionicons name="locate" size={20} color={c.onWarm} />
 						)}
 						<Text style={styles.gpsPrimaryText}>{isLocating ? 'LOCATING…' : 'USE MY LOCATION'}</Text>
 					</Pressable>
@@ -176,7 +183,7 @@ export default function SearchScreen({
 							<TextInput
 								style={styles.input}
 								placeholder="Where are you eating?"
-								placeholderTextColor={COLORS.muted}
+								placeholderTextColor={c.muted}
 								value={location}
 								onChangeText={onChangeLocation}
 								onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
@@ -190,7 +197,7 @@ export default function SearchScreen({
 									accessibilityRole="button"
 									accessibilityLabel="Clear location"
 								>
-									<Ionicons name="close-circle" size={20} color={COLORS.muted} />
+									<Ionicons name="close-circle" size={20} color={c.muted} />
 								</Pressable>
 							)}
 						</View>
@@ -212,7 +219,7 @@ export default function SearchScreen({
 											setTimeout(() => (suppressAutocomplete.current = false), 500);
 										}}
 									>
-										<Ionicons name="location-outline" size={16} color={COLORS.tomato} />
+										<Ionicons name="location-outline" size={16} color={c.tomato} />
 										<Text style={styles.suggestionText} numberOfLines={1}>
 											{item.label}
 										</Text>
@@ -225,7 +232,7 @@ export default function SearchScreen({
 
 					{error && (
 						<View style={styles.errorBanner} accessibilityRole="alert">
-							<Ionicons name="alert-circle" size={18} color={COLORS.tomato} />
+							<Ionicons name="alert-circle" size={18} color={c.tomato} />
 							<Text style={styles.errorText}>{error}</Text>
 						</View>
 					)}
@@ -303,7 +310,7 @@ export default function SearchScreen({
 			</ScrollView>
 
 			<View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-				<HardButton dx={6} dy={6} color={COLORS.shadow} radius={RADII.cta} onPress={handleFind} accessibilityLabel="Find food" faceStyle={styles.ctaFace}>
+				<HardButton dx={6} dy={6} color={c.shadow} radius={RADII.cta} onPress={handleFind} accessibilityLabel="Find food" faceStyle={styles.ctaFace}>
 					<Text style={styles.ctaText}>FIND FOOD →</Text>
 				</HardButton>
 			</View>
@@ -311,32 +318,39 @@ export default function SearchScreen({
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) => StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: COLORS.cream,
+		backgroundColor: c.cream,
 	},
 	header: {
 		flexDirection: 'row',
 		alignItems: 'center',
+		justifyContent: 'space-between',
 		gap: 10,
 		paddingHorizontal: 20,
 		paddingBottom: 10,
+	},
+	headerLeft: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 10,
+		flexShrink: 1,
 	},
 	backButton: {
 		width: 44,
 		height: 44,
 		borderRadius: RADII.sticker,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	title: {
 		fontFamily: FONTS.display,
 		fontSize: 22,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	scroll: {
 		flex: 1,
@@ -350,7 +364,7 @@ const styles = StyleSheet.create({
 		fontFamily: FONTS.bold,
 		fontSize: 13,
 		letterSpacing: 1.2,
-		color: COLORS.ink,
+		color: c.ink,
 		marginBottom: 12,
 	},
 	locationSection: {
@@ -367,16 +381,16 @@ const styles = StyleSheet.create({
 		marginTop: 12,
 		paddingVertical: 10,
 		paddingHorizontal: 12,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: 2,
-		borderColor: COLORS.tomato,
+		borderColor: c.tomato,
 		borderRadius: RADII.sticker,
 	},
 	errorText: {
 		flex: 1,
 		fontFamily: FONTS.semibold,
 		fontSize: 13,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	gpsPrimary: {
 		flexDirection: 'row',
@@ -384,23 +398,23 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 		gap: 10,
 		height: 54,
-		backgroundColor: COLORS.yolk,
+		backgroundColor: c.yolk,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		borderRadius: RADII.sticker,
 	},
 	gpsPrimaryText: {
 		fontFamily: FONTS.bold,
 		fontSize: 15,
 		letterSpacing: 0.5,
-		color: COLORS.ink,
+		color: c.onWarm,
 	},
 	orType: {
 		marginTop: 12,
 		marginBottom: 10,
 		fontFamily: FONTS.medium,
 		fontSize: 13,
-		color: COLORS.muted,
+		color: c.muted,
 	},
 	inputWrap: {
 		width: '100%',
@@ -410,15 +424,15 @@ const styles = StyleSheet.create({
 	input: {
 		width: '100%',
 		height: 54,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		borderRadius: RADII.sticker,
 		paddingLeft: 16,
 		paddingRight: 44, // room for the clear button
 		fontFamily: FONTS.semibold,
 		fontSize: 16,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	clearButton: {
 		position: 'absolute',
@@ -436,9 +450,9 @@ const styles = StyleSheet.create({
 		right: 0,
 		zIndex: 40,
 		elevation: 8, // Android stacking (zIndex alone isn't enough)
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		borderRadius: RADII.sticker,
 		overflow: 'hidden',
 	},
@@ -449,18 +463,18 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 13,
 		borderBottomWidth: 1,
-		borderBottomColor: COLORS.line,
+		borderBottomColor: c.line,
 	},
 	suggestionText: {
 		flex: 1,
 		fontFamily: FONTS.medium,
 		fontSize: 14,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	attribution: {
 		fontFamily: FONTS.medium,
 		fontSize: 10,
-		color: COLORS.muted,
+		color: c.muted,
 		textAlign: 'right',
 		paddingHorizontal: 14,
 		paddingVertical: 6,
@@ -476,45 +490,45 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderRadius: RADII.chip,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		paddingVertical: 10,
 		paddingHorizontal: 16,
 	},
 	chipActive: {
-		backgroundColor: COLORS.ink,
+		backgroundColor: c.ink,
 	},
 	chipInactive: {
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 	},
 	chipText: {
 		fontFamily: FONTS.bold,
 		fontSize: 14,
 	},
 	chipTextActive: {
-		color: COLORS.cream,
+		color: c.cream,
 	},
 	chipTextInactive: {
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	toggleRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		borderRadius: RADII.sticker,
 		padding: 16,
 	},
 	toggleTitle: {
 		fontFamily: FONTS.bold,
 		fontSize: 16,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	toggleHint: {
 		fontFamily: FONTS.medium,
 		fontSize: 12,
-		color: COLORS.muted,
+		color: c.muted,
 		marginTop: 2,
 	},
 	toggleTrack: {
@@ -522,21 +536,21 @@ const styles = StyleSheet.create({
 		height: 32,
 		borderRadius: RADII.pill,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		justifyContent: 'center',
 		paddingHorizontal: 3,
 	},
 	toggleOn: {
-		backgroundColor: COLORS.green,
+		backgroundColor: c.green,
 	},
 	toggleOff: {
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 	},
 	toggleKnob: {
 		width: 20,
 		height: 20,
 		borderRadius: RADII.pill,
-		backgroundColor: COLORS.ink,
+		backgroundColor: c.ink,
 	},
 	knobOn: {
 		alignSelf: 'flex-end',
@@ -551,21 +565,21 @@ const styles = StyleSheet.create({
 		bottom: 0,
 		paddingHorizontal: 20,
 		paddingTop: 12,
-		backgroundColor: COLORS.cream,
+		backgroundColor: c.cream,
 		borderTopWidth: 1,
-		borderTopColor: COLORS.line,
+		borderTopColor: c.line,
 	},
 	ctaFace: {
 		width: '100%',
 		paddingVertical: 18,
 		alignItems: 'center',
-		backgroundColor: COLORS.brass,
+		backgroundColor: c.brass,
 		borderWidth: BORDER,
-		borderColor: COLORS.brassDeep,
+		borderColor: c.brassDeep,
 	},
 	ctaText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
-		color: COLORS.cream,
+		color: c.onAccent,
 	},
 });

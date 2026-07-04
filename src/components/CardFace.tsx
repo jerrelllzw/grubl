@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { metaLine, type Restaurant } from '../data/restaurants';
-import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
+import { useColors, useThemedStyles } from '../theme/theme';
+import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 import StripePhoto from './StripePhoto';
 
 // Placeholder food card: a hue-tinted field with the cuisine's emoji standing in
@@ -13,7 +14,7 @@ import StripePhoto from './StripePhoto';
 export default function CardFace({
 	restaurant,
 	cardRadius = RADII.card,
-	shadow = { dx: 7, dy: 7, color: COLORS.shadow },
+	shadow,
 	nameSize = 23,
 	metaSize = 15,
 	emojiSize = 96,
@@ -30,6 +31,9 @@ export default function CardFace({
 	onInfo?: () => void;
 	children?: React.ReactNode;
 }) {
+	const c = useColors();
+	const styles = useThemedStyles(makeStyles);
+	const cardShadow = shadow ?? { dx: 7, dy: 7, color: c.shadow };
 	return (
 		<View
 			style={styles.root}
@@ -40,11 +44,11 @@ export default function CardFace({
 			<View
 				style={[
 					StyleSheet.absoluteFillObject,
-					{ backgroundColor: shadow.color, borderRadius: cardRadius, transform: [{ translateX: shadow.dx }, { translateY: shadow.dy }] },
+					{ backgroundColor: cardShadow.color, borderRadius: cardRadius, transform: [{ translateX: cardShadow.dx }, { translateY: cardShadow.dy }] },
 				]}
 			/>
 			{/* bordered card */}
-			<View style={[StyleSheet.absoluteFillObject, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: COLORS.ink, backgroundColor: COLORS.paper, overflow: 'hidden' }]}>
+			<View style={[StyleSheet.absoluteFillObject, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: c.ink, backgroundColor: c.paper, overflow: 'hidden' }]}>
 				<StripePhoto hue={restaurant.hue} radius={cardRadius} />
 
 				{onInfo && (
@@ -55,7 +59,7 @@ export default function CardFace({
 						accessibilityRole="button"
 						accessibilityLabel={`More about ${restaurant.name}`}
 					>
-						<Ionicons name="information" size={22} color={COLORS.ink} />
+						<Ionicons name="information" size={22} color={c.ink} />
 					</Pressable>
 				)}
 
@@ -83,7 +87,7 @@ export default function CardFace({
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: Palette) => StyleSheet.create({
 	root: {
 		flex: 1,
 	},
@@ -105,9 +109,9 @@ const styles = StyleSheet.create({
 		width: 38,
 		height: 38,
 		borderRadius: 999,
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
@@ -119,25 +123,25 @@ const styles = StyleSheet.create({
 		transform: [{ rotate: '-1deg' }],
 	},
 	stickerShadow: {
-		backgroundColor: COLORS.shadow,
+		backgroundColor: c.shadow,
 		borderRadius: RADII.sticker,
 		transform: [{ translateX: 5 }, { translateY: 5 }],
 	},
 	sticker: {
-		backgroundColor: COLORS.paper,
+		backgroundColor: c.paper,
 		borderWidth: BORDER,
-		borderColor: COLORS.ink,
+		borderColor: c.ink,
 		borderRadius: RADII.sticker,
 		paddingVertical: 14,
 		paddingHorizontal: 16,
 	},
 	name: {
 		fontFamily: FONTS.display,
-		color: COLORS.ink,
+		color: c.ink,
 	},
 	meta: {
 		marginTop: 5,
 		fontFamily: FONTS.semibold,
-		color: COLORS.muted,
+		color: c.muted,
 	},
 });
