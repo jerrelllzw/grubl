@@ -29,20 +29,29 @@ type Move = 'no' | 'shortlist';
 
 export default function SwipeScreen({
 	deck,
+	initialIndex = 0,
+	initialShortlist = [],
 	onBack,
 	onComplete,
 }: {
 	deck: Restaurant[];
+	/** Card to start on — non-zero when resuming a deck left mid-swipe. */
+	initialIndex?: number;
+	/** Shortlist carried over when resuming, so earlier "yums" aren't lost. */
+	initialShortlist?: Restaurant[];
 	/** Back to the search screen to change filters. */
 	onBack: () => void;
-	/** Deck exhausted or "Done" pressed — hand back the shortlist to choose from. */
-	onComplete: (shortlist: Restaurant[]) => void;
+	/** Deck exhausted or "Done" pressed — hand back the shortlist and stopping index. */
+	onComplete: (shortlist: Restaurant[], atIndex: number) => void;
 }) {
 	const insets = useSafeAreaInsets();
-	const [index, setIndex] = useState(0);
-	const [shortlistCount, setShortlistCount] = useState(0);
+	const [index, setIndex] = useState(initialIndex);
+	const [shortlistCount, setShortlistCount] = useState(initialShortlist.length);
+	// Moves made *this session* — bounds undo so a resumed deck can't rewind past
+	// where it picked up (historyRef starts empty even when initialIndex > 0).
+	const [moveCount, setMoveCount] = useState(0);
 	const [detail, setDetail] = useState<Restaurant | null>(null); // place shown in the detail sheet
-	const shortlistRef = useRef<Restaurant[]>([]);
+	const shortlistRef = useRef<Restaurant[]>(initialShortlist);
 	const historyRef = useRef<Move[]>([]); // each committed move, for undo
 
 	const tx = useSharedValue(0);
@@ -57,12 +66,13 @@ export default function SwipeScreen({
 				setShortlistCount(shortlistRef.current.length);
 			}
 			historyRef.current.push(move);
+			setMoveCount((c) => c + 1);
 			Haptics.selectionAsync().catch(() => {});
 			tx.value = 0;
 			ty.value = 0;
 			locked.value = false;
 			const next = index + 1;
-			if (next >= deck.length) onComplete(shortlistRef.current);
+			if (next >= deck.length) onComplete(shortlistRef.current, next);
 			else setIndex(next);
 		},
 		[deck, index, onComplete, tx, ty, locked]
@@ -71,8 +81,9 @@ export default function SwipeScreen({
 	// Rewind the last committed move: step back a card and drop it from the
 	// shortlist if that's where it went.
 	const undo = useCallback(() => {
-		if (locked.value || index === 0) return;
+		if (locked.value || moveCount === 0) return;
 		const last = historyRef.current.pop();
+		setMoveCount((c) => c - 1);
 		if (last === 'shortlist') {
 			shortlistRef.current = shortlistRef.current.slice(0, -1);
 			setShortlistCount(shortlistRef.current.length);
@@ -84,7 +95,7 @@ export default function SwipeScreen({
 		ty.value = 0;
 		tx.value = withTiming(0, { duration: 300 });
 		ty.value = withTiming(0, { duration: 300 });
-	}, [index, tx, ty, locked]);
+	}, [index, moveCount, tx, ty, locked]);
 
 	// Fling the top card off-screen, then run the matching handler. Used by the
 	// action buttons; the pan gesture mirrors this inline on its worklet thread.
@@ -102,8 +113,8 @@ export default function SwipeScreen({
 
 	const handleDone = useCallback(() => {
 		if (locked.value) return;
-		onComplete(shortlistRef.current);
-	}, [onComplete, locked]);
+		onComplete(shortlistRef.current, index);
+	}, [onComplete, index, locked]);
 
 	const pan = Gesture.Pan()
 		.onUpdate((e) => {
@@ -225,7 +236,7 @@ export default function SwipeScreen({
 					color={COLORS.ink}
 					radius={RADII.pill}
 					onPress={undo}
-					disabled={index === 0}
+					disabled={moveCount === 0}
 					accessibilityLabel="Undo last swipe"
 					faceStyle={styles.undoButton}
 				>

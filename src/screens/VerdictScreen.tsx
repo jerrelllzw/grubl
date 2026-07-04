@@ -15,6 +15,8 @@ export default function VerdictScreen({
 	shortlist,
 	deck,
 	onPick,
+	onBack,
+	onReshuffle,
 	onAgain,
 	onNewSearch,
 }: {
@@ -22,6 +24,8 @@ export default function VerdictScreen({
 	shortlist: Restaurant[];
 	deck: Restaurant[]; // the full swiped deck — lets grubl pick even with an empty shortlist
 	onPick: (r: Restaurant) => void;
+	onBack: () => void; // resume swiping where they left off (shortlist kept)
+	onReshuffle: () => void; // drop the locked-in pick, back to the shortlist / wheel
 	onAgain: () => void;
 	onNewSearch: () => void;
 }) {
@@ -174,6 +178,18 @@ export default function VerdictScreen({
 							{renderRows(others, null)}
 						</>
 					)}
+
+					{shortlist.length >= 2 && (
+						<Pressable
+							onPress={onReshuffle}
+							style={styles.reshuffle}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel="Spin again — let grubl re-pick from your shortlist"
+						>
+							<Text style={styles.reshuffleText}>↻ Spin again</Text>
+						</Pressable>
+					)}
 				</>
 			) : shortlist.length > 0 ? (
 				// No pick yet — spin the wheel, or tap one yourself.
@@ -243,7 +259,7 @@ export default function VerdictScreen({
 
 			<Pressable
 				style={[styles.backButton, { top: insets.top + 12 }]}
-				onPress={onAgain}
+				onPress={onBack}
 				hitSlop={8}
 				accessibilityRole="button"
 				accessibilityLabel="Back to swiping"
@@ -360,6 +376,16 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		letterSpacing: 1.2,
 		color: COLORS.muted,
+	},
+	reshuffle: {
+		marginTop: 24,
+		paddingVertical: 8,
+	},
+	reshuffleText: {
+		fontFamily: FONTS.bold,
+		fontSize: 15,
+		color: COLORS.ink,
+		textDecorationLine: 'underline',
 	},
 	shortlist: {
 		width: '100%',

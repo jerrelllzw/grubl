@@ -16,7 +16,6 @@ import HardButton from '../components/HardButton';
 import { DEFAULT_RADIUS, PRICE_KEYS, PRICE_MAP, RADII_OPTIONS } from '../constants/googlePlaces';
 import type { SearchQuery } from '../data/restaurants';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
-import { handleError } from '../utils/errorHandler';
 import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 
 export default function SearchScreen({
@@ -36,6 +35,7 @@ export default function SearchScreen({
 	const [isLocating, setIsLocating] = useState(false);
 	const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
+	const [error, setError] = useState<string | null>(null); // inline, on-brand feedback
 	const suppressAutocomplete = useRef(false);
 
 	const [radius, setRadius] = useState(initial?.radius ?? DEFAULT_RADIUS);
@@ -54,6 +54,7 @@ export default function SearchScreen({
 	const onChangeLocation = (text: string) => {
 		setLocation(text);
 		setCoords(null); // typed text no longer matches the resolved GPS coords
+		if (error) setError(null); // clear stale feedback as the user fixes it
 	};
 
 	const clearLocation = () => {
@@ -70,13 +71,18 @@ export default function SearchScreen({
 	// The ANY chip clears every specific price back to "no constraint".
 	const setAnyPrice = () => setPriceLevels([]);
 
-	const resolveCurrentLocation = useCurrentLocation((label, resolved) => {
-		setLocation(label);
-		setCoords(resolved);
-	});
+	const resolveCurrentLocation = useCurrentLocation(
+		(label, resolved) => {
+			setLocation(label);
+			setCoords(resolved);
+			setError(null);
+		},
+		setError
+	);
 
 	const useCurrentLocationPress = async () => {
 		try {
+			setError(null);
 			setIsLocating(true);
 			suppressAutocomplete.current = true;
 			await resolveCurrentLocation();
@@ -91,7 +97,7 @@ export default function SearchScreen({
 
 	const handleFind = () => {
 		if (!location.trim()) {
-			handleError('No location', 'Enter a location to start swiping.');
+			setError('Tell grubl where you are to start swiping.');
 			return;
 		}
 		Keyboard.dismiss();
@@ -216,6 +222,13 @@ export default function SearchScreen({
 							</View>
 						)}
 					</View>
+
+					{error && (
+						<View style={styles.errorBanner} accessibilityRole="alert">
+							<Ionicons name="alert-circle" size={18} color={COLORS.tomato} />
+							<Text style={styles.errorText}>{error}</Text>
+						</View>
+					)}
 				</View>
 
 				{/* Radius */}
@@ -346,6 +359,24 @@ const styles = StyleSheet.create({
 	locationAnchor: {
 		position: 'relative',
 		zIndex: 30,
+	},
+	errorBanner: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
+		marginTop: 12,
+		paddingVertical: 10,
+		paddingHorizontal: 12,
+		backgroundColor: COLORS.paper,
+		borderWidth: 2,
+		borderColor: COLORS.tomato,
+		borderRadius: RADII.sticker,
+	},
+	errorText: {
+		flex: 1,
+		fontFamily: FONTS.semibold,
+		fontSize: 13,
+		color: COLORS.ink,
 	},
 	gpsPrimary: {
 		flexDirection: 'row',

@@ -6,12 +6,15 @@ import { handleError } from '../utils/errorHandler';
 // exact coordinates, so callers can search without a second geocoding round-trip.
 // Permission + GPS come from the OS (expo-location); the coords→label step uses
 // Photon/OSM, matching the autocomplete source so labels read consistently.
-export function useCurrentLocation(onResolved: (label: string, coords: Coordinates) => void) {
+export function useCurrentLocation(
+	onResolved: (label: string, coords: Coordinates) => void,
+	onError?: (message: string) => void
+) {
 	return async () => {
 		try {
 			const { status } = await Location.requestForegroundPermissionsAsync();
 			if (status !== 'granted') {
-				handleError('Permission denied', 'Permission to access location was denied');
+				onError?.('Location access is off. Turn it on, or type an address instead.');
 				return Promise.reject(new Error('Permission denied'));
 			}
 
@@ -29,7 +32,8 @@ export function useCurrentLocation(onResolved: (label: string, coords: Coordinat
 			onResolved(label, coords);
 			return Promise.resolve(label);
 		} catch (error) {
-			handleError(error, 'Failed to get current location');
+			handleError(error);
+			onError?.('Couldn’t pin down your location. Try again, or type an address.');
 			return Promise.reject(error);
 		}
 	};

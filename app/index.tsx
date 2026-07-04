@@ -40,6 +40,7 @@ export default function Index() {
 	const [emptyReason, setEmptyReason] = useState<'location' | 'no-results' | 'error'>('no-results');
 	const [winner, setWinner] = useState<Restaurant | null>(null); // null → let the user choose
 	const [shortlist, setShortlist] = useState<Restaurant[]>([]); // the "yum" pile (swipe right)
+	const [swipeIndex, setSwipeIndex] = useState(0); // where the deck was left off, so we can resume
 	const [runId, setRunId] = useState(0); // remounts the deck for a fresh swipe run
 
 	useEffect(() => {
@@ -51,6 +52,8 @@ export default function Index() {
 	const handleSearch = useCallback(async (q: SearchQuery) => {
 		setQuery(q);
 		setDeck([]);
+		setShortlist([]); // a new deck starts with an empty shortlist…
+		setSwipeIndex(0); // …swiped from the top
 		setLoading(true);
 		setRunId((id) => id + 1);
 		setScreen('swipe');
@@ -69,9 +72,11 @@ export default function Index() {
 	}, [query, handleSearch]);
 
 	// Deck exhausted or "Done" pressed — no pick yet, so the verdict screen lets
-	// the user spin the wheel or tap a place from their shortlist.
-	const handleComplete = useCallback((maybes: Restaurant[]) => {
+	// the user spin the wheel or tap a place from their shortlist. We stash the
+	// stopping index so "back" from the verdict can resume the deck in place.
+	const handleComplete = useCallback((maybes: Restaurant[], atIndex: number) => {
 		setShortlist(maybes);
+		setSwipeIndex(atIndex);
 		setWinner(null);
 		setScreen('result');
 	}, []);
@@ -79,11 +84,22 @@ export default function Index() {
 	// Promote a specific shortlisted place to the pick (tapped from the shortlist).
 	const handlePick = useCallback((r: Restaurant) => setWinner(r), []);
 
+	// Back from the verdict → resume swiping right where they left off, shortlist
+	// intact (unlike "Swipe again", which deliberately restarts the deck).
+	const handleResume = useCallback(() => {
+		setWinner(null);
+		setScreen('swipe');
+	}, []);
+
+	// Drop a locked-in pick to return to the shortlist / spin-the-wheel view.
+	const handleReshuffle = useCallback(() => setWinner(null), []);
+
 	const handleAgain = useCallback(() => {
 		// Re-swipe the same deck without another API round-trip.
 		setRunId((id) => id + 1);
 		setWinner(null);
 		setShortlist([]);
+		setSwipeIndex(0);
 		setScreen('swipe');
 	}, []);
 
@@ -111,6 +127,8 @@ export default function Index() {
 							<SwipeScreen
 								key={runId}
 								deck={deck}
+								initialIndex={swipeIndex}
+								initialShortlist={shortlist}
 								onBack={handleNewSearch}
 								onComplete={handleComplete}
 							/>
@@ -122,6 +140,8 @@ export default function Index() {
 							shortlist={shortlist}
 							deck={deck}
 							onPick={handlePick}
+							onBack={swipeIndex < deck.length ? handleResume : handleNewSearch}
+							onReshuffle={handleReshuffle}
 							onAgain={handleAgain}
 							onNewSearch={handleNewSearch}
 						/>

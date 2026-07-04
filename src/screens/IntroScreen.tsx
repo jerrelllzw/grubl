@@ -7,26 +7,24 @@ import { BORDER, COLORS, FONTS, RADII } from '../theme/tokens';
 export default function IntroScreen({ onStart }: { onStart: () => void }) {
 	const insets = useSafeAreaInsets();
 	return (
-		<View style={[styles.container, { paddingTop: insets.top + 44, paddingBottom: insets.bottom + 40 }]}>
+		<View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
 			<Text style={styles.wordmark}>
 				grubl<Text style={styles.dot}>.</Text>
 			</Text>
 			<Text style={styles.tagline}>Stop scrolling menus.{'\n'}Swipe. Eat. Done.</Text>
 
-			<View style={styles.bottom}>
-				<HardButton
-					dx={6}
-					dy={6}
-					color={COLORS.tomato}
-					radius={RADII.cta}
-					onPress={onStart}
-					accessibilityLabel="Start — set up a food search"
-					containerStyle={styles.ctaContainer}
-					faceStyle={styles.ctaFace}
-				>
-					<Text style={styles.ctaText}>FEED ME →</Text>
-				</HardButton>
-			</View>
+			<HardButton
+				dx={6}
+				dy={6}
+				color={COLORS.tomato}
+				radius={RADII.cta}
+				onPress={onStart}
+				accessibilityLabel="Start — set up a food search"
+				containerStyle={styles.ctaContainer}
+				faceStyle={styles.ctaFace}
+			>
+				<Text style={styles.ctaText}>FEED ME →</Text>
+			</HardButton>
 		</View>
 	);
 }
@@ -36,6 +34,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: COLORS.cream,
 		paddingHorizontal: 28,
+		// Group the wordmark, tagline and CTA as one block in the vertical centre
+		// instead of splitting them top-and-bottom with a dead band between.
+		justifyContent: 'center',
 	},
 	wordmark: {
 		fontFamily: FONTS.display,
@@ -54,11 +55,8 @@ const styles = StyleSheet.create({
 		lineHeight: 19 * 1.35,
 		color: COLORS.ink,
 	},
-	bottom: {
-		marginTop: 'auto',
-	},
 	ctaContainer: {
-		marginTop: 28,
+		marginTop: 40,
 	},
 	ctaFace: {
 		width: '100%',
