@@ -25,11 +25,11 @@ export default function IntroScreen({ onStart }: { onStart: () => void }) {
 				color={c.shadow}
 				radius={RADII.cta}
 				onPress={onStart}
-				accessibilityLabel="Start — set up a food search"
+				accessibilityLabel="Get started — set up a food search"
 				containerStyle={styles.ctaContainer}
 				faceStyle={styles.ctaFace}
 			>
-				<Text style={styles.ctaText}>FEED ME →</Text>
+				<Text style={styles.ctaText}>GET STARTED →</Text>
 			</HardButton>
 		</View>
 	);

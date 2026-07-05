@@ -23,7 +23,7 @@ const SWIPE_THRESHOLD = 90;
 const FLY_DISTANCE = 640;
 const EASE = Easing.in(Easing.ease);
 
-// Every card ends up in one of two piles: skipped, or shortlisted as a "yum".
+// Every card ends up in one of two piles: skipped ("no"), or shortlisted ("yes").
 // Grubl doesn't ask you to pick the winner here — that's the wheel's job later —
 // so a right swipe just adds to the shortlist and keeps you on the deck.
 type Move = 'no' | 'shortlist';
@@ -131,7 +131,7 @@ export default function SwipeScreen({
 			if (Math.abs(dx) > SWIPE_THRESHOLD) {
 				locked.value = true;
 				ty.value = withTiming(ty.value - 40, { duration: 300, easing: EASE });
-				// Right → yum (shortlist); left → nah (skip).
+				// Right → yes (shortlist); left → no (skip).
 				const dir: Move = dx > 0 ? 'shortlist' : 'no';
 				tx.value = withTiming(dx > 0 ? FLY_DISTANCE : -FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
 					if (f) runOnJS(commit)(dir);
@@ -222,10 +222,10 @@ export default function SwipeScreen({
 							<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
 								<CardFace restaurant={r} onInfo={() => setDetail(r)}>
 									<Animated.View style={[styles.stamp, styles.stampLeft, yumStampStyle]}>
-										<Text style={[styles.stampText, { color: c.green }]}>YUM</Text>
+										<Text style={[styles.stampText, { color: c.green }]}>YES</Text>
 									</Animated.View>
 									<Animated.View style={[styles.stamp, styles.stampRight, nopeStampStyle]}>
-										<Text style={[styles.stampText, { color: c.rose }]}>NAH</Text>
+										<Text style={[styles.stampText, { color: c.rose }]}>NO</Text>
 									</Animated.View>
 								</CardFace>
 							</Animated.View>
@@ -253,7 +253,7 @@ export default function SwipeScreen({
 					color={c.shadow}
 					radius={RADII.pill}
 					onPress={() => fling('no')}
-					accessibilityLabel="Nah — skip this place"
+					accessibilityLabel="No — skip this place"
 					faceStyle={styles.nopeButton}
 				>
 					<Text style={styles.nopeGlyph}>✕</Text>
@@ -264,11 +264,11 @@ export default function SwipeScreen({
 					color={c.shadow}
 					radius={RADII.pill}
 					onPress={() => fling('shortlist')}
-					accessibilityLabel="Yum — add to your shortlist"
+					accessibilityLabel="Yes — add to your shortlist"
 					containerStyle={styles.yumContainer}
 					faceStyle={styles.yumButton}
 				>
-					<Text style={styles.yumText}>YUM ♥</Text>
+					<Text style={styles.yumText}>YES</Text>
 				</HardButton>
 			</View>
 

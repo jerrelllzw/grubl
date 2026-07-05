@@ -151,7 +151,7 @@ export default function VerdictScreen({
 					{others.length > 0 && (
 						<>
 							<Text style={styles.shortlistLabel}>
-								CHANGED YOUR MIND? TAP ANOTHER OF YOUR {others.length}
+								OR PICK ANOTHER OF YOUR {others.length}
 							</Text>
 							{renderRows(others)}
 						</>
@@ -182,7 +182,7 @@ export default function VerdictScreen({
 					{shortlist.length >= 2 ? (
 						<>
 							<Text style={styles.chooseBody}>
-								{spinning ? 'Rolling…' : 'Can’t decide? Let Grubl call it.'}
+								{spinning ? 'Spinning…' : 'Can’t decide? Let Grubl pick.'}
 							</Text>
 							<HardButton
 								dx={6}
@@ -217,15 +217,15 @@ export default function VerdictScreen({
 						</>
 					) : (
 						<>
-							<Text style={styles.chooseBody}>Only one made the cut. Tap it.</Text>
+							<Text style={styles.chooseBody}>Only one match. Tap to choose.</Text>
 							{renderRows(shortlist)}
 						</>
 					)}
 				</>
 			) : (
 				<>
-					<Text style={styles.toughHeadline}>TOUGH{'\n'}CROWD.</Text>
-					<Text style={styles.toughBody}>You said nah to everything.{'\n'}Still gotta eat, though.</Text>
+					<Text style={styles.toughHeadline}>NO{'\n'}PICKS.</Text>
+					<Text style={styles.toughBody}>You passed on everything.{'\n'}Pick one anyway?</Text>
 					{deck.length > 0 && (
 						<HardButton
 							dx={6}

@@ -13,7 +13,7 @@ export function LoadingScreen({ location }: { location: string }) {
 				Grubl<Text style={styles.dot}>.</Text>
 			</Text>
 			<ActivityIndicator size="large" color={c.tomato} style={styles.spinner} />
-			<Text style={styles.loadingTitle}>SNIFFING OUT SPOTS</Text>
+			<Text style={styles.loadingTitle}>FINDING PLACES</Text>
 			<Text style={styles.loadingSub} numberOfLines={2}>
 				near {location}
 			</Text>
@@ -36,11 +36,11 @@ export function EmptyScreen({
 	const isError = reason === 'error';
 	const isLocation = reason === 'location';
 
-	const headline = isError ? 'NO\nSIGNAL.' : isLocation ? 'WHERE’S\nTHAT?' : 'TOUGH\nLUCK.';
+	const headline = isError ? 'NO\nCONNECTION.' : isLocation ? 'NOT\nFOUND.' : 'NO\nMATCHES.';
 	const body = isError
-		? 'Couldn’t reach the kitchen.\nCheck your connection and\ntry again.'
+		? 'Couldn’t connect.\nCheck your connection and\ntry again.'
 		: isLocation
-			? 'We couldn’t find that place.\nCheck the spelling or tap the\nlocation button to use GPS.'
+			? 'We couldn’t find that location.\nCheck the spelling or tap the\nlocation button to use GPS.'
 			: 'Nothing matched your search.\nWiden the radius or drop a filter.';
 
 	return (

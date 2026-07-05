@@ -10,8 +10,8 @@
     "lint": "expo lint"
   },
   "dependencies": {
-    "@expo-google-fonts/archivo-black": "^0.4.1",
-    "@expo-google-fonts/space-grotesk": "^0.4.1",
+    "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
+    "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo/vector-icons": "^14.1.0",
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.3.10",

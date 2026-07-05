@@ -1,10 +1,10 @@
-import { ArchivoBlack_400Regular } from '@expo-google-fonts/archivo-black';
+import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
 import {
-	SpaceGrotesk_400Regular,
-	SpaceGrotesk_500Medium,
-	SpaceGrotesk_600SemiBold,
-	SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
+	DMSans_400Regular,
+	DMSans_500Medium,
+	DMSans_600SemiBold,
+	DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -37,11 +37,11 @@ function ThemedRoot({ children }: { children: React.ReactNode }) {
 
 export default function Index() {
 	const [fontsLoaded, fontError] = useFonts({
-		ArchivoBlack_400Regular,
-		SpaceGrotesk_400Regular,
-		SpaceGrotesk_500Medium,
-		SpaceGrotesk_600SemiBold,
-		SpaceGrotesk_700Bold,
+		BricolageGrotesque_800ExtraBold,
+		DMSans_400Regular,
+		DMSans_500Medium,
+		DMSans_600SemiBold,
+		DMSans_700Bold,
 	});
 
 	const [screen, setScreen] = useState<Screen>('intro');

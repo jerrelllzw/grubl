@@ -9,7 +9,7 @@
 //   cream/ground = background · paper/panel = surface   (these flip with the theme)
 //   ink = text + hairline outlines · muted = secondary text
 //   brass/tomato = PRIMARY accent (persimmon — CTAs, wordmark dot)
-//   jade/green = yes / YUM · rose = no / NAH · yolk/amber = secondary (honey)
+//   jade/green = yes · rose = no · yolk/amber = secondary (honey)
 //   shadow = hard offset · line = divider · stone = quiet no
 //   onAccent = text/icon on a SATURATED accent (persimmon/jade/berry) — light, both themes
 //   onWarm   = text/icon on the LIGHT honey accent (yolk) — dark, both themes
@@ -26,13 +26,11 @@ export type Palette = {
 	brass: string;
 	brassDeep: string;
 	tomato: string;
-	amethyst: string;
 	yolk: string;
 	rose: string;
 	jade: string;
 	green: string;
 	amber: string;
-	teal: string;
 	stone: string;
 	shadow: string;
 	line: string;
@@ -52,13 +50,11 @@ const LIGHT: Palette = {
 	brass: '#D8481F', // persimmon — primary
 	brassDeep: '#B23A16',
 	tomato: '#D8481F', // alias → primary
-	amethyst: '#8A6FB8',
 	yolk: '#E9A23B', // secondary → honey/amber
-	rose: '#C6455F', // berry — no / NAH
-	jade: '#2FA46B', // yes / yum
+	rose: '#C6455F', // berry — the "no" accent
+	jade: '#2FA46B', // the "yes" accent
 	green: '#2FA46B', // alias → jade
 	amber: '#E9A23B',
-	teal: '#4194AE',
 	stone: '#B9AE9C', // quiet no / skip
 	shadow: '#3A2A1E', // warm dark hard offset on cream
 	line: 'rgba(42,28,20,0.12)',
@@ -78,13 +74,11 @@ const DARK: Palette = {
 	brass: '#EA5A34', // persimmon — a touch brighter for the dark ground
 	brassDeep: '#B23A16',
 	tomato: '#EA5A34',
-	amethyst: '#A98BD8',
 	yolk: '#E9A23B', // honey holds up on dark
 	rose: '#E06B82', // berry — brighter
 	jade: '#35B884', // basil — brighter
 	green: '#35B884',
 	amber: '#E9A23B',
-	teal: '#4FA6C0',
 	stone: '#6E6559',
 	shadow: '#0B0705', // near-black hard offset reads on the dark ground
 	line: 'rgba(243,233,217,0.14)',
@@ -99,13 +93,16 @@ export type ThemeName = keyof typeof PALETTES;
 // prefer `useColors()` so the value tracks the live theme.
 export const COLORS: Palette = PALETTES.light;
 
-// Google Fonts loaded via expo-font.
+// Google Fonts loaded via expo-font. Bricolage Grotesque — a warm, slightly quirky
+// grotesque — carries the display voice (wordmark, headlines, stamps): its heft sits
+// right on the neo-brutalist hard shadows. DM Sans handles UI/body text across
+// weights: clean but not cold.
 export const FONTS = {
-	display: 'ArchivoBlack_400Regular', // single-weight display face
-	regular: 'SpaceGrotesk_400Regular',
-	medium: 'SpaceGrotesk_500Medium',
-	semibold: 'SpaceGrotesk_600SemiBold',
-	bold: 'SpaceGrotesk_700Bold',
+	display: 'BricolageGrotesque_800ExtraBold', // single-weight display face — brutalist poster
+	regular: 'DMSans_400Regular',
+	medium: 'DMSans_500Medium',
+	semibold: 'DMSans_600SemiBold',
+	bold: 'DMSans_700Bold',
 } as const;
 
 export const RADII = {

@@ -101,7 +101,7 @@ export default function SearchScreen({
 
 	const handleFind = () => {
 		if (!location.trim()) {
-			setError('Tell Grubl where you are to start swiping.');
+			setError('Enter a location to search.');
 			return;
 		}
 		Keyboard.dismiss();
@@ -140,7 +140,7 @@ export default function SearchScreen({
 					>
 						<Ionicons name="chevron-back" size={24} color={c.ink} />
 					</Pressable>
-					<Text style={styles.title}>WHAT SOUNDS GOOD?</Text>
+					<Text style={styles.title}>FIND FOOD</Text>
 				</View>
 				<ThemeToggle />
 			</View>
@@ -310,8 +310,8 @@ export default function SearchScreen({
 			</ScrollView>
 
 			<View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-				<HardButton dx={6} dy={6} color={c.shadow} radius={RADII.cta} onPress={handleFind} accessibilityLabel="Find food" faceStyle={styles.ctaFace}>
-					<Text style={styles.ctaText}>FIND FOOD →</Text>
+				<HardButton dx={6} dy={6} color={c.shadow} radius={RADII.cta} onPress={handleFind} accessibilityLabel="Search" faceStyle={styles.ctaFace}>
+					<Text style={styles.ctaText}>SEARCH →</Text>
 				</HardButton>
 			</View>
 		</View>

@@ -8,7 +8,7 @@ export default {
 		orientation: 'portrait',
 		icon: './assets/images/icon.png',
 		scheme: 'grubl',
-		userInterfaceStyle: 'light',
+		userInterfaceStyle: 'automatic',
 		newArchEnabled: true,
 		ios: {
 			supportsTablet: true,
@@ -32,7 +32,7 @@ export default {
 			[
 				'expo-location',
 				{
-					locationWhenInUsePermission: 'grubl uses your location to find restaurants near you.',
+					locationWhenInUsePermission: 'Grubl uses your location to find restaurants near you.',
 				},
 			],
 			[
