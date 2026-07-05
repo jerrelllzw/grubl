@@ -1,36 +1,25 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HardButton from '../components/HardButton';
+import Wordmark from '../components/Wordmark';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 
-export function LoadingScreen({ location }: { location: string }) {
-	const c = useColors();
-	const styles = useThemedStyles(makeStyles);
-	return (
-		<View style={styles.center}>
-			<Text style={styles.wordmark}>
-				Grubl<Text style={styles.dot}>.</Text>
-			</Text>
-			<ActivityIndicator size="large" color={c.tomato} style={styles.spinner} />
-			<Text style={styles.loadingTitle}>FINDING PLACES</Text>
-			<Text style={styles.loadingSub} numberOfLines={2}>
-				near {location}
-			</Text>
-		</View>
-	);
-}
-
 export function EmptyScreen({
 	reason = 'no-results',
+	loading = false,
 	onAdjust,
 	onRetry,
 }: {
 	reason?: 'location' | 'no-results' | 'error';
+	/** True while a retry is refetching — shows a spinner on the retry button. */
+	loading?: boolean;
 	onAdjust: () => void;
 	/** Re-runs the last search; used by the connectivity-error variant. */
 	onRetry?: () => void;
 }) {
+	const insets = useSafeAreaInsets();
 	const c = useColors();
 	const styles = useThemedStyles(makeStyles);
 	const isError = reason === 'error';
@@ -45,6 +34,9 @@ export function EmptyScreen({
 
 	return (
 		<View style={styles.center}>
+			<View style={[styles.brand, { top: insets.top + 16 }]}>
+				<Wordmark size={22} />
+			</View>
 			<Text style={styles.headline}>{headline}</Text>
 			<Text style={styles.body}>{body}</Text>
 			{isError && onRetry ? (
@@ -53,12 +45,16 @@ export function EmptyScreen({
 					dy={5}
 					color={c.shadow}
 					radius={RADII.sticker}
-					onPress={onRetry}
+					onPress={loading ? undefined : onRetry}
 					accessibilityLabel="Try the search again"
 					containerStyle={styles.button}
 					faceStyle={styles.buttonFace}
 				>
-					<Text style={styles.buttonText}>TRY AGAIN</Text>
+					{loading ? (
+						<ActivityIndicator size="small" color={c.onWarm} />
+					) : (
+						<Text style={styles.buttonText}>TRY AGAIN</Text>
+					)}
 				</HardButton>
 			) : (
 				<HardButton
@@ -91,31 +87,11 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		justifyContent: 'center',
 		padding: 36,
 	},
-	wordmark: {
-		fontFamily: FONTS.display,
-		fontSize: 52,
-		color: c.ink,
-		letterSpacing: -1,
-	},
-	dot: {
-		color: c.tomato,
-	},
-	spinner: {
-		marginTop: 26,
-		marginBottom: 20,
-	},
-	loadingTitle: {
-		fontFamily: FONTS.bold,
-		fontSize: 15,
-		letterSpacing: 1.5,
-		color: c.ink,
-	},
-	loadingSub: {
-		marginTop: 6,
-		fontFamily: FONTS.medium,
-		fontSize: 15,
-		color: c.muted,
-		textAlign: 'center',
+	brand: {
+		position: 'absolute',
+		left: 0,
+		right: 0,
+		alignItems: 'center',
 	},
 	headline: {
 		fontFamily: FONTS.display,

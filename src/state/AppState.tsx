@@ -43,7 +43,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 	const [swipeIndex, setSwipeIndex] = useState(0);
 	const [runId, setRunId] = useState(0);
 
-	// Fetch a deck for q. `navigate` pushes the swipe route (a brand-new search);
+	// Fetch a deck for q. We fetch first (with the spinner shown on the calling
+	// screen) and only navigate once results are in — there's no standalone
+	// loading screen. `navigate` pushes the swipe route for a brand-new search;
 	// retry re-runs in place on the swipe route that's already showing.
 	const performFetch = useCallback(
 		async (q: SearchQuery, navigate: boolean) => {
@@ -52,12 +54,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 			setSwipeIndex(0); // …swiped from the top
 			setWinner(null);
 			setLoading(true);
-			setRunId((id) => id + 1);
-			if (navigate) router.push('/swipe');
 			try {
 				const { deck: found, status } = await searchRestaurants(q);
 				setDeck(found);
 				setEmptyReason(status === 'error' ? 'error' : status === 'no-location' ? 'location' : 'no-results');
+				setRunId((id) => id + 1);
+				if (navigate) router.push('/swipe');
 			} finally {
 				setLoading(false);
 			}

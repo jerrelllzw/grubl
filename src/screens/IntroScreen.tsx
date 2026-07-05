@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HardButton from '../components/HardButton';
 import ThemeToggle from '../components/ThemeToggle';
+import Wordmark from '../components/Wordmark';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 
@@ -14,9 +15,7 @@ export default function IntroScreen({ onStart }: { onStart: () => void }) {
 		<View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
 			<ThemeToggle style={[styles.toggle, { top: insets.top + 16 }]} />
 
-			<Text style={styles.wordmark}>
-				Grubl<Text style={styles.dot}>.</Text>
-			</Text>
+			<Wordmark size={58} style={styles.wordmark} />
 			<Text style={styles.tagline}>No more “I don’t know.”</Text>
 			<Text style={styles.subline}>The fastest way to decide where to eat.</Text>
 
@@ -50,14 +49,8 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		right: 24,
 	},
 	wordmark: {
-		fontFamily: FONTS.display,
-		fontSize: 58,
-		color: c.ink,
-		letterSpacing: -1,
+		letterSpacing: -1, // tighter tracking for the big hero treatment
 		lineHeight: 58 * 0.95,
-	},
-	dot: {
-		color: c.tomato,
 	},
 	tagline: {
 		marginTop: 18,

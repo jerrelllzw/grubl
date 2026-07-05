@@ -14,6 +14,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
 import HardButton from '../components/HardButton';
+import Wordmark from '../components/Wordmark';
 import type { Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
@@ -172,9 +173,7 @@ export default function SwipeScreen({
 					>
 						<Ionicons name="arrow-undo" size={20} color={c.ink} />
 					</Pressable>
-					<Text style={styles.wordmark}>
-						Grubl<Text style={styles.dot}>.</Text>
-					</Text>
+					<Wordmark size={22} />
 				</View>
 				<View style={styles.headerRight}>
 					<Text style={styles.progressText}>{progress}</Text>
@@ -289,14 +288,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 	},
 	undoDisabled: {
 		opacity: 0.35,
-	},
-	wordmark: {
-		fontFamily: FONTS.display,
-		fontSize: 22,
-		color: c.ink,
-	},
-	dot: {
-		color: c.tomato,
 	},
 	headerRight: {
 		flexDirection: 'row',

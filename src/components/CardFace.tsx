@@ -1,6 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { metaLine, type Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
@@ -18,7 +17,6 @@ export default function CardFace({
 	nameSize = 23,
 	metaSize = 15,
 	emojiSize = 96,
-	onInfo,
 	children,
 }: {
 	restaurant: Restaurant;
@@ -27,8 +25,6 @@ export default function CardFace({
 	nameSize?: number;
 	metaSize?: number;
 	emojiSize?: number;
-	/** When set, shows an ⓘ button that opens the detail sheet for this place. */
-	onInfo?: () => void;
 	children?: React.ReactNode;
 }) {
 	const c = useColors();
@@ -50,18 +46,6 @@ export default function CardFace({
 			{/* bordered card */}
 			<View style={[StyleSheet.absoluteFillObject, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: c.ink, backgroundColor: c.paper, overflow: 'hidden' }]}>
 				<StripePhoto hue={restaurant.hue} radius={cardRadius} />
-
-				{onInfo && (
-					<Pressable
-						style={styles.infoButton}
-						onPress={onInfo}
-						hitSlop={8}
-						accessibilityRole="button"
-						accessibilityLabel={`More about ${restaurant.name}`}
-					>
-						<Ionicons name="information" size={22} color={c.ink} />
-					</Pressable>
-				)}
 
 				{/* emoji stand-in for a photo */}
 				<View style={styles.emojiWrap} pointerEvents="none">
@@ -100,20 +84,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 	},
 	emoji: {
 		textAlign: 'center',
-	},
-	infoButton: {
-		position: 'absolute',
-		top: 14,
-		right: 14,
-		zIndex: 5,
-		width: 38,
-		height: 38,
-		borderRadius: 999,
-		backgroundColor: c.paper,
-		borderWidth: BORDER,
-		borderColor: c.ink,
-		alignItems: 'center',
-		justifyContent: 'center',
 	},
 	stickerWrap: {
 		position: 'absolute',

@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchAutoComplete, type Coordinates, type Suggestion } from '../api/googlePlaces';
 import DistanceSlider from '../components/DistanceSlider';
 import HardButton from '../components/HardButton';
+import LoadingDots from '../components/LoadingDots';
 import ThemeToggle from '../components/ThemeToggle';
+import Wordmark from '../components/Wordmark';
 import {
 	DEFAULT_RADIUS_M,
 	PRICE_KEYS,
@@ -25,9 +27,12 @@ const formatKm = (m: number) => `${Number((m / 1000).toFixed(1))} km`;
 export default function SearchScreen({
 	initial,
 	onSearch,
+	loading = false,
 }: {
 	initial: SearchQuery | null;
 	onSearch: (query: SearchQuery) => void;
+	/** True while the search is fetching — shows a spinner on the CTA. */
+	loading?: boolean;
 }) {
 	const insets = useSafeAreaInsets();
 	const c = useColors();
@@ -43,12 +48,14 @@ export default function SearchScreen({
 	const suppressAutocomplete = useRef(false);
 
 	const [radius, setRadius] = useState(initial?.radius ?? DEFAULT_RADIUS_M);
-	// Empty = "any price" (no constraint). An explicit ANY chip owns that state so
-	// the user never has to reason about "all off means all on".
-	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? []);
+	// Empty = "any price" (no constraint). Default to every tier selected so the
+	// first search casts the widest net; the user narrows by toggling tiers off.
+	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? [...PRICE_KEYS]);
 	const [openNow, setOpenNow] = useState(initial?.openNow ?? true);
 
-	const priceIsAny = priceLevels.length === 0;
+	// Nothing selected and everything selected both mean "no price constraint" —
+	// show "Any" for both rather than spelling out all four tiers.
+	const priceIsAny = priceLevels.length === 0 || priceLevels.length === PRICE_KEYS.length;
 
 	const clearSuggestions = () => {
 		setSuggestions([]);
@@ -94,6 +101,7 @@ export default function SearchScreen({
 	};
 
 	const handleFind = () => {
+		if (loading) return; // a fetch is already in flight
 		if (!location.trim()) {
 			setError('Enter a location to search.');
 			return;
@@ -124,7 +132,7 @@ export default function SearchScreen({
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 14 }]}>
 			<View style={styles.header}>
-				<Text style={styles.title}>FIND FOOD</Text>
+				<Wordmark size={24} />
 				<ThemeToggle />
 			</View>
 
@@ -138,6 +146,17 @@ export default function SearchScreen({
 					setShowSuggestions(false);
 				}}
 			>
+				{/* Tap anywhere outside the dropdown to dismiss it. Sits above the other
+				    sections but below the location section, so the dropdown stays tappable. */}
+				{showSuggestions && suggestions.length > 0 && (
+					<Pressable
+						style={styles.dismissOverlay}
+						onPress={() => setShowSuggestions(false)}
+						accessibilityElementsHidden
+						importantForAccessibility='no-hide-descendants'
+					/>
+				)}
+
 				{/* Location */}
 				<View style={styles.locationSection}>
 					<Text style={styles.label}>LOCATION</Text>
@@ -151,11 +170,11 @@ export default function SearchScreen({
 						accessibilityLabel='Use my current location'
 					>
 						{isLocating ? (
-							<ActivityIndicator size='small' color={c.onWarm} />
+							<LoadingDots color={c.onWarm} size={7} />
 						) : (
 							<Ionicons name='locate' size={20} color={c.onWarm} />
 						)}
-						<Text style={styles.gpsPrimaryText}>{isLocating ? 'LOCATING…' : 'USE MY LOCATION'}</Text>
+						<Text style={styles.gpsPrimaryText}>{isLocating ? 'LOCATING' : 'USE MY LOCATION'}</Text>
 					</Pressable>
 
 					<View style={styles.orRow}>
@@ -169,7 +188,7 @@ export default function SearchScreen({
 						<View style={styles.inputWrap}>
 							<TextInput
 								style={styles.input}
-								placeholder='Where are you eating?'
+								placeholder='e.g. Marina Bay Sands'
 								placeholderTextColor={c.muted}
 								value={location}
 								onChangeText={onChangeLocation}
@@ -308,7 +327,14 @@ export default function SearchScreen({
 					accessibilityLabel='Find food'
 					faceStyle={styles.ctaFace}
 				>
-					<Text style={styles.ctaText}>SEARCH →</Text>
+					{loading ? (
+						<View style={styles.ctaLoading}>
+							<Text style={styles.ctaText}>FINDING</Text>
+							<LoadingDots color={c.onAccent} />
+						</View>
+					) : (
+						<Text style={styles.ctaText}>SEARCH →</Text>
+					)}
 				</HardButton>
 			</View>
 		</View>
@@ -328,11 +354,6 @@ const makeStyles = (c: Palette) =>
 			gap: 10,
 			paddingHorizontal: 20,
 			paddingBottom: 10,
-		},
-		title: {
-			fontFamily: FONTS.display,
-			fontSize: 22,
-			color: c.ink,
 		},
 		scroll: {
 			flex: 1,
@@ -490,6 +511,14 @@ const makeStyles = (c: Palette) =>
 			paddingHorizontal: 14,
 			paddingVertical: 6,
 		},
+		dismissOverlay: {
+			position: 'absolute',
+			top: 0,
+			left: 0,
+			right: 0,
+			bottom: 0,
+			zIndex: 20, // above the filter sections, below the location section (30) + dropdown (40)
+		},
 		section: {},
 		chipWrap: {
 			flexDirection: 'row',
@@ -575,8 +604,6 @@ const makeStyles = (c: Palette) =>
 			paddingHorizontal: 20,
 			paddingTop: 12,
 			backgroundColor: c.cream,
-			borderTopWidth: 1,
-			borderTopColor: c.line,
 		},
 		ctaFace: {
 			width: '100%',
@@ -585,6 +612,11 @@ const makeStyles = (c: Palette) =>
 			backgroundColor: c.brass,
 			borderWidth: BORDER,
 			borderColor: c.brassDeep,
+		},
+		ctaLoading: {
+			flexDirection: 'row',
+			alignItems: 'center',
+			gap: 12,
 		},
 		ctaText: {
 			fontFamily: FONTS.display,

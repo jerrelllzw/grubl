@@ -1,13 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
-import DetailSheet from '../components/DetailSheet';
 import HardButton from '../components/HardButton';
 import SlotReel from '../components/SlotReel';
 import StripePhoto from '../components/StripePhoto';
+import Wordmark from '../components/Wordmark';
 import { mapsUrl, metaLine, type Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
@@ -34,8 +33,6 @@ export default function VerdictScreen({
 	const styles = useThemedStyles(makeStyles);
 	// Everything on the shortlist that isn't already the pick.
 	const others = winner ? shortlist.filter((r) => r.id !== winner.id) : shortlist;
-
-	const [detail, setDetail] = useState<Restaurant | null>(null); // place shown in the detail sheet
 
 	// Spin the wheel — Grubl makes the call. The shortlist rolls past a fixed window
 	// like a slot machine (see SlotReel) and decelerates onto the pick.
@@ -86,16 +83,6 @@ export default function VerdictScreen({
 							{metaLine(r)}
 						</Text>
 					</View>
-					<Pressable
-						style={styles.rowInfo}
-						onPress={() => setDetail(r)}
-						disabled={spinning}
-						hitSlop={8}
-						accessibilityRole="button"
-						accessibilityLabel={`More about ${r.name}`}
-					>
-						<Ionicons name="information" size={18} color={c.ink} />
-					</Pressable>
 				</Pressable>
 			))}
 		</View>
@@ -111,12 +98,14 @@ export default function VerdictScreen({
 			]}
 			showsVerticalScrollIndicator={false}
 		>
+			<Wordmark size={22} style={styles.brand} />
+
 			{winner ? (
 				// A pick is locked in — spun for, or tapped from the shortlist.
 				<>
 					<View style={styles.headlineWrap}>
 						<Text style={styles.headline}>
-							GO EAT AT{'\n'}
+							EAT AT{'\n'}
 							<Text style={styles.headlineName}>{winner.name.toUpperCase()}</Text>
 						</Text>
 					</View>
@@ -129,7 +118,6 @@ export default function VerdictScreen({
 							nameSize={20}
 							metaSize={14}
 							emojiSize={84}
-							onInfo={() => setDetail(winner)}
 						/>
 					</View>
 
@@ -251,12 +239,6 @@ export default function VerdictScreen({
 				</Pressable>
 			</View>
 		</ScrollView>
-
-			<DetailSheet
-				restaurant={detail}
-				visible={detail !== null}
-				onClose={() => setDetail(null)}
-			/>
 		</View>
 	);
 }
@@ -273,6 +255,9 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 	container: {
 		paddingHorizontal: 28,
 		alignItems: 'center',
+	},
+	brand: {
+		marginBottom: 24,
 	},
 	headlineWrap: {
 		transform: [{ rotate: '-2deg' }],
@@ -401,16 +386,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		fontFamily: FONTS.semibold,
 		fontSize: 12,
 		color: c.muted,
-	},
-	rowInfo: {
-		width: 34,
-		height: 34,
-		borderRadius: RADII.pill,
-		borderWidth: 2,
-		borderColor: c.ink,
-		backgroundColor: c.cream,
-		alignItems: 'center',
-		justifyContent: 'center',
 	},
 	toughHeadline: {
 		marginTop: 40,
