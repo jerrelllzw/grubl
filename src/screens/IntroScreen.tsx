@@ -17,7 +17,8 @@ export default function IntroScreen({ onStart }: { onStart: () => void }) {
 			<Text style={styles.wordmark}>
 				Grubl<Text style={styles.dot}>.</Text>
 			</Text>
-			<Text style={styles.tagline}>Stop scrolling menus.{'\n'}Swipe. Eat. Done.</Text>
+			<Text style={styles.tagline}>No more “I don’t know.”</Text>
+			<Text style={styles.subline}>The fastest way to decide where to eat.</Text>
 
 			<HardButton
 				dx={6}
@@ -59,11 +60,20 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		color: c.tomato,
 	},
 	tagline: {
-		marginTop: 14,
-		fontFamily: FONTS.medium,
-		fontSize: 19,
-		lineHeight: 19 * 1.35,
+		marginTop: 18,
+		fontFamily: FONTS.semibold,
+		fontSize: 20,
+		lineHeight: 20 * 1.25,
+		letterSpacing: -0.4, // echoes the wordmark's tight tracking so they read as one voice
 		color: c.ink,
+	},
+	subline: {
+		marginTop: 8,
+		fontFamily: FONTS.medium,
+		fontSize: 15,
+		lineHeight: 15 * 1.3,
+		letterSpacing: -0.2,
+		color: c.muted,
 	},
 	ctaContainer: {
 		marginTop: 40,
