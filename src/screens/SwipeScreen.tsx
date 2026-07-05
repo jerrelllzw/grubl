@@ -13,7 +13,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
-import DetailSheet from '../components/DetailSheet';
 import HardButton from '../components/HardButton';
 import type { Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
@@ -32,7 +31,6 @@ export default function SwipeScreen({
 	deck,
 	initialIndex = 0,
 	initialShortlist = [],
-	onBack,
 	onComplete,
 }: {
 	deck: Restaurant[];
@@ -40,8 +38,6 @@ export default function SwipeScreen({
 	initialIndex?: number;
 	/** Shortlist carried over when resuming, so earlier "yums" aren't lost. */
 	initialShortlist?: Restaurant[];
-	/** Back to the search screen to change filters. */
-	onBack: () => void;
 	/** Deck exhausted or "Done" pressed — hand back the shortlist and stopping index. */
 	onComplete: (shortlist: Restaurant[], atIndex: number) => void;
 }) {
@@ -53,7 +49,6 @@ export default function SwipeScreen({
 	// Moves made *this session* — bounds undo so a resumed deck can't rewind past
 	// where it picked up (historyRef starts empty even when initialIndex > 0).
 	const [moveCount, setMoveCount] = useState(0);
-	const [detail, setDetail] = useState<Restaurant | null>(null); // place shown in the detail sheet
 	const shortlistRef = useRef<Restaurant[]>(initialShortlist);
 	const historyRef = useRef<Move[]>([]); // each committed move, for undo
 
@@ -167,13 +162,15 @@ export default function SwipeScreen({
 			<View style={styles.header}>
 				<View style={styles.headerLeft}>
 					<Pressable
-						style={styles.backButton}
-						onPress={onBack}
+						style={[styles.backButton, moveCount === 0 && styles.undoDisabled]}
+						onPress={undo}
+						disabled={moveCount === 0}
 						hitSlop={8}
 						accessibilityRole="button"
-						accessibilityLabel="Back to search"
+						accessibilityState={{ disabled: moveCount === 0 }}
+						accessibilityLabel="Undo last swipe"
 					>
-						<Ionicons name="chevron-back" size={22} color={c.ink} />
+						<Ionicons name="arrow-undo" size={20} color={c.ink} />
 					</Pressable>
 					<Text style={styles.wordmark}>
 						Grubl<Text style={styles.dot}>.</Text>
@@ -220,7 +217,7 @@ export default function SwipeScreen({
 					return (
 						<GestureDetector key={index + o} gesture={pan}>
 							<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
-								<CardFace restaurant={r} onInfo={() => setDetail(r)}>
+								<CardFace restaurant={r}>
 									<Animated.View style={[styles.stamp, styles.stampLeft, yumStampStyle]}>
 										<Text style={[styles.stampText, { color: c.green }]}>YES</Text>
 									</Animated.View>
@@ -240,23 +237,12 @@ export default function SwipeScreen({
 					dy={4}
 					color={c.shadow}
 					radius={RADII.pill}
-					onPress={undo}
-					disabled={moveCount === 0}
-					accessibilityLabel="Undo last swipe"
-					faceStyle={styles.undoButton}
-				>
-					<Ionicons name="arrow-undo" size={20} color={c.onWarm} />
-				</HardButton>
-				<HardButton
-					dx={4}
-					dy={4}
-					color={c.shadow}
-					radius={RADII.pill}
 					onPress={() => fling('no')}
 					accessibilityLabel="No — skip this place"
+					containerStyle={styles.actionHalf}
 					faceStyle={styles.nopeButton}
 				>
-					<Text style={styles.nopeGlyph}>✕</Text>
+					<Text style={styles.nopeText}>NO</Text>
 				</HardButton>
 				<HardButton
 					dx={4}
@@ -265,18 +251,12 @@ export default function SwipeScreen({
 					radius={RADII.pill}
 					onPress={() => fling('shortlist')}
 					accessibilityLabel="Yes — add to your shortlist"
-					containerStyle={styles.yumContainer}
+					containerStyle={styles.actionHalf}
 					faceStyle={styles.yumButton}
 				>
 					<Text style={styles.yumText}>YES</Text>
 				</HardButton>
 			</View>
-
-			<DetailSheet
-				restaurant={detail}
-				visible={detail !== null}
-				onClose={() => setDetail(null)}
-			/>
 		</View>
 	);
 }
@@ -306,6 +286,9 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
+	},
+	undoDisabled: {
+		opacity: 0.35,
 	},
 	wordmark: {
 		fontFamily: FONTS.display,
@@ -392,37 +375,27 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 	actions: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: 12,
+		gap: 14,
 		paddingHorizontal: 24,
 		paddingTop: 14,
 	},
-	undoButton: {
-		width: 52,
-		height: 52,
-		borderRadius: RADII.pill,
-		backgroundColor: c.yolk,
-		borderWidth: BORDER,
-		borderColor: c.ink,
-		alignItems: 'center',
-		justifyContent: 'center',
+	// Yes and No share the row evenly — same size, same weight, opposite intent.
+	actionHalf: {
+		flex: 1,
 	},
 	nopeButton: {
-		width: 60,
 		height: 60,
 		borderRadius: RADII.pill,
-		backgroundColor: c.paper,
+		backgroundColor: c.rose,
 		borderWidth: BORDER,
 		borderColor: c.ink,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	nopeGlyph: {
-		fontSize: 24,
-		color: c.ink,
-		lineHeight: 28,
-	},
-	yumContainer: {
-		flex: 1,
+	nopeText: {
+		fontFamily: FONTS.display,
+		fontSize: 20,
+		color: c.onAccent,
 	},
 	yumButton: {
 		height: 60,

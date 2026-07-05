@@ -17,7 +17,6 @@ export default function VerdictScreen({
 	shortlist,
 	deck,
 	onPick,
-	onBack,
 	onReshuffle,
 	onAgain,
 	onNewSearch,
@@ -26,7 +25,6 @@ export default function VerdictScreen({
 	shortlist: Restaurant[];
 	deck: Restaurant[]; // the full swiped deck — lets grubl pick even with an empty shortlist
 	onPick: (r: Restaurant) => void;
-	onBack: () => void; // resume swiping where they left off (shortlist kept)
 	onReshuffle: () => void; // drop the locked-in pick, back to the shortlist / wheel
 	onAgain: () => void;
 	onNewSearch: () => void;
@@ -254,16 +252,6 @@ export default function VerdictScreen({
 			</View>
 		</ScrollView>
 
-			<Pressable
-				style={[styles.backButton, { top: insets.top + 12 }]}
-				onPress={onBack}
-				hitSlop={8}
-				accessibilityRole="button"
-				accessibilityLabel="Back to swiping"
-			>
-				<Ionicons name="chevron-back" size={22} color={c.ink} />
-			</Pressable>
-
 			<DetailSheet
 				restaurant={detail}
 				visible={detail !== null}
@@ -277,18 +265,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 	wrap: {
 		flex: 1,
 		backgroundColor: c.cream,
-	},
-	backButton: {
-		position: 'absolute',
-		left: 20,
-		width: 40,
-		height: 40,
-		borderRadius: RADII.pill,
-		backgroundColor: c.paper,
-		borderWidth: BORDER,
-		borderColor: c.ink,
-		alignItems: 'center',
-		justifyContent: 'center',
 	},
 	scroll: {
 		flex: 1,

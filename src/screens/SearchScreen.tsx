@@ -24,11 +24,9 @@ const formatKm = (m: number) => `${Number((m / 1000).toFixed(1))} km`;
 
 export default function SearchScreen({
 	initial,
-	onBack,
 	onSearch,
 }: {
 	initial: SearchQuery | null;
-	onBack: () => void;
 	onSearch: (query: SearchQuery) => void;
 }) {
 	const insets = useSafeAreaInsets();
@@ -126,18 +124,7 @@ export default function SearchScreen({
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 14 }]}>
 			<View style={styles.header}>
-				<View style={styles.headerLeft}>
-					<Pressable
-						style={styles.backButton}
-						onPress={onBack}
-						hitSlop={8}
-						accessibilityRole='button'
-						accessibilityLabel='Back'
-					>
-						<Ionicons name='chevron-back' size={24} color={c.ink} />
-					</Pressable>
-					<Text style={styles.title}>FIND FOOD</Text>
-				</View>
+				<Text style={styles.title}>FIND FOOD</Text>
 				<ThemeToggle />
 			</View>
 
@@ -341,22 +328,6 @@ const makeStyles = (c: Palette) =>
 			gap: 10,
 			paddingHorizontal: 20,
 			paddingBottom: 10,
-		},
-		headerLeft: {
-			flexDirection: 'row',
-			alignItems: 'center',
-			gap: 10,
-			flexShrink: 1,
-		},
-		backButton: {
-			width: 44,
-			height: 44,
-			borderRadius: RADII.sticker,
-			backgroundColor: c.paper,
-			borderWidth: BORDER,
-			borderColor: c.ink,
-			alignItems: 'center',
-			justifyContent: 'center',
 		},
 		title: {
 			fontFamily: FONTS.display,
