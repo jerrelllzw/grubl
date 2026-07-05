@@ -1,6 +1,16 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, type StyleProp, type ViewStyle } from 'react-native';
+import { type StyleProp, type ViewStyle } from 'react-native';
+
+// Dark mode is disabled for now, so there's nothing to toggle — this renders
+// nothing. To bring the light/dark switch back, restore the implementation below
+// (and re-enable the scheme resolution in ../theme/theme.tsx).
+export default function ThemeToggle(_props: { style?: StyleProp<ViewStyle> }) {
+	return null;
+}
+
+/*
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable } from 'react-native';
 import { useColors, useTheme } from '../theme/theme';
 import { BORDER, RADII } from '../theme/tokens';
 
@@ -35,3 +45,4 @@ export default function ThemeToggle({ style }: { style?: StyleProp<ViewStyle> })
 		</Pressable>
 	);
 }
+*/

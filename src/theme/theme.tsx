@@ -1,5 +1,4 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { useColorScheme } from 'react-native';
 import { PALETTES, type Palette, type ThemeName } from './tokens';
 
 // Runtime theming. The app follows the OS colour scheme until the user flips the
@@ -22,10 +21,13 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-	const system = useColorScheme(); // 'light' | 'dark' | null
 	const [override, setOverride] = useState<ThemeName | null>(null);
 
-	const scheme: ThemeName = override ?? (system === 'dark' ? 'dark' : 'light');
+	// Dark mode is disabled for now — pin light regardless of the OS setting or
+	// any in-app override. Restore the two lines below to re-enable:
+	//   const system = useColorScheme(); // 'light' | 'dark' | null
+	//   const scheme: ThemeName = override ?? (system === 'dark' ? 'dark' : 'light');
+	const scheme = 'light' as ThemeName;
 
 	const toggle = useCallback(() => {
 		setOverride(scheme === 'dark' ? 'light' : 'dark');
