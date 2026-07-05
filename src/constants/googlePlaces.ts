@@ -80,13 +80,8 @@ export const PRICE_MAP: Record<string, string> = {
 
 export const PRICE_KEYS = Object.keys(PRICE_MAP);
 
-// Radius chips shown on the intro, mapped to metres for the API's locationBias.
-export const RADII_OPTIONS = ['1 km', '2 km', '5 km', '10 km'] as const;
-export const DEFAULT_RADIUS: (typeof RADII_OPTIONS)[number] = '2 km';
-
-export const RADIUS_METRES: Record<string, number> = {
-	'1 km': 1000,
-	'2 km': 2000,
-	'5 km': 5000,
-	'10 km': 10000,
-};
+// Search radius as a continuous range (metres) for the "how far" slider.
+export const RADIUS_MIN_M = 1000;
+export const RADIUS_MAX_M = 10000;
+export const RADIUS_STEP_M = 500;
+export const DEFAULT_RADIUS_M = 2000;

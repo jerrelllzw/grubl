@@ -9,7 +9,7 @@ import {
 	type Coordinates,
 	type Place,
 } from '../api/googlePlaces';
-import { formatPlaceType, getPlaceEmoji, PRICE_MAP, RADIUS_METRES } from '../constants/googlePlaces';
+import { formatPlaceType, getPlaceEmoji, PRICE_MAP } from '../constants/googlePlaces';
 
 export type Restaurant = {
 	id: string;
@@ -30,7 +30,7 @@ export type Restaurant = {
 export type SearchQuery = {
 	location: string;
 	coords?: Coordinates;
-	radius: string; // one of RADII_OPTIONS
+	radius: number; // search radius in metres
 	priceLevels: string[];
 	openNow: boolean;
 };
@@ -91,7 +91,7 @@ export async function searchRestaurants(query: SearchQuery): Promise<SearchOutco
 		const coords = query.coords ?? (await fetchCoordinates(query.location));
 		if (!coords) return { deck: [], status: 'no-location' };
 
-		const radiusMetres = RADIUS_METRES[query.radius] ?? 1600;
+		const radiusMetres = query.radius;
 		const places = await fetchPlaces(
 			coords.lat,
 			coords.lng,
