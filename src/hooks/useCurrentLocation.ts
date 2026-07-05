@@ -2,6 +2,27 @@ import * as Location from 'expo-location';
 import { reverseGeocode, type Coordinates } from '../api/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
+// Resolves a position without hanging: a recent cached fix returns instantly;
+// otherwise we race a fresh Balanced-accuracy request against a timeout so a
+// device that can't get a lock fails cleanly instead of spinning forever.
+async function getPositionWithTimeout(timeoutMs: number): Promise<Location.LocationObject> {
+	const lastKnown = await Location.getLastKnownPositionAsync({ maxAge: 60000 });
+	if (lastKnown) return lastKnown;
+
+	let timer: ReturnType<typeof setTimeout>;
+	const timeout = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => reject(new Error('Location request timed out')), timeoutMs);
+	});
+	try {
+		return await Promise.race([
+			Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+			timeout,
+		]);
+	} finally {
+		clearTimeout(timer!);
+	}
+}
+
 // Resolves the device's current position to both a human-readable label and the
 // exact coordinates, so callers can search without a second geocoding round-trip.
 // Permission + GPS come from the OS (expo-location); the coords→label step uses
@@ -18,9 +39,12 @@ export function useCurrentLocation(
 				return Promise.reject(new Error('Permission denied'));
 			}
 
-			const loc = await Location.getCurrentPositionAsync({
-				accuracy: Location.Accuracy.High,
-			});
+			// getCurrentPositionAsync has no built-in timeout: on a real device that
+			// can't get a High-accuracy fix (indoors, weak GPS) it hangs forever and
+			// the button sticks on "LOCATING". So: take a cached last-known fix if we
+			// have a recent one, otherwise request a fresh Balanced fix (much faster to
+			// acquire than High) and give up after a bounded wait rather than hanging.
+			const loc = await getPositionWithTimeout(12000);
 			const coords: Coordinates = {
 				lat: loc.coords.latitude,
 				lng: loc.coords.longitude,

@@ -123,8 +123,12 @@ export function metaLine(r: Restaurant): string {
 
 /** Deep link to the winner in Google Maps. */
 export function mapsUrl(r: Restaurant): string {
-	const q = encodeURIComponent(r.name);
-	// Mock ids aren't real place ids, so only attach when it looks like one.
-	const placeId = r.id.startsWith('m') && r.id.length <= 3 ? '' : `&query_place_id=${r.id}`;
-	return `https://www.google.com/maps/search/?api=1&query=${q}${placeId}`;
+	// Real Places results carry a Google place id → open that place's detail card
+	// directly. The bundled mock deck uses fake ids (m1, m2…) with no place on the
+	// map, so those fall back to a name search.
+	const isMockId = /^m\d+$/.test(r.id);
+	if (!isMockId) {
+		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name)}&query_place_id=${r.id}`;
+	}
+	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name)}`;
 }
