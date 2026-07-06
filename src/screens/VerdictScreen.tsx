@@ -119,10 +119,12 @@ export default function VerdictScreen({
 					{/* The card below is the place — headline stays generic so the name
 					    isn't shown twice. The verdict lands as a beat: title drops in,
 					    then the card pops (spring zoom), then the actions follow. */}
-					<Animated.View entering={FadeInDown.duration(420)} style={styles.headlineWrap}>
-						<Text style={styles.headline}>
-							EAT <Text style={styles.headlineName}>HERE</Text>
-						</Text>
+					<Animated.View entering={FadeInDown.duration(420)}>
+						<View style={styles.headlineWrap}>
+							<Text style={styles.headline}>
+								EAT <Text style={styles.headlineName}>HERE</Text>
+							</Text>
+						</View>
 					</Animated.View>
 
 					<Animated.View
@@ -132,7 +134,7 @@ export default function VerdictScreen({
 						<CardFace
 							restaurant={winner}
 							cardRadius={22}
-							shadow={{ dx: 7, dy: 7, color: c.tomato }}
+							shadow={{ dx: 7, dy: 7, color: c.shadow }}
 							nameSize={20}
 							metaSize={14}
 							emojiSize={84}
