@@ -53,7 +53,6 @@ const FOOD_QUERY = 'food';
 // coordinates inline, so a picked suggestion needs no separate geocoding call.
 // Data © OpenStreetMap contributors.
 const PHOTON_URL = 'https://photon.komoot.io/api/';
-const PHOTON_REVERSE_URL = 'https://photon.komoot.io/reverse';
 
 export interface Suggestion {
 	label: string;
@@ -93,21 +92,6 @@ export async function fetchCoordinates(address: string): Promise<Coordinates | n
 		// instead of the misleading "WHERE'S THAT?" screen.
 		handleError(error);
 		throw error;
-	}
-}
-
-// Reverse geocoding — turn device GPS coordinates into a readable label, using
-// the same Photon/OSM source as autocomplete so the labels are consistent.
-export async function reverseGeocode(coords: Coordinates): Promise<string | null> {
-	try {
-		const response = await axios.get(PHOTON_REVERSE_URL, {
-			params: { lat: coords.lat, lon: coords.lng },
-		});
-		const feature = response.data?.features?.[0];
-		return feature ? photonLabel(feature.properties ?? {}) || null : null;
-	} catch (error: any) {
-		handleError(error);
-		return null;
 	}
 }
 

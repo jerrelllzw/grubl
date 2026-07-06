@@ -246,7 +246,7 @@ export default function VerdictScreen({
 							radius={RADII.cta}
 							onPress={spin}
 							disabled={spinning}
-							accessibilityLabel='Spin the wheel — let Grubl pick for you'
+							accessibilityLabel='Pick for me — let Grubl decide'
 							containerStyle={styles.spinContainer}
 							faceStyle={styles.spinFace}
 						>

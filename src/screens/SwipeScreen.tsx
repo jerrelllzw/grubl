@@ -36,9 +36,9 @@ export default function SwipeScreen({
 	deck: Restaurant[];
 	/** Card to start on — non-zero when resuming a deck left mid-swipe. */
 	initialIndex?: number;
-	/** Shortlist carried over when resuming, so earlier "yums" aren't lost. */
+	/** Shortlist carried over when resuming, so earlier "yes" swipes aren't lost. */
 	initialShortlist?: Restaurant[];
-	/** Deck exhausted or "Done" pressed — hand back the shortlist and stopping index. */
+	/** Deck exhausted or "Shortlist" pressed — hand back the shortlist and stopping index. */
 	onComplete: (shortlist: Restaurant[], atIndex: number) => void;
 }) {
 	const insets = useSafeAreaInsets();
@@ -114,7 +114,7 @@ export default function SwipeScreen({
 		[commit, tx, ty, locked]
 	);
 
-	const handleDone = useCallback(() => {
+	const handleShortlist = useCallback(() => {
 		if (locked.value) return;
 		onComplete(shortlistRef.current, index);
 	}, [onComplete, index, locked]);
@@ -150,10 +150,10 @@ export default function SwipeScreen({
 			{ rotate: `${tx.value * 0.06}deg` },
 		],
 	}));
-	const yumStampStyle = useAnimatedStyle(() => ({
+	const yesStampStyle = useAnimatedStyle(() => ({
 		opacity: interpolate(tx.value, [0, SWIPE_THRESHOLD], [0, 1], 'clamp'),
 	}));
-	const nopeStampStyle = useAnimatedStyle(() => ({
+	const noStampStyle = useAnimatedStyle(() => ({
 		opacity: interpolate(tx.value, [-SWIPE_THRESHOLD, 0], [1, 0], 'clamp'),
 	}));
 
@@ -166,7 +166,7 @@ export default function SwipeScreen({
 		<View style={[styles.container, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 }]}>
 			<View style={styles.header}>
 				<Pressable
-					style={[styles.backButton, moveCount === 0 && styles.undoDisabled]}
+					style={[styles.undoButton, moveCount === 0 && styles.undoDisabled]}
 					onPress={undo}
 					disabled={moveCount === 0}
 					hitSlop={8}
@@ -183,7 +183,7 @@ export default function SwipeScreen({
 						dy={3}
 						color={c.shadow}
 						radius={RADII.pill}
-						onPress={handleDone}
+						onPress={handleShortlist}
 						accessibilityLabel={
 							shortlistCount > 0
 								? `View your shortlist — ${shortlistCount} saved`
@@ -218,10 +218,10 @@ export default function SwipeScreen({
 						<GestureDetector key={index + o} gesture={pan}>
 							<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
 								<CardFace restaurant={r}>
-									<Animated.View style={[styles.stamp, styles.stampLeft, yumStampStyle]}>
+									<Animated.View style={[styles.stamp, styles.stampLeft, yesStampStyle]}>
 										<Text style={[styles.stampText, { color: c.green }]}>YES</Text>
 									</Animated.View>
-									<Animated.View style={[styles.stamp, styles.stampRight, nopeStampStyle]}>
+									<Animated.View style={[styles.stamp, styles.stampRight, noStampStyle]}>
 										<Text style={[styles.stampText, { color: c.rose }]}>NO</Text>
 									</Animated.View>
 								</CardFace>
@@ -240,9 +240,9 @@ export default function SwipeScreen({
 					onPress={() => fling('no')}
 					accessibilityLabel="No — skip this place"
 					containerStyle={styles.actionHalf}
-					faceStyle={styles.nopeButton}
+					faceStyle={styles.noButton}
 				>
-					<Text style={styles.nopeText}>NO</Text>
+					<Text style={styles.noText}>NO</Text>
 				</HardButton>
 				<HardButton
 					dx={4}
@@ -252,9 +252,9 @@ export default function SwipeScreen({
 					onPress={() => fling('shortlist')}
 					accessibilityLabel="Yes — add to your shortlist"
 					containerStyle={styles.actionHalf}
-					faceStyle={styles.yumButton}
+					faceStyle={styles.yesButton}
 				>
-					<Text style={styles.yumText}>YES</Text>
+					<Text style={styles.yesText}>YES</Text>
 				</HardButton>
 			</View>
 		</View>
@@ -272,7 +272,7 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		justifyContent: 'space-between',
 		paddingHorizontal: 24,
 	},
-	backButton: {
+	undoButton: {
 		width: 40,
 		height: 40,
 		borderRadius: RADII.pill,
@@ -360,7 +360,7 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 	actionHalf: {
 		flex: 1,
 	},
-	nopeButton: {
+	noButton: {
 		height: 60,
 		borderRadius: RADII.pill,
 		backgroundColor: c.rose,
@@ -369,12 +369,12 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	nopeText: {
+	noText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
 		color: c.onAccent,
 	},
-	yumButton: {
+	yesButton: {
 		height: 60,
 		borderRadius: RADII.pill,
 		backgroundColor: c.jade,
@@ -383,7 +383,7 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	yumText: {
+	yesText: {
 		fontFamily: FONTS.display,
 		fontSize: 20,
 		color: c.onAccent,

@@ -107,11 +107,10 @@ export async function searchRestaurants(query: SearchQuery): Promise<SearchOutco
 		const coords = query.coords ?? (await fetchCoordinates(query.location));
 		if (!coords) return { deck: [], status: 'no-location' };
 
-		const radiusMetres = query.radius;
 		const places = await fetchPlaces(
 			coords.lat,
 			coords.lng,
-			radiusMetres,
+			query.radius,
 			query.priceLevels,
 			query.openNow
 		);

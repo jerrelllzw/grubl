@@ -1,4 +1,3 @@
-import React from 'react';
 import { type StyleProp, type ViewStyle } from 'react-native';
 
 // Dark mode is disabled for now, so there's nothing to toggle — this renders

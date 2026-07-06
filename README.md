@@ -4,14 +4,14 @@ A swipe-based food recommender app for Android.
 
 Set your location and preferences, then swipe through nearby places:
 
-- **Swipe right (YUM)** to add a place to your shortlist.
-- **Swipe left (NAH)** to skip it.
+- **Swipe right (YES)** to add a place to your shortlist.
+- **Swipe left (NO)** to skip it.
 - **Undo** rewinds your last swipe if you slipped.
 
-When the deck runs out (or you tap **Done**), Grubl shows your shortlist. Hit
-**Spin the wheel** to let Grubl pick one for you, or tap a place yourself. From
-the verdict you can **open it in Google Maps**, or tap any other place in the
-shortlist to make it the pick instead.
+When the deck runs out (or you tap **Shortlist**), Grubl shows your shortlist. Hit
+**Pick for me** to let Grubl spin the wheel and choose one, or tap a place
+yourself. From the verdict you can **open it in Google Maps**, or tap any other
+place in the shortlist to make it the pick instead.
 
 > Grubl deliberately doesn't ask what you're craving — deciding for you is the
 > whole point. Set a location and go.

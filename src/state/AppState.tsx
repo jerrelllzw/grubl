@@ -82,7 +82,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 		if (query) performFetch(query, false);
 	}, [query, performFetch]);
 
-	// Deck exhausted or "Done" pressed — stash the shortlist and stopping index,
+	// Deck exhausted or "Shortlist" pressed — stash the shortlist and stopping index,
 	// then push the verdict on top of the swipe screen so device back resumes it.
 	const complete = useCallback(
 		(maybes: Restaurant[], atIndex: number) => {
