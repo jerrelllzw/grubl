@@ -74,6 +74,10 @@ export default function SwipeScreen({
 	const tx = useSharedValue(0);
 	const ty = useSharedValue(0);
 	const locked = useSharedValue(false);
+	// Hides the top card for the single frame where a committed card's position is
+	// reset to centre before `index` advances — otherwise the flown-off card flashes
+	// back to the middle before disappearing. Faded back in once the new card mounts.
+	const topOpacity = useSharedValue(1);
 
 	// Advance once a card has flown off the screen (drag-release or button).
 	const commit = useCallback(
@@ -90,6 +94,10 @@ export default function SwipeScreen({
 			historyRef.current.push(move);
 			setMoveCount((c) => c + 1);
 			Haptics.selectionAsync().catch(() => {});
+			// Hide the card as we snap it back to centre so the reset never paints,
+			// then re-centre. The fade-in runs once the next card has mounted (see
+			// the effect on `index`).
+			topOpacity.value = 0;
 			tx.value = 0;
 			ty.value = 0;
 			locked.value = false;
@@ -97,8 +105,15 @@ export default function SwipeScreen({
 			if (next >= deck.length) onComplete(shortlistRef.current, next);
 			else setIndex(next);
 		},
-		[deck, index, onComplete, tx, ty, locked]
+		[deck, index, onComplete, tx, ty, locked, topOpacity]
 	);
+
+	// Reveal the top card once it's mounted at the new index. Covers commit (where
+	// `topOpacity` was zeroed to mask the position reset) and undo (already visible,
+	// so this animates 1→1 and is a no-op).
+	useEffect(() => {
+		topOpacity.value = withTiming(1, { duration: 110 });
+	}, [index, topOpacity]);
 
 	// Rewind the last committed move: step back a card and drop it from the
 	// shortlist if that's where it went.
@@ -163,6 +178,7 @@ export default function SwipeScreen({
 		});
 
 	const topCardStyle = useAnimatedStyle(() => ({
+		opacity: topOpacity.value,
 		transform: [
 			{ translateX: tx.value },
 			{ translateY: ty.value },
