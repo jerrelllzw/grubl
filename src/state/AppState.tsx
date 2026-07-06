@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { searchRestaurants, type Restaurant, type SearchQuery } from '../data/restaurants';
 
 // The whole app is one linear flow (intro → search → swipe → result) but the
@@ -21,6 +21,10 @@ type AppState = {
 	runId: number; // bumped to remount the deck for a fresh swipe run
 
 	start: () => void;
+	/** Read the in-progress search form to seed it (last edits, not just last search). */
+	getDraft: () => SearchQuery | null;
+	/** Stash the in-progress form so leaving and returning to /search restores it. */
+	setDraft: (q: SearchQuery) => void;
 	submitSearch: (q: SearchQuery) => void;
 	retry: () => void;
 	complete: (maybes: Restaurant[], atIndex: number) => void;
@@ -65,6 +69,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 		},
 		[router]
 	);
+
+	// Draft form state. Kept in a ref (not state) since only /search reads it, and
+	// only at mount — writing it on every keystroke shouldn't re-render the app.
+	const draftRef = useRef<SearchQuery | null>(null);
+	const getDraft = useCallback(() => draftRef.current, []);
+	const setDraft = useCallback((q: SearchQuery) => {
+		draftRef.current = q;
+	}, []);
 
 	const start = useCallback(() => router.push('/search'), [router]);
 
@@ -114,6 +126,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 			swipeIndex,
 			runId,
 			start,
+			getDraft,
+			setDraft,
 			submitSearch,
 			retry,
 			complete,
@@ -121,7 +135,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 			reshuffle,
 			newSearch,
 		}),
-		[query, deck, loading, emptyReason, winner, shortlist, swipeIndex, runId, start, submitSearch, retry, complete, pick, reshuffle, newSearch]
+		[query, deck, loading, emptyReason, winner, shortlist, swipeIndex, runId, start, getDraft, setDraft, submitSearch, retry, complete, pick, reshuffle, newSearch]
 	);
 
 	return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

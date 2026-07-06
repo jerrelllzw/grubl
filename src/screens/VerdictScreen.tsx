@@ -116,8 +116,7 @@ export default function VerdictScreen({
 					    isn't shown twice. */}
 					<View style={styles.headlineWrap}>
 						<Text style={styles.headline}>
-							EAT{'\n'}
-							<Text style={styles.headlineName}>HERE.</Text>
+							EAT <Text style={styles.headlineName}>HERE.</Text>
 						</Text>
 					</View>
 
@@ -245,7 +244,7 @@ export default function VerdictScreen({
 							color={c.shadow}
 							radius={RADII.cta}
 							onPress={spin}
-							disabled={spinning}
+							busy={spinning}
 							accessibilityLabel='Pick for me — let Grubl decide'
 							containerStyle={styles.spinContainer}
 							faceStyle={styles.spinFace}
@@ -354,6 +353,7 @@ const makeStyles = (c: Palette) =>
 		},
 		mapsContainer: {
 			width: '100%',
+			maxWidth: 300, // align edges with the winner card it acts on
 			marginTop: 24,
 		},
 		mapsFace: {

@@ -15,6 +15,7 @@ export default function HardButton({
 	containerStyle,
 	onPress,
 	disabled = false,
+	busy = false,
 	accessibilityLabel,
 	children,
 }: {
@@ -26,25 +27,30 @@ export default function HardButton({
 	containerStyle?: StyleProp<ViewStyle>;
 	onPress?: () => void;
 	disabled?: boolean;
+	/** Work in flight (e.g. FINDING / PICKING…): dim like disabled but hold the
+	 *  pressed/sunk look, so it reads as "mid-action" rather than "un-poppable". */
+	busy?: boolean;
 	accessibilityLabel?: string;
 	children?: React.ReactNode;
 }) {
 	const [pressed, setPressed] = useState(false);
-	// When disabled, sit flush with the shadow (looks "un-poppable") and dim.
-	const shift =
-		pressed && !disabled
-			? [{ translateX: dx - PRESSED_GAP }, { translateY: dy - PRESSED_GAP }]
-			: [{ translateX: 0 }, { translateY: 0 }];
+	// Sink into the shadow while actively pressed, or while busy (held down look).
+	// A plain disabled button sits flush — it looks un-poppable.
+	const sunk = busy || (pressed && !disabled);
+	const shift = sunk
+		? [{ translateX: dx - PRESSED_GAP }, { translateY: dy - PRESSED_GAP }]
+		: [{ translateX: 0 }, { translateY: 0 }];
+	const dimmed = disabled || busy;
 	return (
 		<Pressable
 			onPress={onPress}
 			onPressIn={() => setPressed(true)}
 			onPressOut={() => setPressed(false)}
-			disabled={disabled}
+			disabled={disabled || busy}
 			accessibilityRole="button"
 			accessibilityLabel={accessibilityLabel}
-			accessibilityState={{ disabled }}
-			style={[containerStyle, disabled && styles.disabled]}
+			accessibilityState={{ disabled, busy }}
+			style={[containerStyle, dimmed && styles.disabled]}
 		>
 			<View style={styles.wrap}>
 				<View

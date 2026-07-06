@@ -48,64 +48,123 @@ const formatDistance = (metres: number): string =>
 // decides for you — so the search is always the broad "food nearby".
 const FOOD_QUERY = 'food';
 
-// Location lookups (autocomplete + geocoding) use Photon — Komoot's free,
-// key-less search-as-you-type service over OpenStreetMap data. Photon returns
-// coordinates inline, so a picked suggestion needs no separate geocoding call.
-// Data © OpenStreetMap contributors.
-const PHOTON_URL = 'https://photon.komoot.io/api/';
+// Location lookups use the Google Places API (New) — the same pipeline Google
+// Maps uses: Autocomplete (New) returns predictions carrying a placeId (not
+// coordinates), and Place Details (New) resolves a chosen placeId to its exact
+// location. A session token groups the per-keystroke autocomplete calls and the
+// final Details call into ONE billed Autocomplete session (the cheapest, intended
+// pattern) — mint one per search with `newSessionToken`, reuse it across
+// keystrokes, then discard it once a place is resolved.
+const PLACES_V1 = 'https://places.googleapis.com/v1';
+
+const googleHeaders = (fieldMask?: string) => ({
+	'Content-Type': 'application/json',
+	'X-Goog-Api-Key': API_KEY,
+	...(fieldMask ? { 'X-Goog-FieldMask': fieldMask } : {}),
+});
 
 export interface Suggestion {
+	placeId: string;
+	/** Bold primary line, e.g. "Marina Bay Sands". */
+	mainText: string;
+	/** Muted secondary line, e.g. "Bayfront Avenue, Singapore". */
+	secondaryText?: string;
+	/** Full one-line text — becomes the input value once the prediction is picked. */
 	label: string;
-	coords: Coordinates;
 }
 
-// Builds a readable one-line label from a Photon feature's properties, dropping
-// blanks and consecutive duplicates (e.g. a city named the same as its region).
-function photonLabel(props: Record<string, any>): string {
-	const primary = props.name || [props.housenumber, props.street].filter(Boolean).join(' ');
-	const out: string[] = [];
-	for (const part of [primary, props.city, props.state, props.country]) {
-		if (part && out[out.length - 1] !== part) out.push(part);
-	}
-	return out.join(', ');
+// A session token is any unique per-session string; Google recommends a UUID v4.
+// Not security-sensitive, so Math.random is fine.
+export function newSessionToken(): string {
+	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (ch) => {
+		const r = (Math.random() * 16) | 0;
+		return (ch === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+	});
 }
 
-// A Photon feature is GeoJSON: geometry.coordinates is [lon, lat].
-function photonToSuggestion(feature: any): Suggestion | null {
-	const coordinates = feature?.geometry?.coordinates;
-	if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
-	const label = photonLabel(feature.properties ?? {});
+function predictionToSuggestion(item: any): Suggestion | null {
+	const p = item?.placePrediction;
+	if (!p?.placeId) return null;
+	const mainText = p.structuredFormat?.mainText?.text;
+	const secondaryText = p.structuredFormat?.secondaryText?.text;
+	const label = p.text?.text || [mainText, secondaryText].filter(Boolean).join(', ');
 	if (!label) return null;
-	return { label, coords: { lat: coordinates[1], lng: coordinates[0] } };
+	return { placeId: p.placeId, mainText: mainText || label, secondaryText, label };
 }
 
-// Geocoding — resolve a free-typed place to coordinates. Returns null when the
-// place can't be found; the caller surfaces a "couldn't find that place" screen.
-export async function fetchCoordinates(address: string): Promise<Coordinates | null> {
-	try {
-		const response = await axios.get(PHOTON_URL, { params: { q: address, limit: 1 } });
-		const suggestion = photonToSuggestion(response.data?.features?.[0]);
-		return suggestion?.coords ?? null;
-	} catch (error: any) {
-		// A network/geocoder failure is not the same as "place not found" (which
-		// returns null above): rethrow so the caller can show a connectivity error
-		// instead of the misleading "WHERE'S THAT?" screen.
-		handleError(error);
-		throw error;
+// Throwing core — callers decide whether a failure is fatal.
+async function requestAutocomplete(
+	input: string,
+	sessionToken?: string,
+	bias?: Coordinates
+): Promise<Suggestion[]> {
+	const body: Record<string, any> = { input };
+	if (sessionToken) body.sessionToken = sessionToken;
+	// Bias predictions toward a known location (device / last pick) so nearby
+	// places surface first, exactly like Maps. Radius is a soft bias, not a limit.
+	if (bias) {
+		body.locationBias = {
+			circle: { center: { latitude: bias.lat, longitude: bias.lng }, radius: 50000 },
+		};
 	}
+	// Autocomplete (New) does not take a field mask — its response shape is fixed.
+	const response = await axios.post(`${PLACES_V1}/places:autocomplete`, body, {
+		headers: googleHeaders(),
+	});
+	return (response.data?.suggestions ?? [])
+		.map(predictionToSuggestion)
+		.filter((s: Suggestion | null): s is Suggestion => s !== null);
 }
 
-// Autocomplete — search-as-you-type suggestions, each carrying its coordinates.
-export async function fetchAutoComplete(input: string): Promise<Suggestion[]> {
+async function requestPlaceDetails(placeId: string, sessionToken?: string): Promise<Coordinates | null> {
+	const response = await axios.get(`${PLACES_V1}/places/${placeId}`, {
+		headers: googleHeaders('location'),
+		params: sessionToken ? { sessionToken } : undefined,
+	});
+	const loc = response.data?.location;
+	return loc ? { lat: loc.latitude, lng: loc.longitude } : null;
+}
+
+// Autocomplete — search-as-you-type predictions. Silent on failure: this fires on
+// every keystroke, so a blip just yields no suggestions rather than an alert.
+export async function fetchAutoComplete(
+	input: string,
+	sessionToken?: string,
+	bias?: Coordinates
+): Promise<Suggestion[]> {
+	if (!hasApiKey || !input.trim()) return []; // no key → app runs on the mock deck
 	try {
-		const response = await axios.get(PHOTON_URL, { params: { q: input, limit: 5 } });
-		return (response.data?.features ?? [])
-			.map(photonToSuggestion)
-			.filter((s: Suggestion | null): s is Suggestion => s !== null);
+		return await requestAutocomplete(input, sessionToken, bias);
 	} catch (error: any) {
-		// Silent on failure — this fires on every keystroke; no alert spam.
 		handleError(error);
 		return [];
+	}
+}
+
+// Resolve a picked prediction to coordinates. Returns null (not throw) so a failed
+// lookup just leaves coords unset and the search falls back to the geocode path.
+export async function fetchPlaceDetails(placeId: string, sessionToken?: string): Promise<Coordinates | null> {
+	try {
+		return await requestPlaceDetails(placeId, sessionToken);
+	} catch (error: any) {
+		handleError(error);
+		return null;
+	}
+}
+
+// Geocoding fallback — resolve a free-typed place (no prediction picked) by taking
+// the top autocomplete prediction and fetching its details, mirroring how Maps
+// treats an un-selected query. Returns null when nothing matches; rethrows on a
+// network/API failure so the caller can tell "bad location" from "no connection".
+export async function fetchCoordinates(address: string): Promise<Coordinates | null> {
+	try {
+		const token = newSessionToken();
+		const [top] = await requestAutocomplete(address, token);
+		if (!top) return null;
+		return await requestPlaceDetails(top.placeId, token);
+	} catch (error: any) {
+		handleError(error);
+		throw error;
 	}
 }
 
