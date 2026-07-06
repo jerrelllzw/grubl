@@ -49,11 +49,11 @@ export default function HardButton({
 		press.value = withSpring(0, { mass: 0.5, damping: 13, stiffness: 340 });
 	};
 
-	// While busy, hold the button pressed-in; restore once the work finishes.
+	// While disabled or busy, hold the button pressed-in; restore once it's live again.
 	useEffect(() => {
-		if (busy) press.value = withTiming(1, { duration: 110 });
+		if (dimmed) press.value = withTiming(1, { duration: 110 });
 		else press.value = withSpring(0, { mass: 0.5, damping: 13, stiffness: 340 });
-	}, [busy, press]);
+	}, [dimmed, press]);
 
 	// The face travels toward the shadow by (offset − PRESSED_GAP), leaving a hair
 	// of shadow so it still reads as raised-then-pressed, never fully flat.
