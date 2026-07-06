@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
@@ -39,9 +39,14 @@ export default function HardButton({
 	// 0 = raised (flush with the page), 1 = sunk into the shadow.
 	const press = useSharedValue(0);
 	const dimmed = disabled || busy;
+	// Freshest `dimmed` for the gesture callbacks. A quick tap fires onPressOut
+	// before React re-renders, so a captured `dimmed` would be stale and raise a
+	// button that's actually about to hold pressed — read the ref instead.
+	const dimmedRef = useRef(dimmed);
+	dimmedRef.current = dimmed;
 
 	// Snap down fast on press, spring back on release — the "pop" that reads as a
-	// physical key returning. `busy` holds it sunk (see below) for the mid-action look.
+	// physical key returning. The dimmed effect below holds it sunk while disabled/busy.
 	const sink = () => {
 		press.value = withTiming(1, { duration: 45 });
 	};
@@ -67,8 +72,8 @@ export default function HardButton({
 	return (
 		<Pressable
 			onPress={onPress}
-			onPressIn={() => !dimmed && sink()}
-			onPressOut={() => !busy && raise()}
+			onPressIn={() => !dimmedRef.current && sink()}
+			onPressOut={() => !dimmedRef.current && raise()}
 			disabled={dimmed}
 			accessibilityRole="button"
 			accessibilityLabel={accessibilityLabel}
