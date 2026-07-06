@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
@@ -52,6 +52,34 @@ export default function VerdictScreen({
 	// Height of the scrollable list box, measured so the spinning reel can fill the
 	// exact same area — the reel is a skin over this list, not a separate widget.
 	const [listH, setListH] = useState(0);
+
+	// Handing off to the Maps app. Once tapped, disable the button and show
+	// "OPENING…" so a double-tap can't fire two openURLs. The tap only flips the
+	// flag; the actual openURL runs in the effect below so React paints the
+	// "OPENING…" frame *before* Maps backgrounds us — otherwise the launch fires
+	// in the same tick and the frame never shows.
+	const [opening, setOpening] = useState(false);
+	useEffect(() => {
+		if (!opening || !winner) return;
+		let cancelled = false;
+		// Clear the flag when we return to the foreground (Maps backgrounded us),
+		// so the button goes live again for a second trip.
+		const sub = AppState.addEventListener('change', (state) => {
+			if (state === 'active') setOpening(false);
+		});
+		Linking.openURL(mapsUrl(winner)).catch(() => {
+			// Couldn't hand off — drop back to a live button so they can retry.
+			if (!cancelled) setOpening(false);
+		});
+		return () => {
+			cancelled = true;
+			sub.remove();
+		};
+	}, [opening, winner]);
+
+	const openInMaps = () => {
+		if (!opening && winner) setOpening(true);
+	};
 
 	// The shortlist and winner views share this one route, so a device back from a
 	// locked-in pick would pop straight to the swipe deck. Intercept it: while a
@@ -147,11 +175,12 @@ export default function VerdictScreen({
 							dy={6}
 							color={c.shadow}
 							radius={RADII.cta}
-							onPress={() => Linking.openURL(mapsUrl(winner))}
+							onPress={openInMaps}
+							busy={opening}
 							accessibilityLabel={`Open ${winner.name} in Maps`}
 							faceStyle={styles.mapsFace}
 						>
-							<Text style={styles.mapsText}>OPEN IN MAPS →</Text>
+							<Text style={styles.mapsText}>{opening ? 'OPENING…' : 'OPEN IN MAPS →'}</Text>
 						</HardButton>
 					</Animated.View>
 
