@@ -78,7 +78,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 		draftRef.current = q;
 	}, []);
 
-	const start = useCallback(() => router.push('/search'), [router]);
+	// The intro is a one-time splash, not a screen you return to — replace it with
+	// search so search becomes the app's home. With nothing beneath it, device-back
+	// from the search home exits the app (Android convention) instead of surfacing
+	// the welcome splash again.
+	const start = useCallback(() => router.replace('/search'), [router]);
 
 	const submitSearch = useCallback(
 		(q: SearchQuery) => {
@@ -111,8 +115,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 	// Drop a locked-in pick to return to the shortlist / spin-the-wheel view.
 	const reshuffle = useCallback(() => setWinner(null), []);
 
-	// Start over with new filters — pop straight back to the search route, keeping
-	// the last query seeded so tweaking one filter doesn't mean re-entering all.
+	// "New search" is a fresh start, not a forward step: the pick is done with. Unwind
+	// the funnel (swipe + result) back to the search home rather than stacking another
+	// search on top — so you can't device-back into an abandoned decision, and the
+	// stack stays bounded. Search is the root (see `start`), so back there exits the
+	// app. The form is seeded from the last query/draft, so tweaking one filter doesn't
+	// mean re-entering all.
 	const newSearch = useCallback(() => router.dismissTo('/search'), [router]);
 
 	const value = useMemo<AppState>(
