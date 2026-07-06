@@ -2,12 +2,8 @@ import * as Location from 'expo-location';
 import { type Coordinates } from '../api/googlePlaces';
 import { handleError } from '../utils/errorHandler';
 
-// A recent-enough cached fix is instant and plenty accurate for a "restaurants
-// near me" radius — no need to spin up a fresh GPS lock for a position that's a
-// few minutes old.
-const RECENT_MAX_AGE_MS = 5 * 60 * 1000;
 // Bound the fresh-fix wait so a weak signal can't hang the button forever.
-const FRESH_TIMEOUT_MS = 10000;
+const FRESH_TIMEOUT_MS = 5000;
 
 // Coords → human label using expo-location's built-in reverse geocoder (the OS
 // geocoder — Apple on iOS, Google Play Services on Android). No third-party HTTP
@@ -36,30 +32,14 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 	return Promise.race([promise, timeout]).finally(() => clearTimeout(timer)) as Promise<T>;
 }
 
-// Resolve a position via a fallback chain rather than one all-or-nothing attempt,
-// so we almost always return *something* usable fast:
-//   1. a recent cached fix        → instant
-//   2. a fresh fix (bounded wait) → a second or two
-//   3. any last-known fix, stale  → still finds nearby food
-// Only if every step comes up empty do we fail.
+// One fresh fix, bounded so a weak signal can't hang the button forever. Balanced
+// accuracy (~city block) acquires far faster than High and is plenty for a radius
+// search.
 async function getPosition(): Promise<Location.LocationObject> {
-	const recent = await Location.getLastKnownPositionAsync({ maxAge: RECENT_MAX_AGE_MS });
-	if (recent) return recent;
-
-	try {
-		// Balanced accuracy (~city block) acquires far faster and more reliably than
-		// High, and it's plenty for a radius search.
-		return await withTimeout(
-			Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-			FRESH_TIMEOUT_MS
-		);
-	} catch (error) {
-		handleError(error);
-		// Fresh fix timed out or failed — a slightly old position still works.
-		const stale = await Location.getLastKnownPositionAsync();
-		if (stale) return stale;
-		throw error instanceof Error ? error : new Error('Location unavailable');
-	}
+	return withTimeout(
+		Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+		FRESH_TIMEOUT_MS
+	);
 }
 
 // Resolves the device's current position to both a human-readable label and the
@@ -76,7 +56,7 @@ export function useCurrentLocation(
 			const servicesOn = await Location.hasServicesEnabledAsync();
 			if (!servicesOn) {
 				onError?.('Location is off on your device. Turn it on, or type an address.');
-				return Promise.reject(new Error('Location services disabled'));
+				throw new Error('Location services disabled');
 			}
 
 			const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
@@ -88,7 +68,7 @@ export function useCurrentLocation(
 						? 'Location access is off. Allow it, or type an address instead.'
 						: 'Location is blocked in Settings. Enable it there, or type an address.'
 				);
-				return Promise.reject(new Error('Permission denied'));
+				throw new Error('Permission denied');
 			}
 
 			const loc = await getPosition();
@@ -101,11 +81,10 @@ export function useCurrentLocation(
 			// fall back to a generic one rather than failing the whole lookup.
 			const label = (await reverseGeocodeDevice(coords)) ?? 'Current location';
 			onResolved(label, coords);
-			return Promise.resolve(label);
 		} catch (error) {
 			handleError(error);
 			onError?.('Couldn’t pin down your location. Try again, or type an address.');
-			return Promise.reject(error);
+			throw error;
 		}
 	};
 }

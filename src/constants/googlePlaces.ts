@@ -80,8 +80,8 @@ export const PRICE_MAP: Record<string, string> = {
 
 export const PRICE_KEYS = Object.keys(PRICE_MAP);
 
-// Search radius as a continuous range (metres) for the "how far" slider.
+// Search radius as a continuous range (metres) for the distance slider.
 export const RADIUS_MIN_M = 1000;
-export const RADIUS_MAX_M = 10000;
+export const RADIUS_MAX_M = 5000;
 export const RADIUS_STEP_M = 500;
 export const DEFAULT_RADIUS_M = 2000;

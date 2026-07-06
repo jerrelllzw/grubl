@@ -64,6 +64,11 @@ export default function DistanceSlider({
 
 	const frac = max === min ? 0 : (value - min) / (max - min);
 
+	// Interior step boundaries as fractions along the track (endpoints are the
+	// track ends, so skip them). These are the "breaks" the value snaps to.
+	const steps = step > 0 ? Math.round((max - min) / step) : 0;
+	const ticks = steps > 1 ? Array.from({ length: steps - 1 }, (_, i) => (i + 1) / steps) : [];
+
 	return (
 		<View
 			ref={hitRef}
@@ -84,6 +89,10 @@ export default function DistanceSlider({
 			>
 				<View style={[styles.fill, { width: frac * trackWidth, backgroundColor: c.ink }]} />
 			</View>
+			{trackWidth > 0 &&
+				ticks.map((t, i) => (
+					<View key={i} style={[styles.tick, { left: PAD + t * trackWidth - 1, backgroundColor: c.ink }]} />
+				))}
 			<View style={[styles.thumb, { backgroundColor: c.paper, borderColor: c.ink, left: frac * trackWidth }]}>
 				<View style={[styles.grip, { backgroundColor: c.ink }]} />
 			</View>
@@ -110,6 +119,13 @@ const styles = StyleSheet.create({
 		left: 0,
 		top: 0,
 		bottom: 0,
+	},
+	tick: {
+		position: 'absolute',
+		width: 2,
+		height: 8,
+		top: (THUMB - 8) / 2, // vertically centered on the track
+		borderRadius: 1,
 	},
 	thumb: {
 		position: 'absolute',

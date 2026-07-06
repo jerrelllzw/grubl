@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchAutoComplete, fetchPlaceDetails, newSessionToken, type Coordinates, type Suggestion } from '../api/googlePlaces';
 import DistanceSlider from '../components/DistanceSlider';
@@ -44,6 +44,8 @@ export default function SearchScreen({
 	const [location, setLocation] = useState(initial?.location ?? '');
 	const [coords, setCoords] = useState<Coordinates | null>(initial?.coords ?? null);
 	const [isLocating, setIsLocating] = useState(false);
+	// Spin the GPS icon while a location lookup is in flight.
+	const spin = useRef(new Animated.Value(0)).current;
 	const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [error, setError] = useState<string | null>(null); // inline, on-brand feedback
@@ -137,6 +139,25 @@ export default function SearchScreen({
 		});
 	};
 
+	// Loop the icon rotation while locating; reset to upright when it settles.
+	useEffect(() => {
+		if (!isLocating) {
+			spin.stopAnimation();
+			spin.setValue(0);
+			return;
+		}
+		const loop = Animated.loop(
+			Animated.timing(spin, {
+				toValue: 1,
+				duration: 900,
+				easing: Easing.linear,
+				useNativeDriver: true,
+			})
+		);
+		loop.start();
+		return () => loop.stop();
+	}, [isLocating, spin]);
+
 	// Debounced autocomplete. Short debounce keeps it responsive; the `cancelled`
 	// guard drops a slow in-flight response once a newer keystroke supersedes it,
 	// so results can't land out of order.
@@ -210,11 +231,12 @@ export default function SearchScreen({
 							<View style={styles.inputWrap}>
 								<TextInput
 									ref={inputRef}
-									style={styles.input}
+									style={[styles.input, isLocating && styles.disabledField]}
 									placeholder='e.g. Marina Bay Sands'
 									placeholderTextColor={c.muted}
 									value={location}
 									selection={selection}
+									editable={!isLocating}
 									onChangeText={onChangeLocation}
 									onFocus={() => {
 										isFocused.current = true;
@@ -240,16 +262,29 @@ export default function SearchScreen({
 								)}
 							</View>
 							<Pressable
-								style={styles.gpsButton}
+								style={[styles.gpsButton, isLocating && styles.disabledField]}
 								onPress={useCurrentLocationPress}
 								disabled={isLocating}
 								accessibilityRole='button'
 								accessibilityLabel='Use my current location'
 							>
 								{isLocating ? (
-									<LoadingDots color={c.ink} size={6} />
+									<Animated.View
+										style={{
+											transform: [
+												{
+													rotate: spin.interpolate({
+														inputRange: [0, 1],
+														outputRange: ['0deg', '360deg'],
+													}),
+												},
+											],
+										}}
+									>
+										<MaterialIcons name='my-location' size={22} color={c.ink} />
+									</Animated.View>
 								) : (
-									<Ionicons name='locate' size={22} color={c.ink} />
+									<MaterialIcons name='my-location' size={22} color={c.ink} />
 								)}
 							</Pressable>
 						</View>
@@ -310,7 +345,7 @@ export default function SearchScreen({
 				{/* How far — a slider: a distance is a magnitude, so it gets a range control. */}
 				<View style={styles.section}>
 					<View style={styles.labelRow}>
-						<Text style={styles.label}>HOW FAR</Text>
+						<Text style={styles.label}>DISTANCE</Text>
 						<Text style={styles.labelValue}>{formatKm(radius)}</Text>
 					</View>
 					<DistanceSlider
@@ -328,7 +363,7 @@ export default function SearchScreen({
 				</View>
 
 				{/* Price — multi-select checkboxes. No "any" chip: nothing selected already
-				    means any price, shown in the readout, mirroring How Far's value. */}
+				    means any price, shown in the readout, mirroring Distance's value. */}
 				<View style={styles.section}>
 					<View style={styles.labelRow}>
 						<Text style={styles.label}>PRICE</Text>
@@ -508,6 +543,12 @@ const makeStyles = (c: Palette) =>
 			flexDirection: 'row',
 			alignItems: 'center',
 			gap: 10,
+		},
+		// Dimmed, muted look applied to the location field + GPS button while a
+		// location lookup is in flight, so both read as temporarily disabled.
+		disabledField: {
+			opacity: 0.5,
+			backgroundColor: c.line,
 		},
 		// Standalone GPS button on the right — square, neutral, matches input height.
 		gpsButton: {
