@@ -43,8 +43,14 @@ export default {
 						'./assets/fonts/DMSans_500Medium.ttf',
 						'./assets/fonts/DMSans_600SemiBold.ttf',
 						'./assets/fonts/DMSans_700Bold.ttf',
-						'./assets/fonts/Ionicons.ttf',
-						'./assets/fonts/MaterialIcons.ttf',
+						// Named for the font family @expo/vector-icons renders with —
+						// 'ionicons' / 'material' (lowercase), NOT the class names. On
+						// Android an embedded font's family name is its filename, so
+						// 'Ionicons.ttf' would register as "Ionicons" while <Ionicons>
+						// asks for "ionicons" → tofu. (The display fonts already match:
+						// their filenames equal the FONTS strings the code uses.)
+						'./assets/fonts/ionicons.ttf',
+						'./assets/fonts/material.ttf',
 					],
 				},
 			],

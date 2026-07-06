@@ -195,8 +195,9 @@ export default function SwipeScreen({
 
 	const progress = `${Math.min(index + 1, deck.length)} / ${deck.length}`;
 
-	// Render up to three cards, bottom-most first so the top card sits on top.
-	const offsets = [2, 1, 0].filter((o) => index + o < deck.length);
+	// Up to two cards sit *behind* the top card; the top card is rendered
+	// separately with a stable key (see below) so it never remounts on advance.
+	const bgOffsets = [2, 1].filter((o) => index + o < deck.length);
 
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 }]}>
@@ -238,36 +239,38 @@ export default function SwipeScreen({
 			</View>
 
 			<View style={styles.deck}>
-				{offsets.map((o) => {
-					const r = deck[index + o];
-					if (o !== 0) {
-						return (
-							// Newly revealed deeper cards fade in, so the deck replenishes
-							// smoothly behind the top card instead of popping into place.
-							<Animated.View
-								key={index + o}
-								entering={FadeIn.duration(260)}
-								style={[styles.cardPos, { transform: [{ translateY: o * 11 }, { scale: 1 - o * 0.045 }], zIndex: 10 - o }]}
-							>
-								<CardFace restaurant={r} />
-							</Animated.View>
-						);
-					}
-					return (
-						<GestureDetector key={index + o} gesture={pan}>
-							<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
-								<CardFace restaurant={r}>
-									<Animated.View style={[styles.stamp, styles.stampLeft, yesStampStyle]}>
-										<Text style={[styles.stampText, { color: c.green }]}>YES</Text>
-									</Animated.View>
-									<Animated.View style={[styles.stamp, styles.stampRight, noStampStyle]}>
-										<Text style={[styles.stampText, { color: c.rose }]}>NO</Text>
-									</Animated.View>
-								</CardFace>
-							</Animated.View>
-						</GestureDetector>
-					);
-				})}
+				{/* Cards behind the top one, deepest first. Keyed by their card index so a
+				    newly revealed deeper card fades in, while a card sliding forward one
+				    slot just updates in place. */}
+				{bgOffsets.map((o) => (
+					<Animated.View
+						key={index + o}
+						entering={FadeIn.duration(260)}
+						style={[styles.cardPos, { transform: [{ translateY: o * 11 }, { scale: 1 - o * 0.045 }], zIndex: 10 - o }]}
+					>
+						<CardFace restaurant={deck[index + o]} />
+					</Animated.View>
+				))}
+
+				{/* The top (interactive) card. A CONSTANT key keeps it as one persistent
+				    view across the whole deck: advancing `index` just swaps its content
+				    (masked by topOpacity) rather than remounting it. Remount-on-advance
+				    was the leftover flash — a fresh view paints one frame at full opacity
+				    before its animated style applies. */}
+				{index < deck.length && (
+					<GestureDetector key="top" gesture={pan}>
+						<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
+							<CardFace restaurant={deck[index]}>
+								<Animated.View style={[styles.stamp, styles.stampLeft, yesStampStyle]}>
+									<Text style={[styles.stampText, { color: c.green }]}>YES</Text>
+								</Animated.View>
+								<Animated.View style={[styles.stamp, styles.stampRight, noStampStyle]}>
+									<Text style={[styles.stampText, { color: c.rose }]}>NO</Text>
+								</Animated.View>
+							</CardFace>
+						</Animated.View>
+					</GestureDetector>
+				)}
 			</View>
 
 			<View style={styles.actions}>
