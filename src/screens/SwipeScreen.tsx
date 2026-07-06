@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -14,9 +14,11 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
 import HardButton from '../components/HardButton';
+import SwipeTutorial from '../components/SwipeTutorial';
 import type { Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
+import { hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../utils/onboarding';
 
 const SWIPE_THRESHOLD = 90;
 const FLY_DISTANCE = 640;
@@ -51,6 +53,23 @@ export default function SwipeScreen({
 	const [moveCount, setMoveCount] = useState(0);
 	const shortlistRef = useRef<Restaurant[]>(initialShortlist);
 	const historyRef = useRef<Move[]>([]); // each committed move, for undo
+
+	// First-run coach overlay: gate on the persisted flag so it appears exactly once
+	// ever, then never again. `undefined` = still checking storage (show nothing yet).
+	const [showTutorial, setShowTutorial] = useState<boolean | undefined>(undefined);
+	useEffect(() => {
+		let alive = true;
+		hasSeenSwipeTutorial().then((seen) => {
+			if (alive) setShowTutorial(!seen);
+		});
+		return () => {
+			alive = false;
+		};
+	}, []);
+	const dismissTutorial = useCallback(() => {
+		setShowTutorial(false);
+		markSwipeTutorialSeen();
+	}, []);
 
 	const tx = useSharedValue(0);
 	const ty = useSharedValue(0);
@@ -257,6 +276,8 @@ export default function SwipeScreen({
 					<Text style={styles.yesText}>YES</Text>
 				</HardButton>
 			</View>
+
+			{showTutorial && <SwipeTutorial onDismiss={dismissTutorial} />}
 		</View>
 	);
 }

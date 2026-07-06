@@ -194,7 +194,7 @@ export default function VerdictScreen({
 					<Text style={styles.chooseBody}>
 						{showList
 							? canSpin
-								? 'Tap a place, or let Grubl decide.'
+								? 'Pick a place, or let Grubl decide.'
 								: 'Only one match — tap to choose.'
 							: 'Swipe right on places you like —\nthey’ll gather here.'}
 					</Text>

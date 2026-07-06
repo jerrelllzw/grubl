@@ -2,7 +2,13 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fetchAutoComplete, fetchPlaceDetails, newSessionToken, type Coordinates, type Suggestion } from '../api/googlePlaces';
+import {
+	fetchAutoComplete,
+	fetchPlaceDetails,
+	newSessionToken,
+	type Coordinates,
+	type Suggestion,
+} from '../api/googlePlaces';
 import DistanceSlider from '../components/DistanceSlider';
 import HardButton from '../components/HardButton';
 import LoadingDots from '../components/LoadingDots';
@@ -152,7 +158,7 @@ export default function SearchScreen({
 				duration: 900,
 				easing: Easing.linear,
 				useNativeDriver: true,
-			})
+			}),
 		);
 		loop.start();
 		return () => loop.stop();
@@ -206,213 +212,213 @@ export default function SearchScreen({
 				}}
 			>
 				<View style={styles.formWrap}>
-				{/* Hard offset shadow — lifts the panel off the page like a swipe card. */}
-				<View style={styles.formShadow} />
-				<View style={styles.form}>
-				{/* Tap anywhere outside the dropdown to dismiss it. Sits above the other
+					{/* Hard offset shadow — lifts the panel off the page like a swipe card. */}
+					<View style={styles.formShadow} />
+					<View style={styles.form}>
+						{/* Tap anywhere outside the dropdown to dismiss it. Sits above the other
 				    sections but below the location section, so the dropdown stays tappable. */}
-				{showSuggestions && suggestions.length > 0 && (
-					<Pressable
-						style={styles.dismissOverlay}
-						onPress={() => setShowSuggestions(false)}
-						accessibilityElementsHidden
-						importantForAccessibility='no-hide-descendants'
-					/>
-				)}
+						{showSuggestions && suggestions.length > 0 && (
+							<Pressable
+								style={styles.dismissOverlay}
+								onPress={() => setShowSuggestions(false)}
+								accessibilityElementsHidden
+								importantForAccessibility='no-hide-descendants'
+							/>
+						)}
 
-				{/* Location */}
-				<View style={styles.locationSection}>
-					<Text style={styles.label}>LOCATION</Text>
+						{/* Location */}
+						<View style={styles.locationSection}>
+							<Text style={styles.label}>LOCATION</Text>
 
-					{/* One line: the address field, with a separate "use current location"
+							{/* One line: the address field, with a separate "use current location"
 					    button on the right. Anchor keeps the dropdown pinned to the input. */}
-					<View style={styles.locationAnchor}>
-						<View style={styles.locationRow}>
-							<View style={styles.inputWrap}>
-								<TextInput
-									ref={inputRef}
-									style={[styles.input, isLocating && styles.disabledField]}
-									placeholder='e.g. Marina Bay Sands'
-									placeholderTextColor={c.muted}
-									value={location}
-									selection={selection}
-									editable={!isLocating}
-									onChangeText={onChangeLocation}
-									onFocus={() => {
-										isFocused.current = true;
-										setSelection(undefined); // release control so the caret lands where tapped
-										if (suggestions.length > 0) setShowSuggestions(true);
-									}}
-									onBlur={() => {
-										isFocused.current = false;
-										setShowSuggestions(false); // never show the dropdown while unfocused
-									}}
-									accessibilityLabel='Location'
-								/>
-								{location.length > 0 && (
+							<View style={styles.locationAnchor}>
+								<View style={styles.locationRow}>
+									<View style={styles.inputWrap}>
+										<TextInput
+											ref={inputRef}
+											style={[styles.input, isLocating && styles.disabledField]}
+											placeholder='e.g. Marina Bay Sands'
+											placeholderTextColor={c.muted}
+											value={location}
+											selection={selection}
+											editable={!isLocating}
+											onChangeText={onChangeLocation}
+											onFocus={() => {
+												isFocused.current = true;
+												setSelection(undefined); // release control so the caret lands where tapped
+												if (suggestions.length > 0) setShowSuggestions(true);
+											}}
+											onBlur={() => {
+												isFocused.current = false;
+												setShowSuggestions(false); // never show the dropdown while unfocused
+											}}
+											accessibilityLabel='Location'
+										/>
+										{location.length > 0 && (
+											<Pressable
+												style={styles.clearButton}
+												onPress={clearLocation}
+												hitSlop={8}
+												accessibilityRole='button'
+												accessibilityLabel='Clear location'
+											>
+												<Ionicons name='close-circle' size={20} color={c.muted} />
+											</Pressable>
+										)}
+									</View>
 									<Pressable
-										style={styles.clearButton}
-										onPress={clearLocation}
-										hitSlop={8}
+										style={[styles.gpsButton, isLocating && styles.disabledField]}
+										onPress={useCurrentLocationPress}
+										disabled={isLocating}
 										accessibilityRole='button'
-										accessibilityLabel='Clear location'
+										accessibilityLabel='Use my current location'
 									>
-										<Ionicons name='close-circle' size={20} color={c.muted} />
+										{isLocating ? (
+											<Animated.View
+												style={{
+													transform: [
+														{
+															rotate: spin.interpolate({
+																inputRange: [0, 1],
+																outputRange: ['0deg', '360deg'],
+															}),
+														},
+													],
+												}}
+											>
+												<MaterialIcons name='my-location' size={22} color={c.ink} />
+											</Animated.View>
+										) : (
+											<MaterialIcons name='my-location' size={22} color={c.ink} />
+										)}
 									</Pressable>
+								</View>
+
+								{showSuggestions && suggestions.length > 0 && (
+									<View style={styles.dropdown}>
+										{suggestions.slice(0, 5).map((item, i) => (
+											<Pressable
+												key={`${item.placeId}-${i}`}
+												style={styles.suggestion}
+												accessibilityRole='button'
+												accessibilityLabel={item.label}
+												onPress={() => {
+													suppressAutocomplete.current = true;
+													setLocation(item.label);
+													setCoords(null); // resolve the exact place via Details below
+													clearSuggestions();
+													Keyboard.dismiss();
+													revealStart();
+													// Resolve the placeId → coords (closes the billing session), then
+													// mint a fresh token for the next search.
+													const token = sessionToken.current;
+													fetchPlaceDetails(item.placeId, token).then((resolved) => {
+														if (resolved) {
+															setCoords(resolved);
+															biasCoords.current = resolved;
+														}
+													});
+													sessionToken.current = newSessionToken();
+													setTimeout(() => (suppressAutocomplete.current = false), 500);
+												}}
+											>
+												<Ionicons name='location-outline' size={16} color={c.muted} />
+												<View style={styles.suggestionTextWrap}>
+													<Text style={styles.suggestionMain} numberOfLines={1}>
+														{item.mainText}
+													</Text>
+													{item.secondaryText ? (
+														<Text style={styles.suggestionSecondary} numberOfLines={1}>
+															{item.secondaryText}
+														</Text>
+													) : null}
+												</View>
+											</Pressable>
+										))}
+										<Text style={styles.attribution}>Powered by Google</Text>
+									</View>
 								)}
 							</View>
+
+							{error && (
+								<Text style={styles.errorText} accessibilityRole='alert'>
+									{error}
+								</Text>
+							)}
+						</View>
+
+						{/* How far — a slider: a distance is a magnitude, so it gets a range control. */}
+						<View>
+							<View style={styles.labelRow}>
+								<Text style={styles.label}>DISTANCE</Text>
+								<Text style={styles.labelValue}>{formatKm(radius)}</Text>
+							</View>
+							<DistanceSlider
+								value={radius}
+								min={RADIUS_MIN_M}
+								max={RADIUS_MAX_M}
+								step={RADIUS_STEP_M}
+								onChange={setRadius}
+								accessibilityLabel='Search radius'
+							/>
+							<View style={styles.scaleRow}>
+								<Text style={styles.scaleText}>{formatKm(RADIUS_MIN_M)}</Text>
+								<Text style={styles.scaleText}>{formatKm(RADIUS_MAX_M)}</Text>
+							</View>
+						</View>
+
+						{/* Price — multi-select checkboxes. No "any" chip: nothing selected already
+				    means any price, shown in the readout, mirroring Distance's value. */}
+						<View>
+							<View style={styles.labelRow}>
+								<Text style={styles.label}>PRICE</Text>
+								<Text style={styles.labelValue}>
+									{priceIsAny
+										? 'Any'
+										: PRICE_KEYS.filter((k) => priceLevels.includes(k))
+												.map((k) => PRICE_MAP[k])
+												.join('  ')}
+								</Text>
+							</View>
+							<View style={styles.chipWrap}>
+								{PRICE_KEYS.map((key) => {
+									const active = priceLevels.includes(key);
+									return (
+										<Pressable
+											key={key}
+											onPress={() => togglePrice(key)}
+											style={[styles.priceChip, active ? styles.chipActive : styles.chipInactive]}
+											accessibilityRole='checkbox'
+											accessibilityState={{ checked: active }}
+											accessibilityLabel={`Price ${PRICE_MAP[key]}`}
+										>
+											<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
+												{PRICE_MAP[key]}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+						</View>
+
+						{/* Hours — a boolean, so it gets a switch, not a chip or a slider. */}
+						<View>
+							<Text style={styles.label}>HOURS</Text>
 							<Pressable
-								style={[styles.gpsButton, isLocating && styles.disabledField]}
-								onPress={useCurrentLocationPress}
-								disabled={isLocating}
-								accessibilityRole='button'
-								accessibilityLabel='Use my current location'
+								style={styles.switchRow}
+								onPress={() => setOpenNow((v) => !v)}
+								accessibilityRole='switch'
+								accessibilityLabel='Open now'
+								accessibilityState={{ checked: openNow }}
 							>
-								{isLocating ? (
-									<Animated.View
-										style={{
-											transform: [
-												{
-													rotate: spin.interpolate({
-														inputRange: [0, 1],
-														outputRange: ['0deg', '360deg'],
-													}),
-												},
-											],
-										}}
-									>
-										<MaterialIcons name='my-location' size={22} color={c.ink} />
-									</Animated.View>
-								) : (
-									<MaterialIcons name='my-location' size={22} color={c.ink} />
-								)}
+								<Text style={styles.switchLabel}>Open now</Text>
+								<View style={[styles.track, openNow ? styles.trackOn : styles.trackOff]}>
+									<View style={[styles.knob, openNow ? styles.knobOn : styles.knobOff]} />
+								</View>
 							</Pressable>
 						</View>
-
-						{showSuggestions && suggestions.length > 0 && (
-							<View style={styles.dropdown}>
-								{suggestions.slice(0, 5).map((item, i) => (
-									<Pressable
-										key={`${item.placeId}-${i}`}
-										style={styles.suggestion}
-										accessibilityRole='button'
-										accessibilityLabel={item.label}
-										onPress={() => {
-											suppressAutocomplete.current = true;
-											setLocation(item.label);
-											setCoords(null); // resolve the exact place via Details below
-											clearSuggestions();
-											Keyboard.dismiss();
-											revealStart();
-											// Resolve the placeId → coords (closes the billing session), then
-											// mint a fresh token for the next search.
-											const token = sessionToken.current;
-											fetchPlaceDetails(item.placeId, token).then((resolved) => {
-												if (resolved) {
-													setCoords(resolved);
-													biasCoords.current = resolved;
-												}
-											});
-											sessionToken.current = newSessionToken();
-											setTimeout(() => (suppressAutocomplete.current = false), 500);
-										}}
-									>
-										<Ionicons name='location-outline' size={16} color={c.muted} />
-										<View style={styles.suggestionTextWrap}>
-											<Text style={styles.suggestionMain} numberOfLines={1}>
-												{item.mainText}
-											</Text>
-											{item.secondaryText ? (
-												<Text style={styles.suggestionSecondary} numberOfLines={1}>
-													{item.secondaryText}
-												</Text>
-											) : null}
-										</View>
-									</Pressable>
-								))}
-								<Text style={styles.attribution}>Powered by Google</Text>
-							</View>
-						)}
 					</View>
-
-					{error && (
-						<Text style={styles.errorText} accessibilityRole='alert'>
-							{error}
-						</Text>
-					)}
-				</View>
-
-				{/* How far — a slider: a distance is a magnitude, so it gets a range control. */}
-				<View>
-					<View style={styles.labelRow}>
-						<Text style={styles.label}>DISTANCE</Text>
-						<Text style={styles.labelValue}>{formatKm(radius)}</Text>
-					</View>
-					<DistanceSlider
-						value={radius}
-						min={RADIUS_MIN_M}
-						max={RADIUS_MAX_M}
-						step={RADIUS_STEP_M}
-						onChange={setRadius}
-						accessibilityLabel='Search radius'
-					/>
-					<View style={styles.scaleRow}>
-						<Text style={styles.scaleText}>{formatKm(RADIUS_MIN_M)}</Text>
-						<Text style={styles.scaleText}>{formatKm(RADIUS_MAX_M)}</Text>
-					</View>
-				</View>
-
-				{/* Price — multi-select checkboxes. No "any" chip: nothing selected already
-				    means any price, shown in the readout, mirroring Distance's value. */}
-				<View>
-					<View style={styles.labelRow}>
-						<Text style={styles.label}>PRICE</Text>
-						<Text style={styles.labelValue}>
-							{priceIsAny
-								? 'Any'
-								: PRICE_KEYS.filter((k) => priceLevels.includes(k))
-										.map((k) => PRICE_MAP[k])
-										.join('  ')}
-						</Text>
-					</View>
-					<View style={styles.chipWrap}>
-						{PRICE_KEYS.map((key) => {
-							const active = priceLevels.includes(key);
-							return (
-								<Pressable
-									key={key}
-									onPress={() => togglePrice(key)}
-									style={[styles.priceChip, active ? styles.chipActive : styles.chipInactive]}
-									accessibilityRole='checkbox'
-									accessibilityState={{ checked: active }}
-									accessibilityLabel={`Price ${PRICE_MAP[key]}`}
-								>
-									<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
-										{PRICE_MAP[key]}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
-				</View>
-
-				{/* Hours — a boolean, so it gets a switch, not a chip or a slider. */}
-				<View>
-					<Text style={styles.label}>HOURS</Text>
-					<Pressable
-						style={styles.switchRow}
-						onPress={() => setOpenNow((v) => !v)}
-						accessibilityRole='switch'
-						accessibilityLabel='Open now'
-						accessibilityState={{ checked: openNow }}
-					>
-						<Text style={styles.switchLabel}>Open now</Text>
-						<View style={[styles.track, openNow ? styles.trackOn : styles.trackOff]}>
-							<View style={[styles.knob, openNow ? styles.knobOn : styles.knobOff]} />
-						</View>
-					</Pressable>
-				</View>
-				</View>
 				</View>
 
 				{/* Search sits just below the card, outside it — the card holds only
@@ -430,7 +436,7 @@ export default function SearchScreen({
 					>
 						{loading ? (
 							<View style={styles.ctaLoading}>
-								<Text style={styles.ctaText}>FINDING</Text>
+								<Text style={styles.ctaText}>SEARCHING</Text>
 								<LoadingDots color={c.onAccent} />
 							</View>
 						) : (
