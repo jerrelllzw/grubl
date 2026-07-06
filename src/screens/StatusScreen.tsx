@@ -1,8 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HardButton from '../components/HardButton';
-import Wordmark from '../components/Wordmark';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 
@@ -19,7 +17,6 @@ export function EmptyScreen({
 	/** Re-runs the last search; used by the connectivity-error variant. */
 	onRetry?: () => void;
 }) {
-	const insets = useSafeAreaInsets();
 	const c = useColors();
 	const styles = useThemedStyles(makeStyles);
 	const isError = reason === 'error';
@@ -34,9 +31,6 @@ export function EmptyScreen({
 
 	return (
 		<View style={styles.center}>
-			<View style={[styles.brand, { top: insets.top + 16 }]}>
-				<Wordmark size={22} />
-			</View>
 			<Text style={styles.headline}>{headline}</Text>
 			<Text style={styles.body}>{body}</Text>
 			{isError && onRetry ? (
@@ -51,7 +45,7 @@ export function EmptyScreen({
 					faceStyle={styles.buttonFace}
 				>
 					{loading ? (
-						<ActivityIndicator size="small" color={c.onWarm} />
+						<ActivityIndicator size="small" color={c.onAccent} />
 					) : (
 						<Text style={styles.buttonText}>TRY AGAIN</Text>
 					)}
@@ -87,12 +81,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		justifyContent: 'center',
 		padding: 36,
 	},
-	brand: {
-		position: 'absolute',
-		left: 0,
-		right: 0,
-		alignItems: 'center',
-	},
 	headline: {
 		fontFamily: FONTS.display,
 		fontSize: 44,
@@ -114,14 +102,14 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		paddingVertical: 16,
 		paddingHorizontal: 28,
 		alignItems: 'center',
-		backgroundColor: c.yolk,
+		backgroundColor: c.brass,
 		borderWidth: BORDER,
-		borderColor: c.ink,
+		borderColor: c.brassDeep,
 	},
 	buttonText: {
 		fontFamily: FONTS.display,
 		fontSize: 18,
-		color: c.onWarm,
+		color: c.onAccent,
 	},
 	secondaryLink: {
 		marginTop: 18,

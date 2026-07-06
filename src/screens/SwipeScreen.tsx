@@ -14,7 +14,6 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
 import HardButton from '../components/HardButton';
-import Wordmark from '../components/Wordmark';
 import type { Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
@@ -61,8 +60,13 @@ export default function SwipeScreen({
 	const commit = useCallback(
 		(move: Move) => {
 			if (move === 'shortlist') {
-				shortlistRef.current = shortlistRef.current.concat(deck[index]);
-				setShortlistCount(shortlistRef.current.length);
+				const card = deck[index];
+				// Guard against ever double-adding the same place (e.g. a stray repeat
+				// commit) — the shortlist must stay unique for the verdict list/wheel.
+				if (card && !shortlistRef.current.some((r) => r.id === card.id)) {
+					shortlistRef.current = shortlistRef.current.concat(card);
+					setShortlistCount(shortlistRef.current.length);
+				}
 			}
 			historyRef.current.push(move);
 			setMoveCount((c) => c + 1);
@@ -161,20 +165,17 @@ export default function SwipeScreen({
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 }]}>
 			<View style={styles.header}>
-				<View style={styles.headerLeft}>
-					<Pressable
-						style={[styles.backButton, moveCount === 0 && styles.undoDisabled]}
-						onPress={undo}
-						disabled={moveCount === 0}
-						hitSlop={8}
-						accessibilityRole="button"
-						accessibilityState={{ disabled: moveCount === 0 }}
-						accessibilityLabel="Undo last swipe"
-					>
-						<Ionicons name="arrow-undo" size={20} color={c.ink} />
-					</Pressable>
-					<Wordmark size={22} />
-				</View>
+				<Pressable
+					style={[styles.backButton, moveCount === 0 && styles.undoDisabled]}
+					onPress={undo}
+					disabled={moveCount === 0}
+					hitSlop={8}
+					accessibilityRole="button"
+					accessibilityState={{ disabled: moveCount === 0 }}
+					accessibilityLabel="Undo last swipe"
+				>
+					<Ionicons name="arrow-undo" size={20} color={c.ink} />
+				</Pressable>
 				<View style={styles.headerRight}>
 					<Text style={styles.progressText}>{progress}</Text>
 					<HardButton
@@ -185,16 +186,16 @@ export default function SwipeScreen({
 						onPress={handleDone}
 						accessibilityLabel={
 							shortlistCount > 0
-								? `Choose from your ${shortlistCount} shortlisted`
-								: 'Done — stop swiping'
+								? `View your shortlist — ${shortlistCount} saved`
+								: 'View your shortlist'
 						}
-						faceStyle={[styles.chooseFace, shortlistCount > 0 ? styles.chooseFaceReady : styles.chooseFaceIdle]}
+						faceStyle={styles.chooseFace}
 					>
+						{/* One constant button — same label, size and colour throughout;
+						    it just leads to the shortlist. */}
 						<View style={styles.chooseInner}>
-							<Text style={[styles.chooseText, shortlistCount > 0 && styles.chooseTextReady]}>
-								{shortlistCount > 0 ? `CHOOSE · ${shortlistCount}` : 'DONE'}
-							</Text>
-							{shortlistCount > 0 && <Ionicons name="arrow-forward" size={15} color={c.onWarm} />}
+							<Text style={styles.chooseText}>SHORTLIST</Text>
+							<Ionicons name="arrow-forward" size={15} color={c.ink} />
 						</View>
 					</HardButton>
 				</View>
@@ -271,11 +272,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		justifyContent: 'space-between',
 		paddingHorizontal: 24,
 	},
-	headerLeft: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 10,
-	},
 	backButton: {
 		width: 40,
 		height: 40,
@@ -300,28 +296,18 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		paddingVertical: 8,
 		paddingHorizontal: 14,
 		borderRadius: RADII.pill,
-	},
-	// Idle (nothing shortlisted yet) reads as a quiet "done"; once there are picks
-	// it flips to the yolk accent + arrow so the way to the payoff is obvious.
-	chooseFaceIdle: {
 		backgroundColor: c.paper,
-	},
-	chooseFaceReady: {
-		backgroundColor: c.yolk,
 	},
 	chooseInner: {
 		flexDirection: 'row',
 		alignItems: 'center',
+		justifyContent: 'center',
 		gap: 6,
 	},
 	chooseText: {
 		fontFamily: FONTS.bold,
 		fontSize: 13,
 		color: c.ink,
-	},
-	// On the yolk "ready" face the label sits on a light accent, so it stays dark.
-	chooseTextReady: {
-		color: c.onWarm,
 	},
 	progressText: {
 		fontFamily: FONTS.semibold,

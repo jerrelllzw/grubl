@@ -1,13 +1,13 @@
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import { useNavigation } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
 import HardButton from '../components/HardButton';
 import SlotReel from '../components/SlotReel';
 import StripePhoto from '../components/StripePhoto';
-import Wordmark from '../components/Wordmark';
-import { mapsUrl, metaLine, type Restaurant } from '../data/restaurants';
+import { mapsUrl, metaLine, uniqueById, type Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 
@@ -15,34 +15,62 @@ export default function VerdictScreen({
 	winner,
 	shortlist,
 	deck,
+	swipeIndex,
 	onPick,
 	onReshuffle,
-	onAgain,
 	onNewSearch,
 }: {
 	winner: Restaurant | null; // null → the user still has to choose from the shortlist
 	shortlist: Restaurant[];
 	deck: Restaurant[]; // the full swiped deck — lets grubl pick even with an empty shortlist
+	swipeIndex: number; // where swiping stopped; === deck.length only if the deck was finished
 	onPick: (r: Restaurant) => void;
 	onReshuffle: () => void; // drop the locked-in pick, back to the shortlist / wheel
-	onAgain: () => void;
 	onNewSearch: () => void;
 }) {
 	const insets = useSafeAreaInsets();
 	const c = useColors();
 	const styles = useThemedStyles(makeStyles);
-	// Everything on the shortlist that isn't already the pick.
-	const others = winner ? shortlist.filter((r) => r.id !== winner.id) : shortlist;
+	const hasShortlist = shortlist.length > 0;
+	// Did they swipe all the way through? Only then does an empty shortlist fall
+	// back to the whole deck ("liked nothing — pick anyway"). If they opened the
+	// shortlist early with nothing saved, it's just empty — no list, no wheel.
+	const sawWholeDeck = swipeIndex >= deck.length;
+	const showList = hasShortlist || sawWholeDeck;
+	// What Grubl picks from / the list renders: the shortlist, or the whole deck
+	// once it's been fully swiped with nothing kept. Dedupe by id so the list keys
+	// and the wheel never repeat an entry.
+	const candidates = uniqueById(hasShortlist ? shortlist : deck);
+	const canSpin = showList && candidates.length >= 2;
 
-	// Spin the wheel — Grubl makes the call. The shortlist rolls past a fixed window
-	// like a slot machine (see SlotReel) and decelerates onto the pick.
+	// Spin the wheel — Grubl makes the call. The candidates roll past a fixed window
+	// like a slot machine (see SlotReel) and decelerate onto the pick.
 	const [spinTarget, setSpinTarget] = useState<number | null>(null);
 	const spinning = spinTarget !== null;
 
+	// Height of the scrollable list box, measured so the spinning reel can fill the
+	// exact same area — the reel is a skin over this list, not a separate widget.
+	const [listH, setListH] = useState(0);
+
+	// The shortlist and winner views share this one route, so a device back from a
+	// locked-in pick would pop straight to the swipe deck. Intercept it: while a
+	// winner is showing, back just drops the pick and returns to the shortlist. Only
+	// a genuine back (GO_BACK) is caught — "New search" (dismissTo) still passes.
+	const navigation = useNavigation();
+	useEffect(() => {
+		const unsub = navigation.addListener('beforeRemove', (e) => {
+			if (winner && e.data.action.type === 'GO_BACK') {
+				e.preventDefault();
+				onReshuffle();
+			}
+		});
+		return unsub;
+	}, [navigation, winner, onReshuffle]);
+
 	const spin = () => {
-		if (spinning || shortlist.length < 2) return;
+		if (spinning || !canSpin) return;
 		Haptics.selectionAsync().catch(() => {});
-		setSpinTarget(Math.floor(Math.random() * shortlist.length));
+		setSpinTarget(Math.floor(Math.random() * candidates.length));
 	};
 
 	const pick = (r: Restaurant) => {
@@ -51,62 +79,45 @@ export default function VerdictScreen({
 		onPick(r);
 	};
 
-	// The "decide for me" promise, honoured even when nothing was shortlisted:
-	// pick a random place from everything we showed.
-	const surprise = () => {
-		if (deck.length === 0) return;
-		const choice = deck[Math.floor(Math.random() * deck.length)];
-		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-		onPick(choice);
-	};
-
-	const renderRows = (list: Restaurant[]) => (
-		<View style={styles.shortlist}>
-			{list.map((r) => (
-				<Pressable
-					key={r.id}
-					style={styles.row}
-					onPress={() => pick(r)}
-					disabled={spinning}
-					accessibilityRole="button"
-					accessibilityLabel={`Pick ${r.name}`}
-				>
-					<View style={styles.swatch}>
-						<StripePhoto hue={r.hue} radius={RADII.sticker} />
-						<Text style={styles.swatchEmoji}>{r.emoji}</Text>
-					</View>
-					<View style={styles.rowText}>
-						<Text style={styles.rowName} numberOfLines={1}>
-							{r.name}
-						</Text>
-						<Text style={styles.rowMeta} numberOfLines={1}>
-							{metaLine(r)}
-						</Text>
-					</View>
-				</Pressable>
-			))}
-		</View>
+	const renderRow = (r: Restaurant) => (
+		<Pressable
+			key={r.id}
+			style={styles.row}
+			onPress={() => pick(r)}
+			disabled={spinning}
+			accessibilityRole='button'
+			accessibilityLabel={`Pick ${r.name}`}
+		>
+			<View style={styles.swatch}>
+				<StripePhoto hue={r.hue} radius={RADII.sticker} />
+				<Text style={styles.swatchEmoji}>{r.emoji}</Text>
+			</View>
+			<View style={styles.rowText}>
+				<Text style={styles.rowName} numberOfLines={1}>
+					{r.name}
+				</Text>
+				<Text style={styles.rowMeta} numberOfLines={1}>
+					{metaLine(r)}
+				</Text>
+			</View>
+		</Pressable>
 	);
 
-	return (
-		<View style={styles.wrap}>
-		<ScrollView
-			style={styles.scroll}
-			contentContainerStyle={[
-				styles.container,
-				{ paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 },
-			]}
-			showsVerticalScrollIndicator={false}
-		>
-			<Wordmark size={22} style={styles.brand} />
-
-			{winner ? (
-				// A pick is locked in — spun for, or tapped from the shortlist.
-				<>
+	if (winner) {
+		// A pick is locked in — spun for, or tapped from the shortlist.
+		return (
+			<View style={styles.wrap}>
+				<ScrollView
+					style={styles.scroll}
+					contentContainerStyle={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 }]}
+					showsVerticalScrollIndicator={false}
+				>
+					{/* The card below is the place — headline stays generic so the name
+					    isn't shown twice. */}
 					<View style={styles.headlineWrap}>
 						<Text style={styles.headline}>
-							EAT AT{'\n'}
-							<Text style={styles.headlineName}>{winner.name.toUpperCase()}</Text>
+							EAT{'\n'}
+							<Text style={styles.headlineName}>HERE.</Text>
 						</Text>
 					</View>
 
@@ -134,309 +145,323 @@ export default function VerdictScreen({
 						<Text style={styles.mapsText}>OPEN IN MAPS →</Text>
 					</HardButton>
 
-					{others.length > 0 && (
-						<>
-							<Text style={styles.shortlistLabel}>
-								OR PICK ANOTHER OF YOUR {others.length}
-							</Text>
-							{renderRows(others)}
-						</>
-					)}
-
-					{shortlist.length >= 2 && (
+					{/* Only way back off the winner: re-open the list, or start fresh.
+					    No "swipe again" — the flow stays linear. */}
+					<View style={styles.footer}>
+						{canSpin && (
+							<>
+								<Pressable
+									onPress={onReshuffle}
+									style={styles.link}
+									hitSlop={8}
+									accessibilityRole='button'
+									accessibilityLabel='View your shortlist again'
+								>
+									<Text style={styles.linkText}>View shortlist again</Text>
+								</Pressable>
+								<Text style={styles.linkDivider}>·</Text>
+							</>
+						)}
 						<Pressable
-							onPress={onReshuffle}
-							style={styles.reshuffle}
+							onPress={onNewSearch}
+							style={styles.link}
 							hitSlop={8}
-							accessibilityRole="button"
-							accessibilityLabel="Spin again — let Grubl re-pick from your shortlist"
+							accessibilityRole='button'
+							accessibilityLabel='Start a new search'
 						>
-							<Text style={styles.reshuffleText}>↻ Spin again</Text>
+							<Text style={styles.linkText}>New search</Text>
 						</Pressable>
-					)}
-				</>
-			) : shortlist.length > 0 ? (
-				// No pick yet — spin the wheel, or tap one yourself.
-				<>
+					</View>
+				</ScrollView>
+			</View>
+		);
+	}
+
+	// No pick yet — the "deciding" view. Three fixed zones: header, a scrollable
+	// list of candidates, and a pinned SPIN CTA that's always onscreen. Spinning
+	// swaps the list box for the reel in place, so the list appears to start rolling.
+	return (
+		<View style={styles.wrap}>
+			<View style={[styles.deciding, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
+				<View style={styles.header}>
 					<View style={styles.headlineWrap}>
 						<Text style={styles.headline}>
-							YOUR{'\n'}
-							<Text style={styles.headlineName}>SHORTLIST</Text>
+							{hasShortlist ? 'YOUR\n' : 'NOTHING\n'}
+							<Text style={styles.headlineName}>{hasShortlist ? 'SHORTLIST' : 'SHORTLISTED'}</Text>
 						</Text>
 					</View>
+					{/* Kept constant while spinning so the header height (and thus the
+					    list box the reel fills) doesn't shift mid-spin. */}
+					<Text style={styles.chooseBody}>
+						{showList
+							? canSpin
+								? 'Tap a place, or let Grubl decide.'
+								: 'Only one match — tap to choose.'
+							: 'Swipe right on places you like —\nthey’ll gather here.'}
+					</Text>
+				</View>
 
-					{shortlist.length >= 2 ? (
-						<>
-							<Text style={styles.chooseBody}>
-								{spinning ? 'Spinning…' : 'Can’t decide? Let Grubl pick.'}
-							</Text>
-							<HardButton
-								dx={6}
-								dy={6}
-								color={c.shadow}
-								radius={RADII.cta}
-								onPress={spin}
-								disabled={spinning}
-								accessibilityLabel="Spin the wheel — let Grubl pick for you"
-								containerStyle={styles.spinContainer}
-								faceStyle={styles.spinFace}
-							>
-								<Text style={styles.spinText}>{spinning ? 'SPINNING…' : 'SPIN THE WHEEL'}</Text>
-							</HardButton>
+				{showList ? (
+					<View style={styles.listZone}>
+						{/* Card frame around the list. The reel renders inside the same
+						    frame (measured via listInner) so the skin stays aligned. */}
+						<View style={styles.listCard}>
+							<View style={styles.listInner} onLayout={(e) => setListH(e.nativeEvent.layout.height)}>
+								{spinning && spinTarget !== null && listH > 0 ? (
+									<SlotReel
+										items={candidates}
+										targetIndex={spinTarget}
+										windowHeight={listH}
+										onSettle={() => {
+											const chosen = candidates[spinTarget];
+											setSpinTarget(null);
+											onPick(chosen);
+										}}
+									/>
+								) : (
+									<ScrollView
+										style={styles.listScroll}
+										contentContainerStyle={styles.listContent}
+										showsVerticalScrollIndicator={false}
+									>
+										{candidates.map(renderRow)}
+									</ScrollView>
+								)}
+							</View>
+						</View>
+					</View>
+				) : (
+					// Opened the shortlist with nothing saved yet — no list, no wheel.
+					<View style={styles.emptyZone}>
+						<Text style={styles.emptyMark}>🔖</Text>
+					</View>
+				)}
 
-							{spinning && spinTarget !== null ? (
-								<SlotReel
-									items={shortlist}
-									targetIndex={spinTarget}
-									onSettle={() => {
-										const chosen = shortlist[spinTarget];
-										setSpinTarget(null);
-										onPick(chosen);
-									}}
-								/>
-							) : (
-								<>
-									<Text style={styles.orTap}>or tap one yourself</Text>
-									{renderRows(shortlist)}
-								</>
-							)}
-						</>
-					) : (
-						<>
-							<Text style={styles.chooseBody}>Only one match. Tap to choose.</Text>
-							{renderRows(shortlist)}
-						</>
-					)}
-				</>
-			) : (
-				<>
-					<Text style={styles.toughHeadline}>NO{'\n'}PICKS.</Text>
-					<Text style={styles.toughBody}>You passed on everything.{'\n'}Pick one anyway?</Text>
-					{deck.length > 0 && (
+				{showList ? (
+					canSpin && (
 						<HardButton
 							dx={6}
 							dy={6}
 							color={c.shadow}
 							radius={RADII.cta}
-							onPress={surprise}
-							accessibilityLabel="Pick one anyway — let Grubl choose from everything nearby"
-							containerStyle={styles.surpriseContainer}
-							faceStyle={styles.surpriseFace}
+							onPress={spin}
+							disabled={spinning}
+							accessibilityLabel='Spin the wheel — let Grubl pick for you'
+							containerStyle={styles.spinContainer}
+							faceStyle={styles.spinFace}
 						>
-							<Text style={styles.surpriseText}>PICK ONE ANYWAY</Text>
+							<Text style={styles.spinText}>{spinning ? 'PICKING…' : 'PICK FOR ME'}</Text>
 						</HardButton>
-					)}
-				</>
-			)}
-
-			<View style={styles.footer}>
-				<Pressable onPress={onAgain} style={styles.link} hitSlop={8} accessibilityRole="button" accessibilityLabel="Swipe the same places again">
-					<Text style={styles.linkText}>Swipe again</Text>
-				</Pressable>
-				<Text style={styles.linkDivider}>·</Text>
-				<Pressable onPress={onNewSearch} style={styles.link} hitSlop={8} accessibilityRole="button" accessibilityLabel="Start a new search">
-					<Text style={styles.linkText}>New search</Text>
-				</Pressable>
+					)
+				) : (
+					<HardButton
+						dx={6}
+						dy={6}
+						color={c.shadow}
+						radius={RADII.cta}
+						onPress={() => navigation.goBack()}
+						accessibilityLabel='Keep swiping'
+						containerStyle={styles.spinContainer}
+						faceStyle={styles.keepFace}
+					>
+						<Text style={styles.keepText}>← KEEP SWIPING</Text>
+					</HardButton>
+				)}
 			</View>
-		</ScrollView>
 		</View>
 	);
 }
 
-const makeStyles = (c: Palette) => StyleSheet.create({
-	wrap: {
-		flex: 1,
-		backgroundColor: c.cream,
-	},
-	scroll: {
-		flex: 1,
-		backgroundColor: c.cream,
-	},
-	container: {
-		paddingHorizontal: 28,
-		alignItems: 'center',
-	},
-	brand: {
-		marginBottom: 24,
-	},
-	headlineWrap: {
-		transform: [{ rotate: '-2deg' }],
-	},
-	headline: {
-		fontFamily: FONTS.display,
-		fontSize: 38,
-		lineHeight: 38,
-		color: c.ink,
-		textAlign: 'center',
-	},
-	headlineName: {
-		color: c.tomato,
-	},
-	winnerCard: {
-		marginTop: 24,
-		width: '100%',
-		maxWidth: 300,
-		height: 280,
-	},
-	mapsContainer: {
-		width: '100%',
-		marginTop: 24,
-	},
-	mapsFace: {
-		width: '100%',
-		paddingVertical: 18,
-		alignItems: 'center',
-		backgroundColor: c.brass,
-		borderWidth: BORDER,
-		borderColor: c.brassDeep,
-	},
-	mapsText: {
-		fontFamily: FONTS.display,
-		fontSize: 20,
-		color: c.onAccent,
-	},
-	chooseBody: {
-		marginTop: 16,
-		fontFamily: FONTS.medium,
-		fontSize: 16,
-		color: c.muted,
-		textAlign: 'center',
-	},
-	spinContainer: {
-		width: '100%',
-		marginTop: 18,
-	},
-	spinFace: {
-		width: '100%',
-		paddingVertical: 18,
-		alignItems: 'center',
-		backgroundColor: c.brass,
-		borderWidth: BORDER,
-		borderColor: c.brassDeep,
-	},
-	spinText: {
-		fontFamily: FONTS.display,
-		fontSize: 20,
-		color: c.onAccent,
-	},
-	orTap: {
-		marginTop: 12,
-		fontFamily: FONTS.medium,
-		fontSize: 13,
-		color: c.muted,
-		textAlign: 'center',
-	},
-	shortlistLabel: {
-		alignSelf: 'flex-start',
-		marginTop: 30,
-		marginBottom: 12,
-		fontFamily: FONTS.bold,
-		fontSize: 12,
-		letterSpacing: 1.2,
-		color: c.muted,
-	},
-	reshuffle: {
-		marginTop: 24,
-		paddingVertical: 8,
-	},
-	reshuffleText: {
-		fontFamily: FONTS.bold,
-		fontSize: 15,
-		color: c.ink,
-		textDecorationLine: 'underline',
-	},
-	shortlist: {
-		width: '100%',
-		gap: 10,
-		marginTop: 20,
-	},
-	row: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 12,
-		backgroundColor: c.paper,
-		borderWidth: BORDER,
-		borderColor: c.ink,
-		borderRadius: RADII.sticker,
-		padding: 10,
-	},
-	swatch: {
-		width: 46,
-		height: 46,
-		borderRadius: RADII.sticker,
-		borderWidth: 2,
-		borderColor: c.ink,
-		overflow: 'hidden',
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	swatchEmoji: {
-		fontSize: 24,
-	},
-	rowText: {
-		flex: 1,
-	},
-	rowName: {
-		fontFamily: FONTS.display,
-		fontSize: 16,
-		color: c.ink,
-	},
-	rowMeta: {
-		marginTop: 3,
-		fontFamily: FONTS.semibold,
-		fontSize: 12,
-		color: c.muted,
-	},
-	toughHeadline: {
-		marginTop: 40,
-		fontFamily: FONTS.display,
-		fontSize: 38,
-		lineHeight: 38 * 1.05,
-		color: c.ink,
-		textAlign: 'center',
-	},
-	toughBody: {
-		marginTop: 14,
-		fontFamily: FONTS.medium,
-		fontSize: 17,
-		color: c.muted,
-		textAlign: 'center',
-	},
-	surpriseContainer: {
-		width: '100%',
-		marginTop: 28,
-	},
-	surpriseFace: {
-		width: '100%',
-		paddingVertical: 18,
-		alignItems: 'center',
-		backgroundColor: c.brass,
-		borderWidth: BORDER,
-		borderColor: c.brassDeep,
-	},
-	surpriseText: {
-		fontFamily: FONTS.display,
-		fontSize: 20,
-		color: c.onAccent,
-	},
-	footer: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 10,
-		marginTop: 28,
-	},
-	link: {
-		paddingVertical: 10,
-	},
-	linkText: {
-		fontFamily: FONTS.semibold,
-		fontSize: 15,
-		color: c.muted,
-		textDecorationLine: 'underline',
-	},
-	linkDivider: {
-		fontFamily: FONTS.semibold,
-		fontSize: 15,
-		color: c.muted,
-	},
-});
+const makeStyles = (c: Palette) =>
+	StyleSheet.create({
+		wrap: {
+			flex: 1,
+			backgroundColor: c.cream,
+		},
+		scroll: {
+			flex: 1,
+			backgroundColor: c.cream,
+		},
+		container: {
+			paddingHorizontal: 28,
+			alignItems: 'center',
+			// Float the winner block in the vertical centre; padding acts as the min gap.
+			flexGrow: 1,
+			justifyContent: 'center',
+		},
+		// Deciding phase: three fixed vertical zones (header · scrollable list · CTA).
+		deciding: {
+			flex: 1,
+			paddingHorizontal: 28,
+		},
+		header: {
+			alignItems: 'center',
+		},
+		// Grows to fill the space between the header and the pinned CTA.
+		listZone: {
+			flex: 1,
+			alignSelf: 'stretch',
+			marginTop: 20,
+		},
+		// Card frame around the whole list of places.
+		listCard: {
+			flex: 1,
+			borderWidth: BORDER,
+			borderColor: c.ink,
+			borderRadius: RADII.card,
+			padding: 10,
+			overflow: 'hidden',
+		},
+		// The padded interior — both the list and the reel fill exactly this box.
+		listInner: {
+			flex: 1,
+		},
+		listScroll: {
+			flex: 1,
+		},
+		listContent: {
+			gap: 10,
+		},
+		// Empty shortlist (opened early): fills the list space with a quiet mark.
+		emptyZone: {
+			flex: 1,
+			alignSelf: 'stretch',
+			alignItems: 'center',
+			justifyContent: 'center',
+		},
+		emptyMark: {
+			fontSize: 72,
+			opacity: 0.5,
+		},
+		headlineWrap: {
+			transform: [{ rotate: '-2deg' }],
+		},
+		headline: {
+			fontFamily: FONTS.display,
+			fontSize: 38,
+			lineHeight: 38,
+			color: c.ink,
+			textAlign: 'center',
+		},
+		headlineName: {
+			color: c.tomato,
+		},
+		winnerCard: {
+			marginTop: 24,
+			width: '100%',
+			maxWidth: 300,
+			height: 280,
+		},
+		mapsContainer: {
+			width: '100%',
+			marginTop: 24,
+		},
+		mapsFace: {
+			width: '100%',
+			paddingVertical: 18,
+			alignItems: 'center',
+			backgroundColor: c.brass,
+			borderWidth: BORDER,
+			borderColor: c.brassDeep,
+		},
+		mapsText: {
+			fontFamily: FONTS.display,
+			fontSize: 20,
+			color: c.onAccent,
+		},
+		chooseBody: {
+			marginTop: 16,
+			fontFamily: FONTS.medium,
+			fontSize: 16,
+			color: c.muted,
+			textAlign: 'center',
+		},
+		spinContainer: {
+			width: '100%',
+			marginTop: 16,
+		},
+		spinFace: {
+			width: '100%',
+			paddingVertical: 18,
+			alignItems: 'center',
+			backgroundColor: c.brass,
+			borderWidth: BORDER,
+			borderColor: c.brassDeep,
+		},
+		spinText: {
+			fontFamily: FONTS.display,
+			fontSize: 20,
+			color: c.onAccent,
+		},
+		// Secondary CTA for the empty state — quiet paper, not the brass accent.
+		keepFace: {
+			width: '100%',
+			paddingVertical: 18,
+			alignItems: 'center',
+			backgroundColor: c.paper,
+			borderWidth: BORDER,
+			borderColor: c.ink,
+		},
+		keepText: {
+			fontFamily: FONTS.display,
+			fontSize: 20,
+			color: c.ink,
+		},
+		row: {
+			flexDirection: 'row',
+			alignItems: 'center',
+			gap: 12,
+			backgroundColor: c.paper,
+			borderWidth: BORDER,
+			borderColor: c.ink,
+			borderRadius: RADII.sticker,
+			padding: 10,
+		},
+		swatch: {
+			width: 46,
+			height: 46,
+			borderRadius: RADII.sticker,
+			borderWidth: 2,
+			borderColor: c.ink,
+			overflow: 'hidden',
+			alignItems: 'center',
+			justifyContent: 'center',
+		},
+		swatchEmoji: {
+			fontSize: 24,
+		},
+		rowText: {
+			flex: 1,
+		},
+		rowName: {
+			fontFamily: FONTS.display,
+			fontSize: 16,
+			color: c.ink,
+		},
+		rowMeta: {
+			marginTop: 3,
+			fontFamily: FONTS.semibold,
+			fontSize: 12,
+			color: c.muted,
+		},
+		footer: {
+			flexDirection: 'row',
+			alignItems: 'center',
+			gap: 10,
+			marginTop: 28,
+		},
+		link: {
+			paddingVertical: 10,
+		},
+		linkText: {
+			fontFamily: FONTS.semibold,
+			fontSize: 15,
+			color: c.muted,
+			textDecorationLine: 'underline',
+		},
+		linkDivider: {
+			fontFamily: FONTS.semibold,
+			fontSize: 15,
+			color: c.muted,
+		},
+	});

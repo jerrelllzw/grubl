@@ -7,7 +7,6 @@ import DistanceSlider from '../components/DistanceSlider';
 import HardButton from '../components/HardButton';
 import LoadingDots from '../components/LoadingDots';
 import ThemeToggle from '../components/ThemeToggle';
-import Wordmark from '../components/Wordmark';
 import {
 	DEFAULT_RADIUS_M,
 	PRICE_KEYS,
@@ -132,7 +131,6 @@ export default function SearchScreen({
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 14 }]}>
 			<View style={styles.header}>
-				<Wordmark size={24} />
 				<ThemeToggle />
 			</View>
 
@@ -161,51 +159,45 @@ export default function SearchScreen({
 				<View style={styles.locationSection}>
 					<Text style={styles.label}>LOCATION</Text>
 
-					{/* GPS is the fast path for a "just tell me where to eat" app — lead with it. */}
-					<Pressable
-						style={styles.gpsPrimary}
-						onPress={useCurrentLocationPress}
-						disabled={isLocating}
-						accessibilityRole='button'
-						accessibilityLabel='Use my current location'
-					>
-						{isLocating ? (
-							<LoadingDots color={c.onWarm} size={7} />
-						) : (
-							<Ionicons name='locate' size={20} color={c.onWarm} />
-						)}
-						<Text style={styles.gpsPrimaryText}>{isLocating ? 'LOCATING' : 'USE MY LOCATION'}</Text>
-					</Pressable>
-
-					<View style={styles.orRow}>
-						<View style={styles.orLine} />
-						<Text style={styles.orText}>or type an address</Text>
-						<View style={styles.orLine} />
-					</View>
-
-					{/* Anchor keeps the floating dropdown positioned to the input, not the section. */}
+					{/* One line: the address field, with a separate "use current location"
+					    button on the right. Anchor keeps the dropdown pinned to the input. */}
 					<View style={styles.locationAnchor}>
-						<View style={styles.inputWrap}>
-							<TextInput
-								style={styles.input}
-								placeholder='e.g. Marina Bay Sands'
-								placeholderTextColor={c.muted}
-								value={location}
-								onChangeText={onChangeLocation}
-								onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-								accessibilityLabel='Location'
-							/>
-							{location.length > 0 && (
-								<Pressable
-									style={styles.clearButton}
-									onPress={clearLocation}
-									hitSlop={8}
-									accessibilityRole='button'
-									accessibilityLabel='Clear location'
-								>
-									<Ionicons name='close-circle' size={20} color={c.muted} />
-								</Pressable>
-							)}
+						<View style={styles.locationRow}>
+							<View style={styles.inputWrap}>
+								<TextInput
+									style={styles.input}
+									placeholder='e.g. Marina Bay Sands'
+									placeholderTextColor={c.muted}
+									value={location}
+									onChangeText={onChangeLocation}
+									onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+									accessibilityLabel='Location'
+								/>
+								{location.length > 0 && (
+									<Pressable
+										style={styles.clearButton}
+										onPress={clearLocation}
+										hitSlop={8}
+										accessibilityRole='button'
+										accessibilityLabel='Clear location'
+									>
+										<Ionicons name='close-circle' size={20} color={c.muted} />
+									</Pressable>
+								)}
+							</View>
+							<Pressable
+								style={styles.gpsButton}
+								onPress={useCurrentLocationPress}
+								disabled={isLocating}
+								accessibilityRole='button'
+								accessibilityLabel='Use my current location'
+							>
+								{isLocating ? (
+									<LoadingDots color={c.ink} size={6} />
+								) : (
+									<Ionicons name='locate' size={22} color={c.ink} />
+								)}
+							</Pressable>
 						</View>
 
 						{showSuggestions && suggestions.length > 0 && (
@@ -237,10 +229,9 @@ export default function SearchScreen({
 					</View>
 
 					{error && (
-						<View style={styles.errorBanner} accessibilityRole='alert'>
-							<Ionicons name='alert-circle' size={18} color={c.rose} />
-							<Text style={styles.errorText}>{error}</Text>
-						</View>
+						<Text style={styles.errorText} accessibilityRole='alert'>
+							{error}
+						</Text>
 					)}
 				</View>
 
@@ -350,8 +341,7 @@ const makeStyles = (c: Palette) =>
 		header: {
 			flexDirection: 'row',
 			alignItems: 'center',
-			justifyContent: 'space-between',
-			gap: 10,
+			justifyContent: 'flex-end',
 			paddingHorizontal: 20,
 			paddingBottom: 10,
 		},
@@ -397,59 +387,33 @@ const makeStyles = (c: Palette) =>
 			position: 'relative',
 			zIndex: 30,
 		},
-		errorBanner: {
-			flexDirection: 'row',
-			alignItems: 'center',
-			gap: 8,
-			marginTop: 12,
-			paddingVertical: 10,
-			paddingHorizontal: 12,
-			backgroundColor: c.paper,
-			borderWidth: 2,
-			borderColor: c.rose,
-			borderRadius: RADII.sticker,
-		},
+		// Plain red text, no bubble — reads as a quiet inline hint that doesn't
+		// compete with the form fields.
 		errorText: {
-			flex: 1,
+			marginTop: 8,
 			fontFamily: FONTS.semibold,
 			fontSize: 13,
-			color: c.ink,
+			color: c.rose,
 		},
-		gpsPrimary: {
+		// Address field + its own GPS button, side by side on one line.
+		locationRow: {
 			flexDirection: 'row',
 			alignItems: 'center',
-			justifyContent: 'center',
 			gap: 10,
+		},
+		// Standalone GPS button on the right — square, neutral, matches input height.
+		gpsButton: {
+			width: 54,
 			height: 54,
-			backgroundColor: c.yolk,
+			alignItems: 'center',
+			justifyContent: 'center',
+			backgroundColor: c.paper,
 			borderWidth: BORDER,
 			borderColor: c.ink,
 			borderRadius: RADII.sticker,
 		},
-		gpsPrimaryText: {
-			fontFamily: FONTS.bold,
-			fontSize: 15,
-			letterSpacing: 0.5,
-			color: c.onWarm,
-		},
-		orRow: {
-			flexDirection: 'row',
-			alignItems: 'center',
-			gap: 12,
-			marginVertical: 14,
-		},
-		orLine: {
-			flex: 1,
-			height: BORDER,
-			backgroundColor: c.line,
-		},
-		orText: {
-			fontFamily: FONTS.medium,
-			fontSize: 13,
-			color: c.muted,
-		},
 		inputWrap: {
-			width: '100%',
+			flex: 1,
 			position: 'relative',
 			justifyContent: 'center',
 		},

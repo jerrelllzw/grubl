@@ -35,6 +35,22 @@ export type SearchQuery = {
 	openNow: boolean;
 };
 
+/**
+ * Keep the first occurrence of each id. Guards every downstream list against a
+ * repeated place id — which would otherwise collide React keys (the swipe deck,
+ * the shortlist, and the verdict wheel all key off `id`).
+ */
+export function uniqueById<T extends { id: string }>(items: T[]): T[] {
+	const seen = new Set<string>();
+	const out: T[] = [];
+	for (const item of items) {
+		if (seen.has(item.id)) continue;
+		seen.add(item.id);
+		out.push(item);
+	}
+	return out;
+}
+
 // Deterministic hue from a string so each card gets a stable, distinct tint.
 function hueFrom(seed: string): number {
 	let h = 0;
@@ -99,7 +115,7 @@ export async function searchRestaurants(query: SearchQuery): Promise<SearchOutco
 			query.priceLevels,
 			query.openNow
 		);
-		return { deck: places.map(placeToRestaurant), status: 'ok' };
+		return { deck: uniqueById(places.map(placeToRestaurant)), status: 'ok' };
 	} catch {
 		// fetchCoordinates / fetchPlaces rethrow on network/API failure.
 		return { deck: [], status: 'error' };

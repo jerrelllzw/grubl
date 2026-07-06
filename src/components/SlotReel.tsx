@@ -16,26 +16,32 @@ import { useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 import StripePhoto from './StripePhoto';
 
-// A slot-machine reel with a cozy landing: the shortlist rolls past a fixed
-// window, overshoots a touch and springs back (a friendly "boing"), then pops a
-// little sparkle flourish before handing the pick off. Mounted only while a spin
-// is in flight, so its one-shot mount animation == one spin.
+// A slot-machine reel with a cozy landing: the shortlist rolls past a window,
+// overshoots a touch and springs back (a friendly "boing"), then pops a little
+// sparkle flourish before handing the pick off. Mounted only while a spin is in
+// flight, so its one-shot mount animation == one spin.
+//
+// The reel is a *skin over the shortlist*: its rows are sized identically to the
+// static list rows (ITEM_H/GAP below match VerdictScreen), and it fills the same
+// box the list occupied (`windowHeight`). So the swap from list → reel reads as
+// the list itself starting to roll, not a separate widget appearing.
 
-const ITEM_H = 64;
+const ITEM_H = 69; // == shortlist row: swatch 46 + padding 10·2 + border 1.5·2
 const GAP = 10;
 const STRIDE = ITEM_H + GAP; // centre-to-centre distance between rows
-const VISIBLE = 3; // rows in the window; the middle one is the "pick" slot
-const WINDOW_H = VISIBLE * ITEM_H + (VISIBLE - 1) * GAP;
 const OVERSHOOT = 24; // roll a touch past the pick, then spring back
 
 export default function SlotReel({
 	items,
 	targetIndex,
 	onSettle,
+	windowHeight,
 }: {
 	items: Restaurant[];
 	targetIndex: number;
 	onSettle: () => void;
+	/** Height of the list box the reel replaces — the reel fills it exactly. */
+	windowHeight: number;
 }) {
 	const styles = useThemedStyles(makeStyles);
 	const y = useSharedValue(0);
@@ -45,13 +51,19 @@ export default function SlotReel({
 	const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [landed, setLanded] = useState(false);
 
+	// How many rows fill the box, forced odd so there's one clean centre "pick" slot.
+	const fits = Math.max(1, Math.floor((windowHeight + GAP) / STRIDE));
+	const VISIBLE = fits % 2 === 0 ? fits - 1 : fits;
+	const centerSlot = Math.floor(VISIBLE / 2); // rows above the pick slot
+	const frameTop = centerSlot * STRIDE;
+
 	// Pre-roll cycles before landing — enough travel to feel like a spin, capped so
 	// the strip stays short even for a long shortlist.
 	const cycles = Math.max(2, Math.ceil(18 / items.length));
 	const landAbs = cycles * items.length + targetIndex; // reel index that lands centre
 	const strip = useMemo(
 		() => Array.from({ length: landAbs + VISIBLE }, (_, i) => items[i % items.length]),
-		[items, landAbs]
+		[items, landAbs, VISIBLE]
 	);
 
 	useEffect(() => {
@@ -67,8 +79,9 @@ export default function SlotReel({
 			settleTimer.current = setTimeout(onSettle, 780);
 		};
 
-		// Land with the winner in the middle slot: rows [landAbs-1, landAbs, landAbs+1].
-		const target = -(landAbs - 1) * STRIDE;
+		// Land with the winner in the centre slot. Start at y=0 (rows [0…VISIBLE-1]
+		// from the top) so the first frame matches the resting list — a seamless skin.
+		const target = -(landAbs - centerSlot) * STRIDE;
 		y.value = withSequence(
 			withTiming(target - OVERSHOOT, { duration: 2500, easing: Easing.out(Easing.cubic) }),
 			withSpring(target, { damping: 11, stiffness: 130, mass: 0.9 }, (finished) => {
@@ -105,7 +118,7 @@ export default function SlotReel({
 	}));
 
 	return (
-		<View style={styles.window} accessibilityLabel="Spinning the wheel">
+		<View style={[styles.window, { height: windowHeight }]} accessibilityLabel="Spinning the wheel">
 			<Animated.View style={reelStyle}>
 				{strip.map((r, i) => (
 					<View key={i} style={styles.item}>
@@ -126,14 +139,14 @@ export default function SlotReel({
 			</Animated.View>
 
 			{/* expanding "pop" ring on land */}
-			<Animated.View pointerEvents="none" style={[styles.ring, ringStyle]} />
+			<Animated.View pointerEvents="none" style={[styles.ring, { top: frameTop }, ringStyle]} />
 
-			{/* fixed persimmon frame around the middle slot (pulses on land) */}
-			<Animated.View pointerEvents="none" style={[styles.frame, frameStyle]} />
+			{/* persimmon frame around the centre slot (pulses on land) */}
+			<Animated.View pointerEvents="none" style={[styles.frame, { top: frameTop }, frameStyle]} />
 
 			{/* sparkle flourish */}
 			{landed && (
-				<Animated.View pointerEvents="none" style={[styles.sparkLayer, sparkLayerStyle]}>
+				<Animated.View pointerEvents="none" style={[styles.sparkLayer, { top: frameTop - 10 }, sparkLayerStyle]}>
 					<Text style={[styles.spark, styles.sparkSm]}>✨</Text>
 					<Text style={[styles.spark, styles.sparkLg]}>✨</Text>
 					<Text style={[styles.spark, styles.sparkSm]}>✨</Text>
@@ -144,16 +157,13 @@ export default function SlotReel({
 }
 
 const makeStyles = (c: Palette) => StyleSheet.create({
+	// Transparent, borderless box so the reel reads as the list's own area, not a
+	// separate widget dropped on top. Height is passed in to match the list box.
 	window: {
 		width: '100%',
-		height: WINDOW_H,
-		marginTop: 20,
-		borderRadius: RADII.sticker,
-		backgroundColor: c.ground,
-		borderWidth: BORDER,
-		borderColor: c.line,
 		overflow: 'hidden',
 	},
+	// Sized identically to the shortlist row in VerdictScreen so the swap is seamless.
 	item: {
 		height: ITEM_H,
 		marginBottom: GAP,
@@ -163,10 +173,12 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		paddingHorizontal: 10,
 		backgroundColor: c.paper,
 		borderRadius: RADII.sticker,
+		borderWidth: BORDER,
+		borderColor: c.ink,
 	},
 	swatch: {
-		width: 42,
-		height: 42,
+		width: 46,
+		height: 46,
 		borderRadius: RADII.sticker,
 		borderWidth: 2,
 		borderColor: c.ink,
@@ -175,7 +187,7 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		justifyContent: 'center',
 	},
 	swatchEmoji: {
-		fontSize: 22,
+		fontSize: 24,
 	},
 	txt: {
 		flex: 1,
@@ -195,7 +207,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		position: 'absolute',
 		left: 0,
 		right: 0,
-		top: STRIDE, // one row + gap down → wraps the middle slot
 		height: ITEM_H,
 		borderRadius: RADII.sticker,
 		borderWidth: 2.5,
@@ -205,7 +216,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		position: 'absolute',
 		left: 0,
 		right: 0,
-		top: STRIDE,
 		height: ITEM_H,
 		borderRadius: RADII.sticker,
 		borderWidth: 2.5,
@@ -215,7 +225,6 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		position: 'absolute',
 		left: 0,
 		right: 0,
-		top: STRIDE - 10,
 		height: 26,
 		flexDirection: 'row',
 		justifyContent: 'center',

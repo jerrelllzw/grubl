@@ -25,63 +25,67 @@ export default function IntroScreen({ onStart }: { onStart: () => void }) {
 				color={c.shadow}
 				radius={RADII.cta}
 				onPress={onStart}
-				accessibilityLabel="Get started — set up a food search"
+				accessibilityLabel='Start — set up a food search'
 				containerStyle={styles.ctaContainer}
 				faceStyle={styles.ctaFace}
 			>
-				<Text style={styles.ctaText}>GET STARTED →</Text>
+				<Text style={styles.ctaText}>START →</Text>
 			</HardButton>
 		</View>
 	);
 }
 
-const makeStyles = (c: Palette) => StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: c.cream,
-		paddingHorizontal: 28,
-		// Group the wordmark, tagline and CTA as one block in the vertical centre
-		// instead of splitting them top-and-bottom with a dead band between.
-		justifyContent: 'center',
-	},
-	toggle: {
-		position: 'absolute',
-		right: 24,
-	},
-	wordmark: {
-		letterSpacing: -1, // tighter tracking for the big hero treatment
-		lineHeight: 58 * 0.95,
-	},
-	tagline: {
-		marginTop: 18,
-		fontFamily: FONTS.semibold,
-		fontSize: 20,
-		lineHeight: 20 * 1.25,
-		letterSpacing: -0.4, // echoes the wordmark's tight tracking so they read as one voice
-		color: c.ink,
-	},
-	subline: {
-		marginTop: 8,
-		fontFamily: FONTS.medium,
-		fontSize: 15,
-		lineHeight: 15 * 1.3,
-		letterSpacing: -0.2,
-		color: c.muted,
-	},
-	ctaContainer: {
-		marginTop: 40,
-	},
-	ctaFace: {
-		width: '100%',
-		paddingVertical: 20,
-		alignItems: 'center',
-		backgroundColor: c.brass,
-		borderWidth: BORDER,
-		borderColor: c.brassDeep,
-	},
-	ctaText: {
-		fontFamily: FONTS.display,
-		fontSize: 22,
-		color: c.onAccent,
-	},
-});
+const makeStyles = (c: Palette) =>
+	StyleSheet.create({
+		container: {
+			flex: 1,
+			backgroundColor: c.cream,
+			paddingHorizontal: 28,
+			// Group the wordmark, tagline and CTA as one block centred on both axes.
+			justifyContent: 'center',
+			alignItems: 'center',
+		},
+		toggle: {
+			position: 'absolute',
+			right: 24,
+		},
+		wordmark: {
+			letterSpacing: -1, // tighter tracking for the big hero treatment
+			lineHeight: 58 * 0.95,
+		},
+		tagline: {
+			marginTop: 18,
+			fontFamily: FONTS.semibold,
+			fontSize: 20,
+			lineHeight: 20 * 1.25,
+			letterSpacing: -0.4, // echoes the wordmark's tight tracking so they read as one voice
+			color: c.ink,
+			textAlign: 'center',
+		},
+		subline: {
+			marginTop: 8,
+			fontFamily: FONTS.medium,
+			fontSize: 15,
+			lineHeight: 15 * 1.3,
+			letterSpacing: -0.2,
+			color: c.muted,
+			textAlign: 'center',
+		},
+		ctaContainer: {
+			marginTop: 40,
+			alignSelf: 'stretch', // full-width CTA even though the hero text is centred
+		},
+		ctaFace: {
+			width: '100%',
+			paddingVertical: 20,
+			alignItems: 'center',
+			backgroundColor: c.brass,
+			borderWidth: BORDER,
+			borderColor: c.brassDeep,
+		},
+		ctaText: {
+			fontFamily: FONTS.display,
+			fontSize: 22,
+			color: c.onAccent,
+		},
+	});

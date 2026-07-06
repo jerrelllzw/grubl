@@ -26,7 +26,6 @@ type AppState = {
 	complete: (maybes: Restaurant[], atIndex: number) => void;
 	pick: (r: Restaurant) => void;
 	reshuffle: () => void;
-	again: () => void;
 	newSearch: () => void;
 };
 
@@ -100,16 +99,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 	// Drop a locked-in pick to return to the shortlist / spin-the-wheel view.
 	const reshuffle = useCallback(() => setWinner(null), []);
 
-	// Re-swipe the same deck without another API round-trip: reset progress, bump
-	// runId so the (still-mounted) swipe route remounts fresh, then pop back to it.
-	const again = useCallback(() => {
-		setShortlist([]);
-		setSwipeIndex(0);
-		setWinner(null);
-		setRunId((id) => id + 1);
-		router.back();
-	}, [router]);
-
 	// Start over with new filters — pop straight back to the search route, keeping
 	// the last query seeded so tweaking one filter doesn't mean re-entering all.
 	const newSearch = useCallback(() => router.dismissTo('/search'), [router]);
@@ -130,10 +119,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 			complete,
 			pick,
 			reshuffle,
-			again,
 			newSearch,
 		}),
-		[query, deck, loading, emptyReason, winner, shortlist, swipeIndex, runId, start, submitSearch, retry, complete, pick, reshuffle, again, newSearch]
+		[query, deck, loading, emptyReason, winner, shortlist, swipeIndex, runId, start, submitSearch, retry, complete, pick, reshuffle, newSearch]
 	);
 
 	return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
