@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
 // A button with the signature hard offset shadow that "presses" by sinking into
 // its shadow: the face translates toward the shadow, shrinking the visible gap.
+// The sink is animated — quick to press down, springy on release — so every CTA
+// feels tactile rather than snapping between two static states.
 
 const PRESSED_GAP = 2;
 
@@ -33,20 +36,40 @@ export default function HardButton({
 	accessibilityLabel?: string;
 	children?: React.ReactNode;
 }) {
-	const [pressed, setPressed] = useState(false);
-	// Sink into the shadow while actively pressed, or while busy (held down look).
-	// A plain disabled button sits flush — it looks un-poppable.
-	const sunk = busy || (pressed && !disabled);
-	const shift = sunk
-		? [{ translateX: dx - PRESSED_GAP }, { translateY: dy - PRESSED_GAP }]
-		: [{ translateX: 0 }, { translateY: 0 }];
+	// 0 = raised (flush with the page), 1 = sunk into the shadow.
+	const press = useSharedValue(0);
 	const dimmed = disabled || busy;
+
+	// Snap down fast on press, spring back on release — the "pop" that reads as a
+	// physical key returning. `busy` holds it sunk (see below) for the mid-action look.
+	const sink = () => {
+		press.value = withTiming(1, { duration: 45 });
+	};
+	const raise = () => {
+		press.value = withSpring(0, { mass: 0.5, damping: 13, stiffness: 340 });
+	};
+
+	// While busy, hold the button pressed-in; restore once the work finishes.
+	useEffect(() => {
+		if (busy) press.value = withTiming(1, { duration: 110 });
+		else press.value = withSpring(0, { mass: 0.5, damping: 13, stiffness: 340 });
+	}, [busy, press]);
+
+	// The face travels toward the shadow by (offset − PRESSED_GAP), leaving a hair
+	// of shadow so it still reads as raised-then-pressed, never fully flat.
+	const faceAnim = useAnimatedStyle(() => ({
+		transform: [
+			{ translateX: press.value * (dx - PRESSED_GAP) },
+			{ translateY: press.value * (dy - PRESSED_GAP) },
+		],
+	}));
+
 	return (
 		<Pressable
 			onPress={onPress}
-			onPressIn={() => setPressed(true)}
-			onPressOut={() => setPressed(false)}
-			disabled={disabled || busy}
+			onPressIn={() => !dimmed && sink()}
+			onPressOut={() => !busy && raise()}
+			disabled={dimmed}
 			accessibilityRole="button"
 			accessibilityLabel={accessibilityLabel}
 			accessibilityState={{ disabled, busy }}
@@ -59,7 +82,7 @@ export default function HardButton({
 						{ backgroundColor: color, borderRadius: radius, transform: [{ translateX: dx }, { translateY: dy }] },
 					]}
 				/>
-				<View style={[{ borderRadius: radius, transform: shift }, faceStyle]}>{children}</View>
+				<Animated.View style={[{ borderRadius: radius }, faceStyle, faceAnim]}>{children}</Animated.View>
 			</View>
 		</Pressable>
 	);

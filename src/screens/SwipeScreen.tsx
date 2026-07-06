@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
 	Easing,
+	FadeIn,
 	interpolate,
 	runOnJS,
 	useAnimatedStyle,
@@ -241,12 +242,15 @@ export default function SwipeScreen({
 					const r = deck[index + o];
 					if (o !== 0) {
 						return (
-							<View
+							// Newly revealed deeper cards fade in, so the deck replenishes
+							// smoothly behind the top card instead of popping into place.
+							<Animated.View
 								key={index + o}
+								entering={FadeIn.duration(260)}
 								style={[styles.cardPos, { transform: [{ translateY: o * 11 }, { scale: 1 - o * 0.045 }], zIndex: 10 - o }]}
 							>
 								<CardFace restaurant={r} />
-							</View>
+							</Animated.View>
 						);
 					}
 					return (

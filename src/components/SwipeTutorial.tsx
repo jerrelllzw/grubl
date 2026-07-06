@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
@@ -45,8 +45,10 @@ export default function SwipeTutorial({ onDismiss }: { onDismiss: () => void }) 
 				<Text style={styles.heading}>Swipe to decide</Text>
 
 				<View style={styles.rows}>
-					{ROWS.map((r) => (
-						<View key={r.title} style={styles.row}>
+					{ROWS.map((r, i) => (
+						// Each tip cascades in after the card, so the "how to" reads
+						// top-to-bottom as it assembles.
+						<Animated.View key={r.title} entering={FadeInDown.delay(140 + i * 80).duration(360)} style={styles.row}>
 							<View style={[styles.iconWrap, { borderColor: tint[r.tintKey] }]}>
 								<Ionicons name={r.icon} size={22} color={tint[r.tintKey]} />
 							</View>
@@ -54,7 +56,7 @@ export default function SwipeTutorial({ onDismiss }: { onDismiss: () => void }) 
 								<Text style={styles.rowTitle}>{r.title}</Text>
 								<Text style={styles.rowBody}>{r.body}</Text>
 							</View>
-						</View>
+						</Animated.View>
 					))}
 				</View>
 

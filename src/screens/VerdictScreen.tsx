@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
 import HardButton from '../components/HardButton';
@@ -79,28 +80,31 @@ export default function VerdictScreen({
 		onPick(r);
 	};
 
-	const renderRow = (r: Restaurant) => (
-		<Pressable
-			key={r.id}
-			style={styles.row}
-			onPress={() => pick(r)}
-			disabled={spinning}
-			accessibilityRole='button'
-			accessibilityLabel={`Pick ${r.name}`}
-		>
-			<View style={styles.swatch}>
-				<StripePhoto hue={r.hue} radius={RADII.sticker} />
-				<Text style={styles.swatchEmoji}>{r.emoji}</Text>
-			</View>
-			<View style={styles.rowText}>
-				<Text style={styles.rowName} numberOfLines={1}>
-					{r.name}
-				</Text>
-				<Text style={styles.rowMeta} numberOfLines={1}>
-					{metaLine(r)}
-				</Text>
-			</View>
-		</Pressable>
+	// Rows drop in one after another (capped stagger) so the shortlist assembles
+	// itself rather than appearing all at once.
+	const renderRow = (r: Restaurant, i: number) => (
+		<Animated.View key={r.id} entering={FadeInDown.delay(Math.min(i, 8) * 55).duration(360)}>
+			<Pressable
+				style={styles.row}
+				onPress={() => pick(r)}
+				disabled={spinning}
+				accessibilityRole='button'
+				accessibilityLabel={`Pick ${r.name}`}
+			>
+				<View style={styles.swatch}>
+					<StripePhoto hue={r.hue} radius={RADII.sticker} />
+					<Text style={styles.swatchEmoji}>{r.emoji}</Text>
+				</View>
+				<View style={styles.rowText}>
+					<Text style={styles.rowName} numberOfLines={1}>
+						{r.name}
+					</Text>
+					<Text style={styles.rowMeta} numberOfLines={1}>
+						{metaLine(r)}
+					</Text>
+				</View>
+			</Pressable>
+		</Animated.View>
 	);
 
 	if (winner) {
@@ -113,14 +117,18 @@ export default function VerdictScreen({
 					showsVerticalScrollIndicator={false}
 				>
 					{/* The card below is the place — headline stays generic so the name
-					    isn't shown twice. */}
-					<View style={styles.headlineWrap}>
+					    isn't shown twice. The verdict lands as a beat: title drops in,
+					    then the card pops (spring zoom), then the actions follow. */}
+					<Animated.View entering={FadeInDown.duration(420)} style={styles.headlineWrap}>
 						<Text style={styles.headline}>
-							EAT <Text style={styles.headlineName}>HERE.</Text>
+							EAT <Text style={styles.headlineName}>HERE</Text>
 						</Text>
-					</View>
+					</Animated.View>
 
-					<View style={styles.winnerCard}>
+					<Animated.View
+						entering={ZoomIn.delay(160).duration(520).springify().damping(13).stiffness(150)}
+						style={styles.winnerCard}
+					>
 						<CardFace
 							restaurant={winner}
 							cardRadius={22}
@@ -129,24 +137,25 @@ export default function VerdictScreen({
 							metaSize={14}
 							emojiSize={84}
 						/>
-					</View>
+					</Animated.View>
 
-					<HardButton
-						dx={6}
-						dy={6}
-						color={c.shadow}
-						radius={RADII.cta}
-						onPress={() => Linking.openURL(mapsUrl(winner))}
-						accessibilityLabel={`Open ${winner.name} in Maps`}
-						containerStyle={styles.mapsContainer}
-						faceStyle={styles.mapsFace}
-					>
-						<Text style={styles.mapsText}>OPEN IN MAPS →</Text>
-					</HardButton>
+					<Animated.View entering={FadeInDown.delay(360).duration(420)} style={styles.mapsContainer}>
+						<HardButton
+							dx={6}
+							dy={6}
+							color={c.shadow}
+							radius={RADII.cta}
+							onPress={() => Linking.openURL(mapsUrl(winner))}
+							accessibilityLabel={`Open ${winner.name} in Maps`}
+							faceStyle={styles.mapsFace}
+						>
+							<Text style={styles.mapsText}>OPEN IN MAPS →</Text>
+						</HardButton>
+					</Animated.View>
 
 					{/* Only way back off the winner: re-open the list, or start fresh.
 					    No "swipe again" — the flow stays linear. */}
-					<View style={styles.footer}>
+					<Animated.View entering={FadeInDown.delay(460).duration(420)} style={styles.footer}>
 						{canSpin && (
 							<>
 								<Pressable
@@ -170,7 +179,7 @@ export default function VerdictScreen({
 						>
 							<Text style={styles.linkText}>New search</Text>
 						</Pressable>
-					</View>
+					</Animated.View>
 				</ScrollView>
 			</View>
 		);
@@ -182,7 +191,7 @@ export default function VerdictScreen({
 	return (
 		<View style={styles.wrap}>
 			<View style={[styles.deciding, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
-				<View style={styles.header}>
+				<Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
 					<View style={styles.headlineWrap}>
 						<Text style={styles.headline}>
 							{hasShortlist ? 'YOUR\n' : 'NOTHING\n'}
@@ -198,7 +207,7 @@ export default function VerdictScreen({
 								: 'Only one match — tap to choose.'
 							: 'Swipe right on places you like —\nthey’ll gather here.'}
 					</Text>
-				</View>
+				</Animated.View>
 
 				{showList ? (
 					<View style={styles.listZone}>
@@ -223,7 +232,7 @@ export default function VerdictScreen({
 										contentContainerStyle={styles.listContent}
 										showsVerticalScrollIndicator={false}
 									>
-										{candidates.map(renderRow)}
+										{candidates.map((r, i) => renderRow(r, i))}
 									</ScrollView>
 								)}
 							</View>

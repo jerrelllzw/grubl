@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HardButton from '../components/HardButton';
 import ThemeToggle from '../components/ThemeToggle';
@@ -15,22 +16,32 @@ export default function IntroScreen({ onStart }: { onStart: () => void }) {
 		<View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
 			<ThemeToggle style={[styles.toggle, { top: insets.top + 16 }]} />
 
-			<Wordmark size={58} style={styles.wordmark} />
-			<Text style={styles.tagline}>No more “I don’t know.”</Text>
-			<Text style={styles.subline}>The fastest way to decide where to eat.</Text>
+			{/* Hero block lands as a quick staggered cascade — wordmark first, then the
+			    lines, then the CTA pops in last so the eye ends on the action. */}
+			<Animated.View entering={FadeInDown.duration(500)}>
+				<Wordmark size={58} style={styles.wordmark} />
+			</Animated.View>
+			<Animated.Text entering={FadeInDown.delay(110).duration(500)} style={styles.tagline}>
+				No more “I don’t know.”
+			</Animated.Text>
+			<Animated.Text entering={FadeInDown.delay(190).duration(500)} style={styles.subline}>
+				The fastest way to decide where to eat.
+			</Animated.Text>
 
-			<HardButton
-				dx={6}
-				dy={6}
-				color={c.shadow}
-				radius={RADII.cta}
-				onPress={onStart}
-				accessibilityLabel='Start — set up a food search'
-				containerStyle={styles.ctaContainer}
-				faceStyle={styles.ctaFace}
-			>
-				<Text style={styles.ctaText}>START →</Text>
-			</HardButton>
+			<Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.ctaStretch}>
+				<HardButton
+					dx={6}
+					dy={6}
+					color={c.shadow}
+					radius={RADII.cta}
+					onPress={onStart}
+					accessibilityLabel='Start — set up a food search'
+					containerStyle={styles.ctaContainer}
+					faceStyle={styles.ctaFace}
+				>
+					<Text style={styles.ctaText}>START →</Text>
+				</HardButton>
+			</Animated.View>
 		</View>
 	);
 }
@@ -71,8 +82,11 @@ const makeStyles = (c: Palette) =>
 			color: c.muted,
 			textAlign: 'center',
 		},
-		ctaContainer: {
+		ctaStretch: {
 			marginTop: 40,
+			alignSelf: 'stretch', // the animated wrapper carries the width so the CTA fills it
+		},
+		ctaContainer: {
 			alignSelf: 'stretch', // full-width CTA even though the hero text is centred
 		},
 		ctaFace: {

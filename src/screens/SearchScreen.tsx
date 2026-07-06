@@ -29,6 +29,10 @@ import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 // 2000 → "2 km", 2500 → "2.5 km"
 const formatKm = (m: number) => `${Number((m / 1000).toFixed(1))} km`;
 
+// How far the switch knob travels between off and on: track content width
+// (52 − 2·border − 2·padding = 43) minus the knob's own width (22).
+const KNOB_TRAVEL = 21;
+
 export default function SearchScreen({
 	initial,
 	onSearch,
@@ -52,6 +56,8 @@ export default function SearchScreen({
 	const [isLocating, setIsLocating] = useState(false);
 	// Spin the GPS icon while a location lookup is in flight.
 	const spin = useRef(new Animated.Value(0)).current;
+	// Slide the "open now" knob across its track instead of snapping between ends.
+	const knobX = useRef(new Animated.Value(initial?.openNow ?? true ? 1 : 0)).current;
 	const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [error, setError] = useState<string | null>(null); // inline, on-brand feedback
@@ -144,6 +150,16 @@ export default function SearchScreen({
 			openNow,
 		});
 	};
+
+	// Glide the knob whenever "open now" flips.
+	useEffect(() => {
+		Animated.timing(knobX, {
+			toValue: openNow ? 1 : 0,
+			duration: 190,
+			easing: Easing.out(Easing.cubic),
+			useNativeDriver: true,
+		}).start();
+	}, [openNow, knobX]);
 
 	// Loop the icon rotation while locating; reset to upright when it settles.
 	useEffect(() => {
@@ -388,7 +404,11 @@ export default function SearchScreen({
 										<Pressable
 											key={key}
 											onPress={() => togglePrice(key)}
-											style={[styles.priceChip, active ? styles.chipActive : styles.chipInactive]}
+											style={({ pressed }) => [
+												styles.priceChip,
+												active ? styles.chipActive : styles.chipInactive,
+												pressed && styles.chipPressed,
+											]}
 											accessibilityRole='checkbox'
 											accessibilityState={{ checked: active }}
 											accessibilityLabel={`Price ${PRICE_MAP[key]}`}
@@ -414,7 +434,12 @@ export default function SearchScreen({
 							>
 								<Text style={styles.switchLabel}>Open now</Text>
 								<View style={[styles.track, openNow ? styles.trackOn : styles.trackOff]}>
-									<View style={[styles.knob, openNow ? styles.knobOn : styles.knobOff]} />
+									<Animated.View
+										style={[
+											styles.knob,
+											{ transform: [{ translateX: knobX.interpolate({ inputRange: [0, 1], outputRange: [0, KNOB_TRAVEL] }) }] },
+										]}
+									/>
 								</View>
 							</Pressable>
 						</View>
@@ -666,6 +691,9 @@ const makeStyles = (c: Palette) =>
 			paddingVertical: 10,
 			paddingHorizontal: 16,
 		},
+		chipPressed: {
+			transform: [{ scale: 0.93 }], // quick tactile dip on tap
+		},
 		chipActive: {
 			backgroundColor: c.ink,
 		},
@@ -718,12 +746,7 @@ const makeStyles = (c: Palette) =>
 			height: 22,
 			borderRadius: RADII.pill,
 			backgroundColor: c.ink,
-		},
-		knobOn: {
-			alignSelf: 'flex-end',
-		},
-		knobOff: {
-			alignSelf: 'flex-start',
+			alignSelf: 'flex-start', // anchored left; translateX slides it to the "on" end
 		},
 		ctaWrap: {
 			width: '100%',

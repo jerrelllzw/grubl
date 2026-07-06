@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import HardButton from '../components/HardButton';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
@@ -31,39 +32,43 @@ export function EmptyScreen({
 
 	return (
 		<View style={styles.center}>
-			<Text style={styles.headline}>{headline}</Text>
-			<Text style={styles.body}>{body}</Text>
-			{isError && onRetry ? (
-				<HardButton
-					dx={5}
-					dy={5}
-					color={c.shadow}
-					radius={RADII.sticker}
-					onPress={loading ? undefined : onRetry}
-					accessibilityLabel="Try the search again"
-					containerStyle={styles.button}
-					faceStyle={styles.buttonFace}
-				>
-					{loading ? (
-						<ActivityIndicator size="small" color={c.onAccent} />
-					) : (
-						<Text style={styles.buttonText}>TRY AGAIN</Text>
-					)}
-				</HardButton>
-			) : (
-				<HardButton
-					dx={5}
-					dy={5}
-					color={c.shadow}
-					radius={RADII.sticker}
-					onPress={onAdjust}
-					accessibilityLabel="Adjust search"
-					containerStyle={styles.button}
-					faceStyle={styles.buttonFace}
-				>
-					<Text style={styles.buttonText}>ADJUST SEARCH</Text>
-				</HardButton>
-			)}
+			<Animated.Text entering={FadeInDown.duration(420)} style={styles.headline}>
+				{headline}
+			</Animated.Text>
+			<Animated.Text entering={FadeInDown.delay(90).duration(420)} style={styles.body}>
+				{body}
+			</Animated.Text>
+			<Animated.View entering={FadeInDown.delay(200).duration(420)} style={styles.button}>
+				{isError && onRetry ? (
+					<HardButton
+						dx={5}
+						dy={5}
+						color={c.shadow}
+						radius={RADII.sticker}
+						onPress={loading ? undefined : onRetry}
+						accessibilityLabel="Try the search again"
+						faceStyle={styles.buttonFace}
+					>
+						{loading ? (
+							<ActivityIndicator size="small" color={c.onAccent} />
+						) : (
+							<Text style={styles.buttonText}>TRY AGAIN</Text>
+						)}
+					</HardButton>
+				) : (
+					<HardButton
+						dx={5}
+						dy={5}
+						color={c.shadow}
+						radius={RADII.sticker}
+						onPress={onAdjust}
+						accessibilityLabel="Adjust search"
+						faceStyle={styles.buttonFace}
+					>
+						<Text style={styles.buttonText}>ADJUST SEARCH</Text>
+					</HardButton>
+				)}
+			</Animated.View>
 			{isError && (
 				<Pressable onPress={onAdjust} style={styles.secondaryLink} hitSlop={8} accessibilityRole="button" accessibilityLabel="Adjust search">
 					<Text style={styles.secondaryText}>Adjust search</Text>

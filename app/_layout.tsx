@@ -34,7 +34,19 @@ function ThemedRoot({ children }: { children: React.ReactNode }) {
 // (Android hardware/gesture back + iOS left-edge swipe pop these routes natively).
 function RootNavigator() {
 	const c = useColors();
-	return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.cream } }} />;
+	return (
+		<Stack
+			screenOptions={{
+				headerShown: false,
+				contentStyle: { backgroundColor: c.cream },
+				// A consistent horizontal slide on every push/pop — the linear
+				// intro → search → swipe → result flow reads as one moving strip
+				// rather than screens hard-cutting in.
+				animation: 'slide_from_right',
+				animationDuration: 260,
+			}}
+		/>
+	);
 }
 
 export default function RootLayout() {
