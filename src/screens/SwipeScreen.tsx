@@ -30,6 +30,10 @@ const EASE = Easing.in(Easing.ease);
 // so a right swipe just adds to the shortlist and keeps you on the deck.
 type Move = 'no' | 'shortlist';
 
+// A card in the middle of flying off the screen, rendered as a throwaway overlay
+// so its exit is fully decoupled from the live top card.
+type Flyaway = { id: number; card: Restaurant; move: Move; fromX: number; fromY: number };
+
 export default function SwipeScreen({
 	deck,
 	initialIndex = 0,
@@ -72,33 +76,48 @@ export default function SwipeScreen({
 		markSwipeTutorialSeen();
 	}, []);
 
+	// Drag offset of the *current* top card. Only ever holds a live finger drag — a
+	// committed card doesn't fly off using this (see `commit`/flyaways below), so it
+	// resets straight to 0 with no visible snap.
 	const tx = useSharedValue(0);
 	const ty = useSharedValue(0);
 	const locked = useSharedValue(false);
-	// Hides the top card for the single frame where a committed card's position is
-	// reset to centre before `index` advances — otherwise the flown-off card flashes
-	// back to the middle before disappearing. Faded back in once the new card mounts.
-	const topOpacity = useSharedValue(1);
 
-	// Advance once a card has flown off the screen (drag-release or button).
+	// Cards mid-flight off the screen. A committed card doesn't fly off using the
+	// top card's own view — that would force us to reset that view's position while
+	// it's still visible (the old flash). Instead each departing card is handed to a
+	// throwaway overlay with its OWN animation, so the top card just swaps its
+	// content to the next card at rest (tx already 0) — no reset, no fade, no flash.
+	const [flyaways, setFlyaways] = useState<Flyaway[]>([]);
+	const flyId = useRef(0);
+	const removeFlyaway = useCallback((id: number) => {
+		setFlyaways((f) => f.filter((x) => x.id !== id));
+	}, []);
+
+	// Commit a move: launch the departing card as an overlay, record it, and advance
+	// to the next card. `fromX/fromY` seed the overlay at the card's current on-screen
+	// position (finger position for a drag, centre for a button) so it flies on
+	// continuously instead of jumping.
 	const commit = useCallback(
-		(move: Move) => {
-			if (move === 'shortlist') {
-				const card = deck[index];
+		(move: Move, fromX: number, fromY: number) => {
+			const card = deck[index];
+			if (move === 'shortlist' && card) {
 				// Guard against ever double-adding the same place (e.g. a stray repeat
 				// commit) — the shortlist must stay unique for the verdict list/wheel.
-				if (card && !shortlistRef.current.some((r) => r.id === card.id)) {
+				if (!shortlistRef.current.some((r) => r.id === card.id)) {
 					shortlistRef.current = shortlistRef.current.concat(card);
 					setShortlistCount(shortlistRef.current.length);
 				}
 			}
+			if (card) {
+				const id = flyId.current++;
+				setFlyaways((f) => f.concat({ id, card, move, fromX, fromY }));
+			}
 			historyRef.current.push(move);
 			setMoveCount((c) => c + 1);
 			Haptics.selectionAsync().catch(() => {});
-			// Hide the card as we snap it back to centre so the reset never paints,
-			// then re-centre. The fade-in runs once the next card has mounted (see
-			// the effect on `index`).
-			topOpacity.value = 0;
+			// The next card becomes the top card at rest — clear any drag so it sits
+			// dead centre, opaque, from the first frame.
 			tx.value = 0;
 			ty.value = 0;
 			locked.value = false;
@@ -106,15 +125,8 @@ export default function SwipeScreen({
 			if (next >= deck.length) onComplete(shortlistRef.current, next);
 			else setIndex(next);
 		},
-		[deck, index, onComplete, tx, ty, locked, topOpacity]
+		[deck, index, onComplete, tx, ty, locked]
 	);
-
-	// Reveal the top card once it's mounted at the new index. Covers commit (where
-	// `topOpacity` was zeroed to mask the position reset) and undo (already visible,
-	// so this animates 1→1 and is a no-op).
-	useEffect(() => {
-		topOpacity.value = withTiming(1, { duration: 110 });
-	}, [index, topOpacity]);
 
 	// Rewind the last committed move: step back a card and drop it from the
 	// shortlist if that's where it went.
@@ -135,18 +147,14 @@ export default function SwipeScreen({
 		ty.value = withTiming(0, { duration: 300 });
 	}, [index, moveCount, tx, ty, locked]);
 
-	// Fling the top card off-screen, then run the matching handler. Used by the
-	// action buttons; the pan gesture mirrors this inline on its worklet thread.
+	// Button-triggered swipe: the card flies off from centre via the overlay.
 	const fling = useCallback(
 		(dir: Move) => {
 			if (locked.value) return;
 			locked.value = true;
-			ty.value = withTiming(ty.value - 40, { duration: 300, easing: EASE });
-			tx.value = withTiming(dir === 'shortlist' ? FLY_DISTANCE : -FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
-				if (f) runOnJS(commit)(dir);
-			});
+			commit(dir, 0, 0);
 		},
-		[commit, tx, ty, locked]
+		[commit, locked]
 	);
 
 	const handleShortlist = useCallback(() => {
@@ -165,12 +173,10 @@ export default function SwipeScreen({
 			const dx = e.translationX;
 			if (Math.abs(dx) > SWIPE_THRESHOLD) {
 				locked.value = true;
-				ty.value = withTiming(ty.value - 40, { duration: 300, easing: EASE });
-				// Right → yes (shortlist); left → no (skip).
+				// Right → yes (shortlist); left → no (skip). Hand the card off to the
+				// overlay from its current dragged position so it flies on seamlessly.
 				const dir: Move = dx > 0 ? 'shortlist' : 'no';
-				tx.value = withTiming(dx > 0 ? FLY_DISTANCE : -FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
-					if (f) runOnJS(commit)(dir);
-				});
+				runOnJS(commit)(dir, tx.value, ty.value);
 			} else {
 				// Not far enough either way — spring back.
 				tx.value = withTiming(0, { duration: 300 });
@@ -179,7 +185,6 @@ export default function SwipeScreen({
 		});
 
 	const topCardStyle = useAnimatedStyle(() => ({
-		opacity: topOpacity.value,
 		transform: [
 			{ translateX: tx.value },
 			{ translateY: ty.value },
@@ -254,9 +259,9 @@ export default function SwipeScreen({
 
 				{/* The top (interactive) card. A CONSTANT key keeps it as one persistent
 				    view across the whole deck: advancing `index` just swaps its content
-				    (masked by topOpacity) rather than remounting it. Remount-on-advance
-				    was the leftover flash — a fresh view paints one frame at full opacity
-				    before its animated style applies. */}
+				    at rest (tx already 0), so it's opaque and centred from the first
+				    frame — the departing card leaves via the overlay below, so this view
+				    never has to reset its own position while visible. */}
 				{index < deck.length && (
 					<GestureDetector key="top" gesture={pan}>
 						<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
@@ -271,6 +276,12 @@ export default function SwipeScreen({
 						</Animated.View>
 					</GestureDetector>
 				)}
+
+				{/* Committed cards flying off. Each rides above the deck (zIndex 20) on
+				    its own animation and removes itself when it lands off-screen. */}
+				{flyaways.map((f) => (
+					<FlyawayCard key={f.id} fly={f} styles={styles} colors={c} onDone={removeFlyaway} />
+				))}
 			</View>
 
 			<View style={styles.actions}>
@@ -302,6 +313,56 @@ export default function SwipeScreen({
 
 			{showTutorial && <SwipeTutorial onDismiss={dismissTutorial} />}
 		</View>
+	);
+}
+
+// A committed card flying off. Owns its own animation values (created fresh per
+// card) so resetting the live top card can never disturb it. Starts wherever the
+// card was (dragged position or centre) and glides off-screen, then unmounts.
+function FlyawayCard({
+	fly,
+	styles,
+	colors,
+	onDone,
+}: {
+	fly: Flyaway;
+	styles: ReturnType<typeof makeStyles>;
+	colors: Palette;
+	onDone: (id: number) => void;
+}) {
+	const x = useSharedValue(fly.fromX);
+	const y = useSharedValue(fly.fromY);
+	const shortlisted = fly.move === 'shortlist';
+
+	useEffect(() => {
+		y.value = withTiming(fly.fromY - 40, { duration: 300, easing: EASE });
+		x.value = withTiming(shortlisted ? FLY_DISTANCE : -FLY_DISTANCE, { duration: 300, easing: EASE }, (f) => {
+			if (f) runOnJS(onDone)(fly.id);
+		});
+		// Values are created for this card only; run the exit exactly once on mount.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	const style = useAnimatedStyle(() => ({
+		transform: [{ translateX: x.value }, { translateY: y.value }, { rotate: `${x.value * 0.06}deg` }],
+	}));
+
+	return (
+		<Animated.View pointerEvents="none" style={[styles.cardPos, { zIndex: 20 }, style]}>
+			<CardFace restaurant={fly.card}>
+				<View
+					style={[
+						styles.stamp,
+						shortlisted ? styles.stampLeft : styles.stampRight,
+						{ borderColor: shortlisted ? colors.green : colors.rose },
+					]}
+				>
+					<Text style={[styles.stampText, { color: shortlisted ? colors.green : colors.rose }]}>
+						{shortlisted ? 'YES' : 'NO'}
+					</Text>
+				</View>
+			</CardFace>
+		</Animated.View>
 	);
 }
 
