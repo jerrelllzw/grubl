@@ -5,6 +5,7 @@ import {
 	DMSans_600SemiBold,
 	DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -37,15 +38,22 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+	// Fonts are also embedded natively via the expo-font config plugin (see
+	// app.config.js), so in a build these resolve immediately. We still register
+	// them here — plus the vector-icon glyph fonts — so Expo Go / dev and the JS
+	// font manager agree on the family names.
 	const [fontsLoaded, fontError] = useFonts({
 		BricolageGrotesque_800ExtraBold,
 		DMSans_400Regular,
 		DMSans_500Medium,
 		DMSans_600SemiBold,
 		DMSans_700Bold,
+		...Ionicons.font,
+		...MaterialIcons.font,
 	});
 
 	useEffect(() => {
+		if (fontError) console.warn('[grubl] font load error', fontError);
 		if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
 	}, [fontsLoaded, fontError]);
 

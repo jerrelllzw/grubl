@@ -343,7 +343,7 @@ export default function SearchScreen({
 				</View>
 
 				{/* How far — a slider: a distance is a magnitude, so it gets a range control. */}
-				<View style={styles.section}>
+				<View>
 					<View style={styles.labelRow}>
 						<Text style={styles.label}>DISTANCE</Text>
 						<Text style={styles.labelValue}>{formatKm(radius)}</Text>
@@ -364,7 +364,7 @@ export default function SearchScreen({
 
 				{/* Price — multi-select checkboxes. No "any" chip: nothing selected already
 				    means any price, shown in the readout, mirroring Distance's value. */}
-				<View style={styles.section}>
+				<View>
 					<View style={styles.labelRow}>
 						<Text style={styles.label}>PRICE</Text>
 						<Text style={styles.labelValue}>
@@ -397,7 +397,7 @@ export default function SearchScreen({
 				</View>
 
 				{/* Hours — a boolean, so it gets a switch, not a chip or a slider. */}
-				<View style={styles.section}>
+				<View>
 					<Text style={styles.label}>HOURS</Text>
 					<Pressable
 						style={styles.switchRow}
@@ -643,7 +643,6 @@ const makeStyles = (c: Palette) =>
 			bottom: -1000,
 			zIndex: 20, // above the filter sections, below the location section (30) + dropdown (40)
 		},
-		section: {},
 		chipWrap: {
 			flexDirection: 'row',
 			flexWrap: 'wrap',

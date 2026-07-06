@@ -28,7 +28,26 @@ export default {
 		},
 		plugins: [
 			'expo-router',
-			'expo-font',
+			[
+				'expo-font',
+				{
+					// Embed fonts natively at build time so they exist from app launch.
+					// Runtime `useFonts` alone is unreliable in a standalone/EAS build
+					// (Expo Go pre-bundles these, which is why it only breaks on device):
+					// if loading fails the app renders with system-font fallback + tofu
+					// icons. Embedding covers BOTH the display/UI fonts and the
+					// vector-icon glyph fonts (Ionicons / MaterialIcons).
+					fonts: [
+						'./assets/fonts/BricolageGrotesque_800ExtraBold.ttf',
+						'./assets/fonts/DMSans_400Regular.ttf',
+						'./assets/fonts/DMSans_500Medium.ttf',
+						'./assets/fonts/DMSans_600SemiBold.ttf',
+						'./assets/fonts/DMSans_700Bold.ttf',
+						'./assets/fonts/Ionicons.ttf',
+						'./assets/fonts/MaterialIcons.ttf',
+					],
+				},
+			],
 			[
 				'expo-location',
 				{

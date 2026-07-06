@@ -30,9 +30,8 @@ npm install
 
 ### 2. Configure Your Google API Key
 
-Restaurant search uses the Google **Places API (New)**. Location autocomplete and
-geocoding use [Photon](https://photon.komoot.io/) (OpenStreetMap) — free and no
-key required. Copy the example env file and add your key:
+Restaurant search and location autocomplete both use the Google **Places API
+(New)**. Copy the example env file and add your key:
 
 ```bash
 cp .env.example .env
@@ -41,7 +40,7 @@ cp .env.example .env
 Then set `EXPO_PUBLIC_GOOGLE_API_KEY` in `.env`. You can create a key in the
 [Google Cloud Console](https://console.cloud.google.com/) with the
 **Places API (New)** enabled. Without a key the app falls back to a bundled demo
-deck, but autocomplete still works.
+deck (and location autocomplete is disabled).
 
 ### 3. Start the Expo Development Server
 
