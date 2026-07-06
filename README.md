@@ -1,6 +1,7 @@
 # Grubl 🍔
 
-A swipe-based food recommender app for Android.
+A swipe-based food recommender app built with Expo. Developed and tested on
+Android; the iOS and web targets are configured but not actively tested.
 
 Set your location and preferences, then swipe through nearby places:
 
@@ -63,6 +64,7 @@ npx expo start
 
 ## 📝 Notes
 
-- **Only Android is supported for now.**
+- **Android is the primary, tested target.** iOS and web are configured (see
+  `app.config.js`) but not actively tested — expect rough edges there.
 - Make sure you have [Node.js](https://nodejs.org/), [npm](https://www.npmjs.com/), and [Expo CLI](https://docs.expo.dev/get-started/installation/) installed.
 - If you encounter issues with the emulator, try restarting Android Studio or your computer.

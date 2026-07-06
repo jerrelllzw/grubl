@@ -15,16 +15,16 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppStateProvider } from '../src/state/AppState';
-import { ThemeProvider, useColors, useTheme } from '../src/theme/theme';
+import { ThemeProvider, useColors } from '../src/theme/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Themed shell: status-bar icons + app background track the live theme.
+// App shell: dark status-bar icons on the light ground, app background from the palette.
 function ThemedRoot({ children }: { children: React.ReactNode }) {
-	const { scheme, colors } = useTheme();
+	const colors = useColors();
 	return (
 		<>
-			<StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+			<StatusBar style="dark" />
 			<View style={{ flex: 1, backgroundColor: colors.cream }}>{children}</View>
 		</>
 	);

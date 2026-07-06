@@ -17,7 +17,9 @@ export interface Place {
 	rating?: number;
 	ratingCount?: number;
 	priceLevel?: string;
-	primaryType: string;
+	// Optional: the Places response omits primaryType for some establishments, so
+	// downstream (emoji/cuisine/hue) must tolerate it being absent.
+	primaryType?: string;
 	distance?: string;
 	address?: string;
 }
@@ -156,9 +158,13 @@ export async function fetchPlaceDetails(placeId: string, sessionToken?: string):
 // the top autocomplete prediction and fetching its details, mirroring how Maps
 // treats an un-selected query. Returns null when nothing matches; rethrows on a
 // network/API failure so the caller can tell "bad location" from "no connection".
-export async function fetchCoordinates(address: string): Promise<Coordinates | null> {
+//
+// Pass the caller's live autocomplete `sessionToken` so the keystrokes the user
+// already typed and this resolving Autocomplete + Details call bill as ONE session
+// (the cheapest, intended pattern). Only mint a fresh token when the caller has none.
+export async function fetchCoordinates(address: string, sessionToken?: string): Promise<Coordinates | null> {
 	try {
-		const token = newSessionToken();
+		const token = sessionToken ?? newSessionToken();
 		const [top] = await requestAutocomplete(address, token);
 		if (!top) return null;
 		return await requestPlaceDetails(top.placeId, token);

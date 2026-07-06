@@ -1,18 +1,15 @@
 // Design tokens for Grubl.
 //
-// Two palettes behind a runtime theme. Screens read colours through `useColors()`
-// (see theme.tsx) and build styles with `useThemedStyles`, so flipping light↔dark
-// re-themes every surface live.
+// A single light palette. Screens read colours through `useColors()` (see
+// theme.tsx) and build styles with `useThemedStyles(makeStyles)`.
 //
 // Token roles (used consistently across screens):
-//   cream/ground = background · paper = surface   (these flip with the theme)
+//   cream/ground = background · paper = surface
 //   ink = text + hairline outlines · muted = secondary text
 //   brass/tomato = PRIMARY accent (persimmon — CTAs, wordmark dot)
 //   jade/green = yes · rose = no
 //   shadow = hard offset · line = divider
-//   onAccent = text/icon on a SATURATED accent (persimmon/jade/berry) — light, both themes
-// onAccent deliberately does NOT flip: an accent is legible on the same ink
-// regardless of the surrounding ground, so buttons never invert into mud.
+//   onAccent = text/icon on a SATURATED accent (persimmon/jade/berry)
 
 export type Palette = {
 	cream: string;
@@ -31,9 +28,9 @@ export type Palette = {
 	onAccent: string;
 };
 
-// Light — food-first. Warm cream, espresso ink, persimmon leads (the appetite
-// colour); basil = yes, berry = no, honey = secondary.
-const LIGHT: Palette = {
+// Food-first. Warm cream, espresso ink, persimmon leads (the appetite colour);
+// basil = yes, berry = no, honey = secondary.
+export const COLORS: Palette = {
 	cream: '#FBF4E6',
 	paper: '#FFFDF8',
 	ground: '#FBF4E6',
@@ -49,28 +46,6 @@ const LIGHT: Palette = {
 	line: 'rgba(42,28,20,0.12)',
 	onAccent: '#FFF7EC', // warm white — text on persimmon/jade/berry
 };
-
-// Dark — food-first "night". Same brand, after dark: warm near-black ground, cream
-// ink, persimmon still leads. Not a jewel/casino palette — the light theme's twin.
-const DARK: Palette = {
-	cream: '#181310', // ground — warm near-black espresso
-	paper: '#241C16', // surface — lifted warm brown-black
-	ground: '#181310',
-	ink: '#F3E9D9', // warm cream — text + hairline outlines
-	muted: '#9E9080',
-	brass: '#EA5A34', // persimmon — a touch brighter for the dark ground
-	brassDeep: '#B23A16',
-	tomato: '#EA5A34',
-	rose: '#E06B82', // berry — brighter
-	jade: '#35B884', // basil — brighter
-	green: '#35B884',
-	shadow: '#0B0705', // near-black hard offset reads on the dark ground
-	line: 'rgba(243,233,217,0.14)',
-	onAccent: '#FFF7EC', // same as light — accents sit at the same brightness
-};
-
-export const PALETTES = { light: LIGHT, dark: DARK };
-export type ThemeName = keyof typeof PALETTES;
 
 // Google Fonts loaded via expo-font. Bricolage Grotesque — a warm, slightly quirky
 // grotesque — carries the display voice (wordmark, headlines, stamps): its heft sits

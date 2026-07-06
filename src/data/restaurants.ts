@@ -33,6 +33,13 @@ export type SearchQuery = {
 	radius: number; // search radius in metres
 	priceLevels: string[];
 	openNow: boolean;
+	/**
+	 * Live Google Autocomplete session token for the location field. Set only when
+	 * the user typed an address without picking a prediction, so the geocode step
+	 * closes the same billed session those keystrokes opened. Unset once a
+	 * prediction or GPS resolves coords (no geocode needed).
+	 */
+	sessionToken?: string;
 };
 
 /**
@@ -104,7 +111,7 @@ export async function searchRestaurants(query: SearchQuery): Promise<SearchOutco
 	if (!hasApiKey) return { deck: MOCK_RESTAURANTS, status: 'ok' };
 
 	try {
-		const coords = query.coords ?? (await fetchCoordinates(query.location));
+		const coords = query.coords ?? (await fetchCoordinates(query.location, query.sessionToken));
 		if (!coords) return { deck: [], status: 'no-location' };
 
 		const places = await fetchPlaces(

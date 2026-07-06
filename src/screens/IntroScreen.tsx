@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HardButton from '../components/HardButton';
-import ThemeToggle from '../components/ThemeToggle';
 import Wordmark from '../components/Wordmark';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
@@ -14,8 +13,6 @@ export default function IntroScreen({ onStart }: { onStart: () => void }) {
 	const styles = useThemedStyles(makeStyles);
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-			<ThemeToggle style={[styles.toggle, { top: insets.top + 16 }]} />
-
 			{/* Hero block lands as a quick staggered cascade — wordmark first, then the
 			    lines, then the CTA pops in last so the eye ends on the action. */}
 			<Animated.View entering={FadeInDown.duration(500)}>
@@ -55,10 +52,6 @@ const makeStyles = (c: Palette) =>
 			// Group the wordmark, tagline and CTA as one block centred on both axes.
 			justifyContent: 'center',
 			alignItems: 'center',
-		},
-		toggle: {
-			position: 'absolute',
-			right: 24,
 		},
 		wordmark: {
 			letterSpacing: -1, // tighter tracking for the big hero treatment

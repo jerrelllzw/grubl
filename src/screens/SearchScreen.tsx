@@ -12,7 +12,6 @@ import {
 import DistanceSlider from '../components/DistanceSlider';
 import HardButton from '../components/HardButton';
 import LoadingDots from '../components/LoadingDots';
-import ThemeToggle from '../components/ThemeToggle';
 import {
 	DEFAULT_RADIUS_M,
 	PRICE_KEYS,
@@ -148,7 +147,12 @@ export default function SearchScreen({
 			radius,
 			priceLevels,
 			openNow,
+			// No prediction picked (coords unset) → the search geocodes the typed text.
+			// Hand over the live token so those keystrokes + the geocode bill as one
+			// session; then mint a fresh token for the next search's keystrokes.
+			sessionToken: coords ? undefined : sessionToken.current,
 		});
+		if (!coords) sessionToken.current = newSessionToken();
 	};
 
 	// Glide the knob whenever "open now" flips.
@@ -213,10 +217,6 @@ export default function SearchScreen({
 
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 14 }]}>
-			<View style={styles.header}>
-				<ThemeToggle />
-			</View>
-
 			<ScrollView
 				style={styles.scroll}
 				contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}
@@ -479,13 +479,6 @@ const makeStyles = (c: Palette) =>
 		container: {
 			flex: 1,
 			backgroundColor: c.cream,
-		},
-		header: {
-			flexDirection: 'row',
-			alignItems: 'center',
-			justifyContent: 'flex-end',
-			paddingHorizontal: 16,
-			paddingBottom: 10,
 		},
 		scroll: {
 			flex: 1,
