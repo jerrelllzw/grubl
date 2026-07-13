@@ -255,18 +255,19 @@ export default function SwipeScreen({
 						}
 						faceStyle={styles.chooseFace}
 					>
-						{/* Leads to the shortlist. A count badge appears once there's at
-						    least one saved place, so the tally of picks is visible instead
-						    of buried in the a11y label. */}
+						{/* Leads to the shortlist. A notification-style count badge sits
+						    on the button's top-right corner once there's at least one saved
+						    place, so the tally of picks pops off the edge instead of being
+						    buried in the a11y label. */}
 						<View style={styles.chooseInner}>
-							{shortlistCount > 0 && (
-								<View style={styles.shortlistBadge}>
-									<Text style={styles.shortlistBadgeText}>{shortlistCount}</Text>
-								</View>
-							)}
 							<Text style={styles.chooseText}>SHORTLIST</Text>
 							<Ionicons name="arrow-forward" size={15} color={c.ink} />
 						</View>
+						{shortlistCount > 0 && (
+							<View style={styles.shortlistBadge}>
+								<Text style={styles.shortlistBadgeText}>{shortlistCount}</Text>
+							</View>
+						)}
 					</HardButton>
 				</View>
 			</View>
@@ -496,17 +497,26 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		color: c.ink,
 	},
 	shortlistBadge: {
-		minWidth: 18,
-		height: 18,
+		position: 'absolute',
+		top: -8,
+		right: -8,
+		minWidth: 20,
+		height: 20,
 		borderRadius: RADII.pill,
 		paddingHorizontal: 5,
 		backgroundColor: c.brass,
 		alignItems: 'center',
 		justifyContent: 'center',
+		// A paper-colored ring lifts the badge off the button edge so it reads as
+		// a notification pip rather than part of the pill.
+		borderWidth: 2,
+		borderColor: c.paper,
+		zIndex: 2,
 	},
 	shortlistBadgeText: {
 		fontFamily: FONTS.bold,
 		fontSize: 11,
+		lineHeight: 14,
 		color: c.onAccent,
 	},
 	deck: {
