@@ -79,14 +79,16 @@ export default function SearchScreen({
 	const revealStart = () => setSelection({ start: 0, end: 0 });
 
 	const [radius, setRadius] = useState(initial?.radius ?? DEFAULT_RADIUS_M);
-	// Empty = "any price" (no constraint). Default to every tier selected so the
-	// first search casts the widest net; the user narrows by toggling tiers off.
-	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? [...PRICE_KEYS]);
+	// Empty = "any price" (no constraint). Default to nothing selected so the
+	// chips read as off; the user opts into tiers to narrow.
+	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? []);
 	const [openNow, setOpenNow] = useState(initial?.openNow ?? true);
 
-	// Nothing selected and everything selected both mean "no price constraint" —
-	// show "Any" for both rather than spelling out all four tiers.
-	const priceIsAny = priceLevels.length === 0 || priceLevels.length === PRICE_KEYS.length;
+	// Only an empty selection means "no price constraint" ("Any"). Selecting all
+	// four tiers is a deliberate choice — "a place whose price is one of these known
+	// tiers" — which the API honors by excluding places that have no price data
+	// (see fetchPlaces in googlePlaces.ts). Keep this in sync with that guard.
+	const priceIsAny = priceLevels.length === 0;
 
 	const clearSuggestions = () => {
 		setSuggestions([]);

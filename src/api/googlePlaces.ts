@@ -174,13 +174,6 @@ export async function fetchCoordinates(address: string, sessionToken?: string): 
 	}
 }
 
-const ALL_PRICE_LEVELS = [
-	'PRICE_LEVEL_INEXPENSIVE',
-	'PRICE_LEVEL_MODERATE',
-	'PRICE_LEVEL_EXPENSIVE',
-	'PRICE_LEVEL_VERY_EXPENSIVE',
-];
-
 // A short, decisive deck: too many cards fatigues the swiper and pressures them to
 // grind through everything, and relevance-ranked results this far down are weaker
 // anyway. Cap the deck and stop paging once we've filled it. One page (20) usually
@@ -231,10 +224,11 @@ export async function fetchPlaces(
 	// as "no filter" anyway, so we just omit it.
 	if (openNow) body.openNow = true;
 
-	// Pushing price server-side excludes places that have no price data, so only
-	// do it when the user has actually narrowed from "any price".
-	const narrowedPrice = priceLevels.length > 0 && priceLevels.length < ALL_PRICE_LEVELS.length;
-	if (narrowedPrice) body.priceLevels = priceLevels;
+	// Pushing price server-side excludes places that have no price data. Any
+	// non-empty selection is a deliberate price choice — including all four tiers,
+	// which the user reaches by opting in tier by tier — so we constrain whenever
+	// at least one tier is selected. Empty means "any price": omit the filter.
+	if (priceLevels.length > 0) body.priceLevels = priceLevels;
 
 	const origin: Coordinates = { lat: latitude, lng: longitude };
 	const seen = new Set<string>();
