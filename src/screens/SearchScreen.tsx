@@ -547,7 +547,7 @@ const makeStyles = (c: Palette) =>
 		// Hard offset shadow behind the panel — same trick as the swipe cards, so the
 		// form reads as a lifted sticker rather than a flat frame.
 		formShadow: {
-			...StyleSheet.absoluteFill,
+			...StyleSheet.absoluteFillObject,
 			backgroundColor: c.shadow,
 			borderRadius: RADII.card,
 			transform: [{ translateX: 7 }, { translateY: 7 }],

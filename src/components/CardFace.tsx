@@ -121,7 +121,7 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		height: '100%',
 	},
 	emojiWrap: {
-		...StyleSheet.absoluteFill,
+		...StyleSheet.absoluteFillObject,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},

@@ -80,7 +80,7 @@ export default function SwipeTutorial({ onDismiss }: { onDismiss: () => void }) 
 const makeStyles = (c: Palette) =>
 	StyleSheet.create({
 		scrim: {
-			...StyleSheet.absoluteFill,
+			...StyleSheet.absoluteFillObject,
 			zIndex: 100,
 			backgroundColor: 'rgba(24,19,16,0.55)',
 			justifyContent: 'center',
