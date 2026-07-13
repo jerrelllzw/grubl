@@ -80,6 +80,15 @@ export const PRICE_MAP: Record<string, string> = {
 
 export const PRICE_KEYS = Object.keys(PRICE_MAP);
 
+// Common dietary filters. The `query` term is folded into the Places text query
+// (e.g. "vegetarian food") to bias the deck toward that style. Single-select —
+// nothing selected means no dietary constraint; stacking terms over-narrows.
+export const DIETARY_OPTIONS: { key: string; label: string; query: string }[] = [
+	{ key: 'vegetarian', label: 'Vegetarian', query: 'vegetarian' },
+	{ key: 'vegan', label: 'Vegan', query: 'vegan' },
+	{ key: 'halal', label: 'Halal', query: 'halal' },
+];
+
 // Search radius as a continuous range (metres) for the distance slider.
 export const RADIUS_MIN_M = 1000;
 export const RADIUS_MAX_M = 5000;

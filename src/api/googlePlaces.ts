@@ -188,7 +188,8 @@ export async function fetchPlaces(
 	longitude: number,
 	radius: number,
 	priceLevels: string[],
-	openNow: boolean
+	openNow: boolean,
+	dietaryQuery?: string
 ): Promise<Place[]> {
 	const url = 'https://places.googleapis.com/v1/places:searchText';
 	const headers = {
@@ -210,7 +211,9 @@ export async function fetchPlaces(
 	};
 
 	const body: Record<string, any> = {
-		textQuery: FOOD_QUERY,
+		// A dietary filter narrows the broad "food" query toward that style, e.g.
+		// "vegetarian food"; absent, it stays the default broad search.
+		textQuery: dietaryQuery ? `${dietaryQuery} ${FOOD_QUERY}` : FOOD_QUERY,
 		locationBias: {
 			circle: {
 				center: { latitude, longitude },

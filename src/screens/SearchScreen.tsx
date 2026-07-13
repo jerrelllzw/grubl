@@ -14,6 +14,7 @@ import HardButton from '../components/HardButton';
 import LoadingDots from '../components/LoadingDots';
 import {
 	DEFAULT_RADIUS_M,
+	DIETARY_OPTIONS,
 	PRICE_KEYS,
 	PRICE_MAP,
 	RADIUS_MAX_M,
@@ -83,6 +84,9 @@ export default function SearchScreen({
 	// chips read as off; the user opts into tiers to narrow.
 	const [priceLevels, setPriceLevels] = useState<string[]>(initial?.priceLevels ?? []);
 	const [openNow, setOpenNow] = useState(initial?.openNow ?? true);
+	// Single-select dietary filter. Undefined = no constraint; tapping the active
+	// chip clears it back to "any".
+	const [dietary, setDietary] = useState<string | undefined>(initial?.dietary);
 
 	// Only an empty selection means "no price constraint" ("Any"). Selecting all
 	// four tiers is a deliberate choice — "a place whose price is one of these known
@@ -112,6 +116,9 @@ export default function SearchScreen({
 
 	const togglePrice = (key: string) =>
 		setPriceLevels((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+
+	// Single-select: tapping the active chip clears the filter; another selects it.
+	const toggleDietary = (key: string) => setDietary((prev) => (prev === key ? undefined : key));
 
 	const resolveCurrentLocation = useCurrentLocation((label, resolved) => {
 		setLocation(label);
@@ -149,6 +156,7 @@ export default function SearchScreen({
 			radius,
 			priceLevels,
 			openNow,
+			dietary,
 			// No prediction picked (coords unset) → the search geocodes the typed text.
 			// Hand over the live token so those keystrokes + the geocode bill as one
 			// session; then mint a fresh token for the next search's keystrokes.
@@ -214,8 +222,9 @@ export default function SearchScreen({
 			radius,
 			priceLevels,
 			openNow,
+			dietary,
 		});
-	}, [location, coords, radius, priceLevels, openNow, onDraftChange]);
+	}, [location, coords, radius, priceLevels, openNow, dietary, onDraftChange]);
 
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 14 }]}>
@@ -417,6 +426,41 @@ export default function SearchScreen({
 										>
 											<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
 												{PRICE_MAP[key]}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+						</View>
+
+						{/* Dietary — single-select chips: a diner has one primary need, and
+					    stacking terms in the query over-narrows the deck. Nothing selected
+					    means "any", shown in the readout, mirroring Price. */}
+						<View>
+							<View style={styles.labelRow}>
+								<Text style={styles.label}>DIETARY</Text>
+								<Text style={styles.labelValue}>
+									{dietary ? DIETARY_OPTIONS.find((d) => d.key === dietary)?.label : 'Any'}
+								</Text>
+							</View>
+							<View style={styles.chipWrap}>
+								{DIETARY_OPTIONS.map(({ key, label }) => {
+									const active = dietary === key;
+									return (
+										<Pressable
+											key={key}
+											onPress={() => toggleDietary(key)}
+											style={({ pressed }) => [
+												styles.dietaryChip,
+												active ? styles.chipActive : styles.chipInactive,
+												pressed && styles.chipPressed,
+											]}
+											accessibilityRole='radio'
+											accessibilityState={{ selected: active }}
+											accessibilityLabel={label}
+										>
+											<Text style={[styles.chipText, active ? styles.chipTextActive : styles.chipTextInactive]}>
+												{label}
 											</Text>
 										</Pressable>
 									);
@@ -680,6 +724,18 @@ const makeStyles = (c: Palette) =>
 			alignItems: 'center',
 			justifyContent: 'center',
 			gap: 5,
+			borderRadius: RADII.chip,
+			borderWidth: BORDER,
+			borderColor: c.ink,
+			paddingVertical: 10,
+			paddingHorizontal: 16,
+		},
+		// Same sticker look as the price chips, but sized to word labels rather than
+		// the fixed-width currency symbols.
+		dietaryChip: {
+			flexDirection: 'row',
+			alignItems: 'center',
+			justifyContent: 'center',
 			borderRadius: RADII.chip,
 			borderWidth: BORDER,
 			borderColor: c.ink,

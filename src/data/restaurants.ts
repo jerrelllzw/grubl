@@ -9,7 +9,7 @@ import {
 	type Coordinates,
 	type Place,
 } from '../api/googlePlaces';
-import { formatPlaceType, getPlaceEmoji, PRICE_MAP } from '../constants/googlePlaces';
+import { DIETARY_OPTIONS, formatPlaceType, getPlaceEmoji, PRICE_MAP } from '../constants/googlePlaces';
 
 export type Restaurant = {
 	id: string;
@@ -33,6 +33,8 @@ export type SearchQuery = {
 	radius: number; // search radius in metres
 	priceLevels: string[];
 	openNow: boolean;
+	/** Selected dietary filter key (see DIETARY_OPTIONS); unset = no constraint. */
+	dietary?: string;
 	/**
 	 * Live Google Autocomplete session token for the location field. Set only when
 	 * the user typed an address without picking a prediction, so the geocode step
@@ -114,12 +116,18 @@ export async function searchRestaurants(query: SearchQuery): Promise<SearchOutco
 		const coords = query.coords ?? (await fetchCoordinates(query.location, query.sessionToken));
 		if (!coords) return { deck: [], status: 'no-location' };
 
+		// Resolve the dietary key to the term folded into the text query (if any).
+		const dietaryQuery = query.dietary
+			? DIETARY_OPTIONS.find((d) => d.key === query.dietary)?.query
+			: undefined;
+
 		const places = await fetchPlaces(
 			coords.lat,
 			coords.lng,
 			query.radius,
 			query.priceLevels,
-			query.openNow
+			query.openNow,
+			dietaryQuery
 		);
 		return { deck: uniqueById(places.map(placeToRestaurant)), status: 'ok' };
 	} catch {
