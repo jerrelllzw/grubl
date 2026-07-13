@@ -78,11 +78,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 		draftRef.current = q;
 	}, []);
 
-	// The intro is a one-time splash, not a screen you return to — replace it with
-	// search so search becomes the app's home. With nothing beneath it, device-back
-	// from the search home exits the app (Android convention) instead of surfacing
-	// the welcome splash again.
-	const start = useCallback(() => router.replace('/search'), [router]);
+	// Push search on top of the intro (rather than replacing it) so the landing
+	// screen stays beneath — device-back / iOS edge-swipe from the search home
+	// returns to the welcome splash instead of exiting the app.
+	const start = useCallback(() => router.push('/search'), [router]);
 
 	const submitSearch = useCallback(
 		(q: SearchQuery) => {

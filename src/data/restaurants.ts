@@ -6,7 +6,7 @@ import { type ImageSourcePropType } from 'react-native';
 import {
 	fetchCoordinates,
 	fetchPlaces,
-	hasApiKey,
+	useMockData,
 	type Coordinates,
 	type Place,
 } from '../api/googlePlaces';
@@ -113,11 +113,12 @@ export type SearchOutcome = { deck: Restaurant[]; status: SearchStatus };
 
 /**
  * Resolves a query into a deck to swipe. Falls back to the mock deck when no API
- * key is present. The status lets callers tell a bad location and a network
+ * key is present — or when the hidden mock switch is on (see useMockData). The
+ * status lets callers tell a bad location and a network
  * failure apart from a genuine "nothing matched", so each gets the right screen.
  */
 export async function searchRestaurants(query: SearchQuery): Promise<SearchOutcome> {
-	if (!hasApiKey) return { deck: MOCK_RESTAURANTS, status: 'ok' };
+	if (useMockData()) return { deck: MOCK_RESTAURANTS, status: 'ok' };
 
 	try {
 		const coords = query.coords ?? (await fetchCoordinates(query.location, query.sessionToken));

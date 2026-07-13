@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { handleError } from '../utils/errorHandler';
 
@@ -5,6 +6,43 @@ const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
 /** Whether live Google Places data is available; when false we fall back to mock. */
 export const hasApiKey = Boolean(API_KEY);
+
+// Hidden dev switch: force the bundled mock deck even when a live key is present.
+// There's no visible control — it's toggled by tapping the intro wordmark 7×
+// (see IntroScreen) — so demos and offline testing don't burn Places quota.
+// Persisted so it survives reloads; loaded once at startup via loadForceMock.
+const FORCE_MOCK_KEY = 'grubl.forceMockPlaces.v1';
+let forceMock = false;
+
+/** True when the app should serve the bundled mock deck instead of live Places. */
+export function useMockData(): boolean {
+	return !hasApiKey || forceMock;
+}
+
+/** Current state of the hidden mock switch (independent of whether a key exists). */
+export function isForceMock(): boolean {
+	return forceMock;
+}
+
+/** Restore the persisted switch state. Call once at app start, before any search. */
+export async function loadForceMock(): Promise<void> {
+	try {
+		forceMock = (await AsyncStorage.getItem(FORCE_MOCK_KEY)) === '1';
+	} catch {
+		// Ignore — defaults to live data when a key is present.
+	}
+}
+
+/** Flip the switch and persist it. Returns the new state. */
+export async function toggleForceMock(): Promise<boolean> {
+	forceMock = !forceMock;
+	try {
+		await AsyncStorage.setItem(FORCE_MOCK_KEY, forceMock ? '1' : '0');
+	} catch {
+		// Ignore — the toggle still applies for this session.
+	}
+	return forceMock;
+}
 
 export interface Coordinates {
 	lat: number;
@@ -134,7 +172,10 @@ export async function fetchAutoComplete(
 	sessionToken?: string,
 	bias?: Coordinates
 ): Promise<Suggestion[]> {
-	if (!hasApiKey || !input.trim()) return []; // no key → app runs on the mock deck
+	// Autocomplete stays live even in mock mode: the location field is a real UI to
+	// exercise, and only the deck is mocked (searchRestaurants ignores the location
+	// then anyway). Gate solely on an actual missing key.
+	if (!hasApiKey || !input.trim()) return [];
 	try {
 		return await requestAutocomplete(input, sessionToken, bias);
 	} catch (error: any) {

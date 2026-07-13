@@ -14,10 +14,14 @@ import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { loadForceMock } from '../src/api/googlePlaces';
 import { AppStateProvider } from '../src/state/AppState';
 import { ThemeProvider, useColors } from '../src/theme/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Restore the hidden mock switch before the first search can run.
+loadForceMock();
 
 // App shell: dark status-bar icons on the light ground, app background from the palette.
 function ThemedRoot({ children }: { children: React.ReactNode }) {
