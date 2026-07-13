@@ -92,14 +92,14 @@ function placeToRestaurant(place: Place): Restaurant {
 
 /** Bundled demo deck — used when no Google API key is configured. */
 export const MOCK_RESTAURANTS: Restaurant[] = [
-	{ id: 'm1', name: 'Tian Tian Hainanese Chicken Rice', cuisine: 'Chicken Rice', price: '$', distance: '0.9 km', rating: 4.5, ratingCount: 3200, hue: 42, emoji: '🍗', photo: require('../../assets/images/mock/tian-tian-chicken-rice.jpg'), address: '1 Kadayanallur St, #01-10 Maxwell Food Centre' },
-	{ id: 'm2', name: '328 Katong Laksa', cuisine: 'Laksa', price: '$', distance: '2.4 km', rating: 4.4, ratingCount: 1890, hue: 14, emoji: '🍜', photo: require('../../assets/images/mock/katong-laksa.jpg'), address: '51 East Coast Rd' },
-	{ id: 'm3', name: 'Jumbo Seafood', cuisine: 'Chilli Crab', price: '$$$', distance: '1.6 km', rating: 4.6, ratingCount: 5400, hue: 9, emoji: '🦀', photo: require('../../assets/images/mock/jumbo-seafood.jpg'), address: '30 Merchant Rd, #01-01/02 Riverside Point' },
-	{ id: 'm4', name: 'Song Fa Bak Kut Teh', cuisine: 'Bak Kut Teh', price: '$$', distance: '1.2 km', rating: 4.5, ratingCount: 2760, hue: 28, emoji: '🍲', photo: require('../../assets/images/mock/song-fa-bak-kut-teh.jpg'), address: '11 New Bridge Rd, #01-01' },
-	{ id: 'm5', name: 'Lau Pa Sat Satay Street', cuisine: 'Satay', price: '$$', distance: '0.7 km', rating: 4.3, ratingCount: 3100, hue: 24, emoji: '🍢', photo: require('../../assets/images/mock/lau-pa-sat-satay.jpg'), address: '18 Raffles Quay' },
-	{ id: 'm6', name: 'Ya Kun Kaya Toast', cuisine: 'Kaya Toast', price: '$', distance: '0.5 km', rating: 4.4, ratingCount: 1520, hue: 46, emoji: '🍞', photo: require('../../assets/images/mock/ya-kun-kaya-toast.jpg'), address: '18 China St, #01-01 Far East Square' },
-	{ id: 'm7', name: 'Springleaf Prata Place', cuisine: 'Roti Prata', price: '$', distance: '4.8 km', rating: 4.5, ratingCount: 2040, hue: 33, emoji: '🫓', photo: require('../../assets/images/mock/springleaf-prata.jpg'), address: '1 Thong Soon Ave' },
-	{ id: 'm8', name: 'Selera Rasa Nasi Lemak', cuisine: 'Nasi Lemak', price: '$$', distance: '5.5 km', rating: 4.6, ratingCount: 980, hue: 95, emoji: '🍚', photo: require('../../assets/images/mock/selera-rasa-nasi-lemak.jpg'), address: '2 Adam Rd, #01-02 Adam Road Food Centre' },
+	{ id: 'ChIJ2ZDgUg0Z2jERXUJpEsR0Oto', name: 'Tian Tian Hainanese Chicken Rice', cuisine: 'Chicken Rice', price: '$', distance: '0.9 km', rating: 3.9, ratingCount: 6277, hue: 42, emoji: '🍗', photo: require('../../assets/images/mock/tian-tian-chicken-rice.jpg'), address: '1 Kadayanallur St, #01-10/11 Maxwell Food Centre, Singapore 069184' },
+	{ id: 'ChIJuU6afXIY2jER21Ir01uoZUY', name: '328 Katong Laksa', cuisine: 'Laksa', price: '$$', distance: '2.4 km', rating: 3.9, ratingCount: 3815, hue: 14, emoji: '🍜', photo: require('../../assets/images/mock/katong-laksa.jpg'), address: '51 E Coast Rd, Singapore 428770' },
+	{ id: 'ChIJsfizTCMa2jER0PvLzgOm59g', name: 'JUMBO Seafood - Dempsey Hill', cuisine: 'Chilli Crab', price: '$$$', distance: '1.6 km', rating: 4.5, ratingCount: 4404, hue: 9, emoji: '🦀', photo: require('../../assets/images/mock/jumbo-seafood.jpg'), address: '11 Dempsey Rd, #01-16, Singapore 249673' },
+	{ id: 'ChIJDcaRbY8Z2jER9weu8geZhtU', name: 'Song Fa Bak Kut Teh Chinatown Point', cuisine: 'Bak Kut Teh', price: '$$', distance: '1.2 km', rating: 4.4, ratingCount: 3469, hue: 28, emoji: '🍲', photo: require('../../assets/images/mock/song-fa-bak-kut-teh.jpg'), address: '133 New Bridge Rd, #01-04 Chinatown Point, Singapore 059413' },
+	{ id: 'ChIJcxFXaw8Z2jERMXh3inxmsdA', name: 'Satay Street @ Lau Pa Sat', cuisine: 'Satay', price: '$$', distance: '0.7 km', rating: 4.4, ratingCount: 2963, hue: 24, emoji: '🍢', photo: require('../../assets/images/mock/lau-pa-sat-satay.jpg'), address: 'Boon Tat St, Singapore' },
+	{ id: 'ChIJXwLbnv0Z2jERsUDm0FMFSlg', name: 'Ya Kun Kaya Toast (Maxwell)', cuisine: 'Kaya Toast', price: '$', distance: '0.5 km', rating: 4.1, ratingCount: 345, hue: 46, emoji: '🍞', photo: require('../../assets/images/mock/ya-kun-kaya-toast.jpg'), address: '297 S Bridge Rd, Singapore 058839' },
+	{ id: 'ChIJhxMBFFEQ2jERTFZ30j_3k2A', name: 'Springleaf Prata Place - The Rail Mall', cuisine: 'Roti Prata', price: '$', distance: '4.8 km', rating: 4.4, ratingCount: 4466, hue: 33, emoji: '🫓', photo: require('../../assets/images/mock/springleaf-prata.jpg'), address: '396 Upper Bukit Timah Road, The Rail Mall, Singapore 678048' },
+	{ id: 'ChIJv4Mk4QYa2jERczmNSOPbWeY', name: 'Selera Rasa Nasi Lemak', cuisine: 'Nasi Lemak', price: '$', distance: '5.5 km', rating: 4.0, ratingCount: 555, hue: 95, emoji: '🍚', photo: require('../../assets/images/mock/selera-rasa-nasi-lemak.jpg'), address: '2 Adam Rd, #01-02 Food Centre, Singapore 289876' },
 ];
 
 /**
@@ -165,12 +165,7 @@ export function metaLine(r: Restaurant): string {
 
 /** Deep link to the winner in Google Maps. */
 export function mapsUrl(r: Restaurant): string {
-	// Real Places results carry a Google place id → open that place's detail card
-	// directly. The bundled mock deck uses fake ids (m1, m2…) with no place on the
-	// map, so those fall back to a name search.
-	const isMockId = /^m\d+$/.test(r.id);
-	if (!isMockId) {
-		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name)}&query_place_id=${r.id}`;
-	}
-	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name)}`;
+	// Both the mock deck and live Places results carry a real Google place id, so
+	// we can open the place's detail card directly rather than a name search.
+	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name)}&query_place_id=${r.id}`;
 }
