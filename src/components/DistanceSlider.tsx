@@ -91,7 +91,7 @@ export default function DistanceSlider({
 			</View>
 			{trackWidth > 0 &&
 				ticks.map((t, i) => (
-					<View key={i} style={[styles.tick, { left: PAD + t * trackWidth - 1, backgroundColor: c.ink }]} />
+					<View key={i} style={[styles.tick, { left: PAD + t * trackWidth - 2, backgroundColor: c.ink }]} />
 				))}
 			<View style={[styles.thumb, { backgroundColor: c.paper, borderColor: c.ink, left: frac * trackWidth }]}>
 				<View style={[styles.grip, { backgroundColor: c.ink }]} />
@@ -122,10 +122,10 @@ const styles = StyleSheet.create({
 	},
 	tick: {
 		position: 'absolute',
-		width: 2,
-		height: 8,
-		top: (THUMB - 8) / 2, // vertically centered on the track
-		borderRadius: 1,
+		width: 4,
+		height: 18, // taller than the 12px track so the ends poke out above & below the bar
+		top: (THUMB - 18) / 2, // vertically centered on the track
+		borderRadius: RADII.pill,
 	},
 	thumb: {
 		position: 'absolute',
