@@ -26,7 +26,11 @@ export default function StripePhoto({ hue, radius = 0 }: { hue: number; radius?:
 	const dark = hslToHex(hue, 50, 80);
 	const id = `stripe-${hue}`;
 	return (
-		<View style={[StyleSheet.absoluteFillObject, { borderRadius: radius, overflow: 'hidden' }]}>
+		// zIndex -1 keeps this stripe backdrop behind its overlay siblings (emoji,
+		// info sticker, stamps) while still sitting above the parent's background.
+		// On Fabric, absolutely-positioned and SVG surfaces otherwise paint *over*
+		// static/later siblings (web stacking rules), which hid the card content.
+		<View style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden', zIndex: -1 }]}>
 			<Svg width="100%" height="100%">
 				<Defs>
 					<Pattern id={id} patternUnits="userSpaceOnUse" width={TILE} height={TILE} patternTransform="rotate(45)">

@@ -83,7 +83,7 @@ export default function HardButton({
 			<View style={styles.wrap}>
 				<View
 					style={[
-						StyleSheet.absoluteFillObject,
+						StyleSheet.absoluteFill,
 						{ backgroundColor: color, borderRadius: radius, transform: [{ translateX: dx }, { translateY: dy }] },
 					]}
 				/>

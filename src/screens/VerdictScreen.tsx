@@ -150,7 +150,7 @@ export default function VerdictScreen({
 					<Animated.View entering={FadeInDown.duration(420)}>
 						<View style={styles.headlineWrap}>
 							<Text style={styles.headline}>
-								EAT <Text style={styles.headlineName}>HERE</Text>
+								EAT <Text style={styles.headlineName}>HERE.</Text>
 							</Text>
 						</View>
 					</Animated.View>

@@ -376,6 +376,9 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'space-between',
 		paddingHorizontal: 24,
+		// Above the deck: on Fabric, zIndex follows web stacking-context rules, so
+		// the controls need an explicit zIndex to stay over the deck's cards.
+		zIndex: 2,
 	},
 	undoButton: {
 		width: 40,
@@ -423,6 +426,9 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		flex: 1,
 		position: 'relative',
 		marginTop: 8,
+		// Establish a stacking context so the cards' zIndex (10–20) stays contained
+		// here rather than escaping to the root and painting over the actions row.
+		zIndex: 1,
 	},
 	cardPos: {
 		position: 'absolute',
@@ -460,6 +466,8 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		gap: 14,
 		paddingHorizontal: 24,
 		paddingTop: 14,
+		// Keep the NO/YES controls above the deck (see `deck`/`header` zIndex).
+		zIndex: 2,
 	},
 	// Yes and No share the row evenly — same size, same weight, opposite intent.
 	actionHalf: {

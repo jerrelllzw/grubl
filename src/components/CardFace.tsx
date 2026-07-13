@@ -39,12 +39,12 @@ export default function CardFace({
 			{/* hard offset shadow */}
 			<View
 				style={[
-					StyleSheet.absoluteFillObject,
+					StyleSheet.absoluteFill,
 					{ backgroundColor: cardShadow.color, borderRadius: cardRadius, transform: [{ translateX: cardShadow.dx }, { translateY: cardShadow.dy }] },
 				]}
 			/>
 			{/* bordered card */}
-			<View style={[StyleSheet.absoluteFillObject, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: c.ink, backgroundColor: c.paper, overflow: 'hidden' }]}>
+			<View style={[StyleSheet.absoluteFill, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: c.ink, backgroundColor: c.paper, overflow: 'hidden' }]}>
 				<StripePhoto hue={restaurant.hue} radius={cardRadius} />
 
 				{/* emoji stand-in for a photo */}
@@ -54,7 +54,7 @@ export default function CardFace({
 
 				{/* info sticker panel */}
 				<View style={styles.stickerWrap}>
-					<View style={[StyleSheet.absoluteFillObject, styles.stickerShadow]} />
+					<View style={[StyleSheet.absoluteFill, styles.stickerShadow]} />
 					<View style={styles.sticker}>
 						<Text style={[styles.name, { fontSize: nameSize }]} numberOfLines={1}>
 							{restaurant.name}
@@ -76,7 +76,7 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		flex: 1,
 	},
 	emojiWrap: {
-		...StyleSheet.absoluteFillObject,
+		...StyleSheet.absoluteFill,
 		alignItems: 'center',
 		justifyContent: 'center',
 		// bias upward so the emoji sits above the bottom info sticker
