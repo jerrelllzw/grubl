@@ -523,6 +523,10 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		left: 20,
 		right: 20,
 		bottom: 10,
+		// The card is sized to its content (photo panel + info), not stretched —
+		// centre it in the deck region so the peek above/below reads as breathing
+		// room and the stacked cards behind show there.
+		justifyContent: 'center',
 	},
 	doneWrap: {
 		position: 'absolute',

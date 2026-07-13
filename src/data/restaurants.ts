@@ -2,6 +2,7 @@
 // adapted into `Restaurant`; when no API key is configured we fall back to the
 // bundled mock deck so the app still runs end-to-end.
 
+import { type ImageSourcePropType } from 'react-native';
 import {
 	fetchCoordinates,
 	fetchPlaces,
@@ -23,6 +24,12 @@ export type Restaurant = {
 	hue: number;
 	/** Big emoji shown on the placeholder card in lieu of a (separately-billed) photo. */
 	emoji: string;
+	/**
+	 * Bundled card photo (a `require(...)` asset). Only the mock deck sets this;
+	 * real Places results leave it unset and fall back to the emoji placeholder,
+	 * since fetching Google photos is separately billed.
+	 */
+	photo?: ImageSourcePropType;
 	/** Street address, shown in the detail sheet. */
 	address?: string;
 };
@@ -85,14 +92,14 @@ function placeToRestaurant(place: Place): Restaurant {
 
 /** Bundled demo deck — used when no Google API key is configured. */
 export const MOCK_RESTAURANTS: Restaurant[] = [
-	{ id: 'm1', name: 'Casa Verde', cuisine: 'Mexican', price: '$$', distance: '0.6 km', rating: 4.6, ratingCount: 812, hue: 130, emoji: '🌮', address: '18 Alameda St' },
-	{ id: 'm2', name: 'Noodle Theory', cuisine: 'Ramen', price: '$$', distance: '1.8 km', rating: 4.8, ratingCount: 1240, hue: 35, emoji: '🍜', address: '204 Harbour Rd' },
-	{ id: 'm3', name: "Lucia's", cuisine: 'Pizza', price: '$$', distance: '1.1 km', rating: 4.5, ratingCount: 356, hue: 8, emoji: '🍕', address: '9 Corso Vittorio' },
-	{ id: 'm4', name: 'Golden Lotus', cuisine: 'Dim Sum', price: '$$$', distance: '3.7 km', rating: 4.7, ratingCount: 903, hue: 48, emoji: '🥟', address: '77 Canton Way' },
-	{ id: 'm5', name: 'Burger Alibi', cuisine: 'Burgers', price: '$', distance: '0.8 km', rating: 4.3, ratingCount: 2110, hue: 25, emoji: '🍔', address: '3 Depot Lane' },
-	{ id: 'm6', name: 'Petit Bouchon', cuisine: 'French', price: '$$$', distance: '2.6 km', rating: 4.9, ratingCount: 274, hue: 280, emoji: '🥖', address: '41 Rue Lafayette' },
-	{ id: 'm7', name: 'Saffron House', cuisine: 'Indian', price: '$$', distance: '3.1 km', rating: 4.4, ratingCount: 640, hue: 18, emoji: '🍛', address: '120 Brick Ln' },
-	{ id: 'm8', name: 'Sea & Salt', cuisine: 'Sushi', price: '$$$', distance: '1.4 km', rating: 4.6, ratingCount: 489, hue: 200, emoji: '🍣', address: '5 Pier Head' },
+	{ id: 'm1', name: 'Tian Tian Hainanese Chicken Rice', cuisine: 'Chicken Rice', price: '$', distance: '0.9 km', rating: 4.5, ratingCount: 3200, hue: 42, emoji: '🍗', photo: require('../../assets/images/mock/tian-tian-chicken-rice.jpg'), address: '1 Kadayanallur St, #01-10 Maxwell Food Centre' },
+	{ id: 'm2', name: '328 Katong Laksa', cuisine: 'Laksa', price: '$', distance: '2.4 km', rating: 4.4, ratingCount: 1890, hue: 14, emoji: '🍜', photo: require('../../assets/images/mock/katong-laksa.jpg'), address: '51 East Coast Rd' },
+	{ id: 'm3', name: 'Jumbo Seafood', cuisine: 'Chilli Crab', price: '$$$', distance: '1.6 km', rating: 4.6, ratingCount: 5400, hue: 9, emoji: '🦀', photo: require('../../assets/images/mock/jumbo-seafood.jpg'), address: '30 Merchant Rd, #01-01/02 Riverside Point' },
+	{ id: 'm4', name: 'Song Fa Bak Kut Teh', cuisine: 'Bak Kut Teh', price: '$$', distance: '1.2 km', rating: 4.5, ratingCount: 2760, hue: 28, emoji: '🍲', photo: require('../../assets/images/mock/song-fa-bak-kut-teh.jpg'), address: '11 New Bridge Rd, #01-01' },
+	{ id: 'm5', name: 'Lau Pa Sat Satay Street', cuisine: 'Satay', price: '$$', distance: '0.7 km', rating: 4.3, ratingCount: 3100, hue: 24, emoji: '🍢', photo: require('../../assets/images/mock/lau-pa-sat-satay.jpg'), address: '18 Raffles Quay' },
+	{ id: 'm6', name: 'Ya Kun Kaya Toast', cuisine: 'Kaya Toast', price: '$', distance: '0.5 km', rating: 4.4, ratingCount: 1520, hue: 46, emoji: '🍞', photo: require('../../assets/images/mock/ya-kun-kaya-toast.jpg'), address: '18 China St, #01-01 Far East Square' },
+	{ id: 'm7', name: 'Springleaf Prata Place', cuisine: 'Roti Prata', price: '$', distance: '4.8 km', rating: 4.5, ratingCount: 2040, hue: 33, emoji: '🫓', photo: require('../../assets/images/mock/springleaf-prata.jpg'), address: '1 Thong Soon Ave' },
+	{ id: 'm8', name: 'Selera Rasa Nasi Lemak', cuisine: 'Nasi Lemak', price: '$$', distance: '5.5 km', rating: 4.6, ratingCount: 980, hue: 95, emoji: '🍚', photo: require('../../assets/images/mock/selera-rasa-nasi-lemak.jpg'), address: '2 Adam Rd, #01-02 Adam Road Food Centre' },
 ];
 
 /**

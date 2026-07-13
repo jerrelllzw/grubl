@@ -1,14 +1,18 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { descriptorLine, formatCount, metaLine, type Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 import StripePhoto from './StripePhoto';
 
-// Placeholder food card: a hue-tinted field with the cuisine's emoji standing in
-// for a (separately-billed) photo, plus a floating, tilted "sticker" info panel.
+// Food card, sized to its content: a fixed 4:3 photo panel on top and an info
+// section below. The card is as tall as those two stacked — it does NOT stretch
+// to fill its parent — so callers centre it in the available space. A fixed-ratio
+// panel keeps the (mostly landscape) photos un-zoomed and identical on every
+// device, and the grounded info section leaves no dead space. When there's no
+// photo (real Places results), the panel falls back to the hue stripe + emoji.
 // Shared by the swipe deck and the verdict winner card. Pass stamp overlays as
-// children.
+// children — they're absolutely positioned over the card face.
 
 export default function CardFace({
 	restaurant,
@@ -43,44 +47,49 @@ export default function CardFace({
 					{ backgroundColor: cardShadow.color, borderRadius: cardRadius, transform: [{ translateX: cardShadow.dx }, { translateY: cardShadow.dy }] },
 				]}
 			/>
-			{/* bordered card */}
-			<View style={[StyleSheet.absoluteFill, { borderRadius: cardRadius, borderWidth: BORDER, borderColor: c.ink, backgroundColor: c.paper, overflow: 'hidden' }]}>
-				<StripePhoto hue={restaurant.hue} radius={cardRadius} />
-
-				{/* emoji stand-in for a photo */}
-				<View style={styles.emojiWrap} pointerEvents="none">
-					<Text style={[styles.emoji, { fontSize: emojiSize }]}>{restaurant.emoji}</Text>
+			{/* bordered card — in normal flow, so its height is the panel + info */}
+			<View style={[styles.face, { borderRadius: cardRadius }]}>
+				{/* 4:3 photo panel */}
+				<View style={styles.band}>
+					{restaurant.photo ? (
+						<Image source={restaurant.photo} style={styles.photo} resizeMode="cover" />
+					) : (
+						<>
+							<StripePhoto hue={restaurant.hue} radius={0} />
+							{/* emoji stand-in for a photo */}
+							<View style={styles.emojiWrap} pointerEvents="none">
+								<Text style={[styles.emoji, { fontSize: emojiSize }]}>{restaurant.emoji}</Text>
+							</View>
+						</>
+					)}
 				</View>
 
-				{/* info sticker panel */}
-				<View style={styles.stickerWrap}>
-					<View style={[StyleSheet.absoluteFill, styles.stickerShadow]} />
-					<View style={styles.sticker}>
-						<Text style={[styles.name, { fontSize: nameSize }]} numberOfLines={1}>
-							{restaurant.name}
-						</Text>
-						<Text style={[styles.meta, { fontSize: metaSize }]} numberOfLines={1}>
-							{descriptorLine(restaurant)}
-						</Text>
-						<View style={styles.ratingRow}>
-							{typeof restaurant.rating === 'number' ? (
-								<>
-									<Text style={[styles.ratingStar, { fontSize: metaSize }]}>★</Text>
-									<Text style={[styles.ratingValue, { fontSize: metaSize }]}>
-										{restaurant.rating.toFixed(1)}
-									</Text>
-									{restaurant.ratingCount ? (
-										<Text style={[styles.ratingCount, { fontSize: metaSize - 1 }]}>
-											{formatCount(restaurant.ratingCount)} reviews
-										</Text>
-									) : null}
-								</>
-							) : (
-								<Text style={[styles.ratingEmpty, { fontSize: metaSize - 1 }]}>
-									No reviews yet
+				{/* info section — fills the lower area, no floating gap */}
+				<View style={styles.info}>
+					<Text style={[styles.name, { fontSize: nameSize }]} numberOfLines={1}>
+						{restaurant.name}
+					</Text>
+					<Text style={[styles.meta, { fontSize: metaSize }]} numberOfLines={1}>
+						{descriptorLine(restaurant)}
+					</Text>
+					<View style={styles.ratingRow}>
+						{typeof restaurant.rating === 'number' ? (
+							<>
+								<Text style={[styles.ratingStar, { fontSize: metaSize }]}>★</Text>
+								<Text style={[styles.ratingValue, { fontSize: metaSize }]}>
+									{restaurant.rating.toFixed(1)}
 								</Text>
-							)}
-						</View>
+								{restaurant.ratingCount ? (
+									<Text style={[styles.ratingCount, { fontSize: metaSize - 1 }]}>
+										{formatCount(restaurant.ratingCount)} reviews
+									</Text>
+								) : null}
+							</>
+						) : (
+							<Text style={[styles.ratingEmpty, { fontSize: metaSize - 1 }]}>
+								No reviews yet
+							</Text>
+						)}
 					</View>
 				</View>
 
@@ -92,49 +101,49 @@ export default function CardFace({
 
 const makeStyles = (c: Palette) => StyleSheet.create({
 	root: {
-		flex: 1,
+		alignSelf: 'stretch',
+	},
+	face: {
+		borderWidth: BORDER,
+		borderColor: c.ink,
+		backgroundColor: c.paper,
+		overflow: 'hidden',
+	},
+	band: {
+		width: '100%',
+		aspectRatio: 4 / 3, // fixed panel shape, independent of the card's height
+		borderBottomWidth: BORDER,
+		borderBottomColor: c.ink,
+		overflow: 'hidden',
+	},
+	photo: {
+		width: '100%',
+		height: '100%',
 	},
 	emojiWrap: {
 		...StyleSheet.absoluteFill,
 		alignItems: 'center',
 		justifyContent: 'center',
-		// bias upward so the emoji sits above the bottom info sticker
-		paddingBottom: 96,
 	},
 	emoji: {
 		textAlign: 'center',
 	},
-	stickerWrap: {
-		position: 'absolute',
-		left: 16,
-		right: 16,
-		bottom: 16,
-		transform: [{ rotate: '-1deg' }],
-	},
-	stickerShadow: {
-		backgroundColor: c.shadow,
-		borderRadius: RADII.sticker,
-		transform: [{ translateX: 5 }, { translateY: 5 }],
-	},
-	sticker: {
-		backgroundColor: c.paper,
-		borderWidth: BORDER,
-		borderColor: c.ink,
-		borderRadius: RADII.sticker,
-		paddingVertical: 16,
+	info: {
 		paddingHorizontal: 18,
+		paddingTop: 15,
+		paddingBottom: 17,
 	},
 	name: {
 		fontFamily: FONTS.display,
 		color: c.ink,
 	},
 	meta: {
-		marginTop: 7,
+		marginTop: 9,
 		fontFamily: FONTS.semibold,
 		color: c.muted,
 	},
 	ratingRow: {
-		marginTop: 8,
+		marginTop: 10,
 		flexDirection: 'row',
 		alignItems: 'center',
 	},

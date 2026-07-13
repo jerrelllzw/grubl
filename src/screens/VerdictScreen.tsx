@@ -389,7 +389,7 @@ const makeStyles = (c: Palette) =>
 			marginTop: 24,
 			width: '100%',
 			maxWidth: 300,
-			height: 280,
+			// CardFace is sized to its content now, so no fixed height — let it hug.
 		},
 		mapsContainer: {
 			width: '100%',
