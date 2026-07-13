@@ -72,29 +72,29 @@ export default function SlotReel({
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 			setLanded(true);
 			pop.value = withSequence(
-				withTiming(1, { duration: 130 }),
-				withTiming(0, { duration: 340, easing: Easing.out(Easing.quad) })
+				withTiming(1, { duration: 110 }),
+				withTiming(0, { duration: 280, easing: Easing.out(Easing.quad) })
 			);
-			spark.value = withTiming(1, { duration: 640, easing: Easing.out(Easing.quad) });
-			settleTimer.current = setTimeout(onSettle, 780);
+			spark.value = withTiming(1, { duration: 460, easing: Easing.out(Easing.quad) });
+			settleTimer.current = setTimeout(onSettle, 720);
 		};
 
 		// Land with the winner in the centre slot. Start at y=0 (rows [0…VISIBLE-1]
 		// from the top) so the first frame matches the resting list — a seamless skin.
 		const target = -(landAbs - centerSlot) * STRIDE;
 		y.value = withSequence(
-			withTiming(target - OVERSHOOT, { duration: 2500, easing: Easing.out(Easing.cubic) }),
-			withSpring(target, { damping: 11, stiffness: 130, mass: 0.9 }, (finished) => {
+			withTiming(target - OVERSHOOT, { duration: 1450, easing: Easing.out(Easing.cubic) }),
+			withSpring(target, { damping: 13, stiffness: 190, mass: 0.85 }, (finished) => {
 				if (finished) runOnJS(flourish)();
 			})
 		);
 
 		// Decelerating haptic clicks, roughly tracking the roll.
-		let gap = 45;
+		let gap = 40;
 		const tick = () => {
 			Haptics.selectionAsync().catch(() => {});
-			gap *= 1.12;
-			if (gap < 320) tickTimer.current = setTimeout(tick, gap);
+			gap *= 1.15;
+			if (gap < 280) tickTimer.current = setTimeout(tick, gap);
 		};
 		tick();
 
@@ -107,7 +107,7 @@ export default function SlotReel({
 	}, []);
 
 	const reelStyle = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
-	const frameStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + pop.value * 0.06 }] }));
+	const frameStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + pop.value * 0.05 }] }));
 	const ringStyle = useAnimatedStyle(() => ({
 		opacity: interpolate(spark.value, [0, 0.15, 1], [0, 0.55, 0]),
 		transform: [{ scale: interpolate(spark.value, [0, 1], [1, 1.5]) }],
@@ -119,24 +119,29 @@ export default function SlotReel({
 
 	return (
 		<View style={[styles.window, { height: windowHeight }]} accessibilityLabel="Spinning the wheel">
-			<Animated.View style={reelStyle}>
-				{strip.map((r, i) => (
-					<View key={i} style={styles.item}>
-						<View style={styles.swatch}>
-							<StripePhoto hue={r.hue} radius={RADII.sticker} />
-							<Text style={styles.swatchEmoji}>{r.emoji}</Text>
+			{/* Only the rolling strip is masked (so rows disappear top/bottom). The
+			    frame/ring/sparkle live outside this clip so their land-pulse can grow
+			    past the edges without getting sliced at the sides. */}
+			<View style={styles.clip}>
+				<Animated.View style={reelStyle}>
+					{strip.map((r, i) => (
+						<View key={i} style={styles.item}>
+							<View style={styles.swatch}>
+								<StripePhoto hue={r.hue} radius={RADII.sticker} />
+								<Text style={styles.swatchEmoji}>{r.emoji}</Text>
+							</View>
+							<View style={styles.txt}>
+								<Text style={styles.name} numberOfLines={1}>
+									{r.name}
+								</Text>
+								<Text style={styles.meta} numberOfLines={1}>
+									{metaLine(r)}
+								</Text>
+							</View>
 						</View>
-						<View style={styles.txt}>
-							<Text style={styles.name} numberOfLines={1}>
-								{r.name}
-							</Text>
-							<Text style={styles.meta} numberOfLines={1}>
-								{metaLine(r)}
-							</Text>
-						</View>
-					</View>
-				))}
-			</Animated.View>
+					))}
+				</Animated.View>
+			</View>
 
 			{/* expanding "pop" ring on land */}
 			<Animated.View pointerEvents="none" style={[styles.ring, { top: frameTop }, ringStyle]} />
@@ -159,8 +164,14 @@ export default function SlotReel({
 const makeStyles = (c: Palette) => StyleSheet.create({
 	// Transparent, borderless box so the reel reads as the list's own area, not a
 	// separate widget dropped on top. Height is passed in to match the list box.
+	// Not clipped itself — only the strip (styles.clip) is — so the land-pulse frame
+	// can breathe past the sides.
 	window: {
 		width: '100%',
+	},
+	// Masks the rolling strip to the window bounds so rows vanish at top/bottom.
+	clip: {
+		...StyleSheet.absoluteFillObject,
 		overflow: 'hidden',
 	},
 	// Sized identically to the shortlist row in VerdictScreen so the swap is seamless.

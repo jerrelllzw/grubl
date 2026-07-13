@@ -146,8 +146,8 @@ export default function VerdictScreen({
 				>
 					{/* The card below is the place — headline stays generic so the name
 					    isn't shown twice. The verdict lands as a beat: title drops in,
-					    then the card pops (spring zoom), then the actions follow. */}
-					<Animated.View entering={FadeInDown.duration(420)}>
+					    then the card zooms up with a soft bounce, then the actions follow. */}
+					<Animated.View entering={FadeInDown.duration(340)}>
 						<View style={styles.headlineWrap}>
 							<Text style={styles.headline}>
 								EAT <Text style={styles.headlineName}>HERE.</Text>
@@ -156,7 +156,7 @@ export default function VerdictScreen({
 					</Animated.View>
 
 					<Animated.View
-						entering={ZoomIn.delay(160).duration(520).springify().damping(13).stiffness(150)}
+						entering={ZoomIn.delay(120).springify().damping(22).stiffness(175).mass(1)}
 						style={styles.winnerCard}
 					>
 						<CardFace
@@ -169,7 +169,7 @@ export default function VerdictScreen({
 						/>
 					</Animated.View>
 
-					<Animated.View entering={FadeInDown.delay(360).duration(420)} style={styles.mapsContainer}>
+					<Animated.View entering={FadeInDown.delay(280).duration(320)} style={styles.mapsContainer}>
 						<HardButton
 							dx={6}
 							dy={6}
@@ -186,7 +186,7 @@ export default function VerdictScreen({
 
 					{/* Only way back off the winner: re-open the list, or start fresh.
 					    No "swipe again" — the flow stays linear. */}
-					<Animated.View entering={FadeInDown.delay(460).duration(420)} style={styles.footer}>
+					<Animated.View entering={FadeInDown.delay(380).duration(320)} style={styles.footer}>
 						{canSpin && (
 							<>
 								<Pressable
