@@ -121,9 +121,18 @@ export default function SwipeScreen({
 			tx.value = 0;
 			ty.value = 0;
 			locked.value = false;
+			// Always advance — even off the end of the deck. Landing on `deck.length`
+			// clears the top card so the exhausted deck shows the "all done" state
+			// instead of leaving the just-swiped last card sitting there (which you'd
+			// otherwise see again on returning from the shortlist).
 			const next = index + 1;
-			if (next >= deck.length) onComplete(shortlistRef.current, next);
-			else setIndex(next);
+			setIndex(next);
+			// Deck exhausted: hand off to the shortlist only if there's something in it.
+			// With an empty shortlist there's nothing to choose from, so stay put on the
+			// "all done" state and let them SWIPE AGAIN rather than pushing an empty list.
+			if (next >= deck.length && shortlistRef.current.length > 0) {
+				onComplete(shortlistRef.current, next);
+			}
 		},
 		[deck, index, onComplete, tx, ty, locked]
 	);
@@ -162,6 +171,18 @@ export default function SwipeScreen({
 		onComplete(shortlistRef.current, index);
 	}, [onComplete, index, locked]);
 
+	// Deal the same deck again from the top — the escape hatch from the "all done"
+	// state when nothing was shortlisted and you want another pass. Only React state
+	// needs wiping: reaching "done" goes through `commit`, which already left the
+	// drag offsets and lock at rest, so the deck reopens clean at card 0.
+	const restart = useCallback(() => {
+		shortlistRef.current = [];
+		historyRef.current = [];
+		setShortlistCount(0);
+		setMoveCount(0);
+		setIndex(0);
+	}, []);
+
 	const pan = Gesture.Pan()
 		.onUpdate((e) => {
 			if (locked.value) return;
@@ -198,7 +219,9 @@ export default function SwipeScreen({
 		opacity: interpolate(tx.value, [-SWIPE_THRESHOLD, 0], [1, 0], 'clamp'),
 	}));
 
-	const progress = `${Math.min(index + 1, deck.length)} / ${deck.length}`;
+	// Every card has been swiped: the index has run off the end of the deck. Shows
+	// the "all done" state rather than a stale last card.
+	const done = index >= deck.length;
 
 	// Up to two cards sit *behind* the top card; the top card is rendered
 	// separately with a stable key (see below) so it never remounts on advance.
@@ -219,7 +242,6 @@ export default function SwipeScreen({
 					<Ionicons name="arrow-undo" size={20} color={c.ink} />
 				</Pressable>
 				<View style={styles.headerRight}>
-					<Text style={styles.progressText}>{progress}</Text>
 					<HardButton
 						dx={3}
 						dy={3}
@@ -233,9 +255,15 @@ export default function SwipeScreen({
 						}
 						faceStyle={styles.chooseFace}
 					>
-						{/* One constant button — same label, size and colour throughout;
-						    it just leads to the shortlist. */}
+						{/* Leads to the shortlist. A count badge appears once there's at
+						    least one saved place, so the tally of picks is visible instead
+						    of buried in the a11y label. */}
 						<View style={styles.chooseInner}>
+							{shortlistCount > 0 && (
+								<View style={styles.shortlistBadge}>
+									<Text style={styles.shortlistBadgeText}>{shortlistCount}</Text>
+								</View>
+							)}
 							<Text style={styles.chooseText}>SHORTLIST</Text>
 							<Ionicons name="arrow-forward" size={15} color={c.ink} />
 						</View>
@@ -277,6 +305,53 @@ export default function SwipeScreen({
 					</GestureDetector>
 				)}
 
+				{/* Deck exhausted — every card has been sorted. Sits where the cards were
+				    (behind any final flyaway still animating off) so it's already showing
+				    when you return from the shortlist. */}
+				{done && (
+					<Animated.View entering={FadeIn.duration(320)} style={styles.doneWrap}>
+						<Text style={styles.doneTitle}>THAT’S{'\n'}EVERYONE.</Text>
+						<Text style={styles.doneBody}>
+							{shortlistCount > 0
+								? `${shortlistCount} ${shortlistCount === 1 ? 'spot' : 'spots'} on your shortlist.`
+								: 'Nothing shortlisted this time.'}
+						</Text>
+						<View style={styles.doneButton}>
+							{shortlistCount > 0 ? (
+								<HardButton
+									dx={5}
+									dy={5}
+									color={c.shadow}
+									radius={RADII.sticker}
+									onPress={handleShortlist}
+									accessibilityLabel={`See your shortlist — ${shortlistCount} saved`}
+									faceStyle={styles.doneButtonFace}
+								>
+									<View style={styles.chooseInner}>
+										<Text style={styles.doneButtonText}>SEE SHORTLIST</Text>
+										<Ionicons name="arrow-forward" size={17} color={c.onAccent} />
+									</View>
+								</HardButton>
+							) : (
+								<HardButton
+									dx={5}
+									dy={5}
+									color={c.shadow}
+									radius={RADII.sticker}
+									onPress={restart}
+									accessibilityLabel="Swipe through the deck again"
+									faceStyle={styles.doneButtonFace}
+								>
+									<View style={styles.chooseInner}>
+										<Ionicons name="refresh" size={17} color={c.onAccent} />
+										<Text style={styles.doneButtonText}>SWIPE AGAIN</Text>
+									</View>
+								</HardButton>
+							)}
+						</View>
+					</Animated.View>
+				)}
+
 				{/* Committed cards flying off. Each rides above the deck (zIndex 20) on
 				    its own animation and removes itself when it lands off-screen. */}
 				{flyaways.map((f) => (
@@ -284,32 +359,35 @@ export default function SwipeScreen({
 				))}
 			</View>
 
-			<View style={styles.actions}>
-				<HardButton
-					dx={4}
-					dy={4}
-					color={c.shadow}
-					radius={RADII.pill}
-					onPress={() => fling('no')}
-					accessibilityLabel="No — skip this place"
-					containerStyle={styles.actionHalf}
-					faceStyle={styles.noButton}
-				>
-					<Text style={styles.noText}>NO</Text>
-				</HardButton>
-				<HardButton
-					dx={4}
-					dy={4}
-					color={c.shadow}
-					radius={RADII.pill}
-					onPress={() => fling('shortlist')}
-					accessibilityLabel="Yes — add to your shortlist"
-					containerStyle={styles.actionHalf}
-					faceStyle={styles.yesButton}
-				>
-					<Text style={styles.yesText}>YES</Text>
-				</HardButton>
-			</View>
+			{/* No cards left to act on once the deck's exhausted — hide the swipe row. */}
+			{!done && (
+				<View style={styles.actions}>
+					<HardButton
+						dx={4}
+						dy={4}
+						color={c.shadow}
+						radius={RADII.pill}
+						onPress={() => fling('no')}
+						accessibilityLabel="No — skip this place"
+						containerStyle={styles.actionHalf}
+						faceStyle={styles.noButton}
+					>
+						<Text style={styles.noText}>NO</Text>
+					</HardButton>
+					<HardButton
+						dx={4}
+						dy={4}
+						color={c.shadow}
+						radius={RADII.pill}
+						onPress={() => fling('shortlist')}
+						accessibilityLabel="Yes — add to your shortlist"
+						containerStyle={styles.actionHalf}
+						faceStyle={styles.yesButton}
+					>
+						<Text style={styles.yesText}>YES</Text>
+					</HardButton>
+				</View>
+			)}
 
 			{showTutorial && <SwipeTutorial onDismiss={dismissTutorial} />}
 		</View>
@@ -417,10 +495,19 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		fontSize: 13,
 		color: c.ink,
 	},
-	progressText: {
-		fontFamily: FONTS.semibold,
-		fontSize: 14,
-		color: c.muted,
+	shortlistBadge: {
+		minWidth: 18,
+		height: 18,
+		borderRadius: RADII.pill,
+		paddingHorizontal: 5,
+		backgroundColor: c.brass,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	shortlistBadgeText: {
+		fontFamily: FONTS.bold,
+		fontSize: 11,
+		color: c.onAccent,
 	},
 	deck: {
 		flex: 1,
@@ -436,6 +523,46 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		left: 20,
 		right: 20,
 		bottom: 10,
+	},
+	doneWrap: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		alignItems: 'center',
+		justifyContent: 'center',
+		paddingHorizontal: 32,
+	},
+	doneTitle: {
+		fontFamily: FONTS.display,
+		fontSize: 40,
+		lineHeight: 42,
+		color: c.ink,
+		textAlign: 'center',
+	},
+	doneBody: {
+		marginTop: 14,
+		fontFamily: FONTS.medium,
+		fontSize: 16,
+		color: c.muted,
+		textAlign: 'center',
+	},
+	doneButton: {
+		marginTop: 28,
+	},
+	doneButtonFace: {
+		paddingVertical: 14,
+		paddingHorizontal: 24,
+		alignItems: 'center',
+		backgroundColor: c.brass,
+		borderWidth: BORDER,
+		borderColor: c.brassDeep,
+	},
+	doneButtonText: {
+		fontFamily: FONTS.display,
+		fontSize: 17,
+		color: c.onAccent,
 	},
 	stamp: {
 		position: 'absolute',
