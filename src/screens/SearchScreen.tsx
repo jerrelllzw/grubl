@@ -530,15 +530,15 @@ const makeStyles = (c: Palette) =>
 			flex: 1,
 		},
 		scrollContent: {
-			flexGrow: 1, // fill the viewport so the card can stretch to fill it
+			flexGrow: 1, // fill the viewport so the content-sized card can float centred
+			justifyContent: 'center', // centre the card + CTA with peek room, like the swipe deck
 			paddingHorizontal: 20, // match the swipe-card side gutters
 			paddingTop: 8,
 		},
-		// The wrapper carries the width + hard shadow and grows to fill the viewport,
-		// so the panel reads as a full swipe-card-sized surface rather than a small
-		// content-hugging box. The panel itself sits on top.
+		// The wrapper carries the width + hard shadow and hugs its content, so the panel
+		// is sized like a swipe card (content height, not stretched) and floats centred
+		// in the viewport. The panel itself sits on top.
 		formWrap: {
-			flex: 1, // fill the vertical space between header and bottom inset
 			width: '100%',
 			maxWidth: 480,
 			alignSelf: 'center',
@@ -553,12 +553,10 @@ const makeStyles = (c: Palette) =>
 			transform: [{ translateX: 7 }, { translateY: 7 }],
 		},
 		// The panel: an ink hairline on the page ground, so the lighter paper fields
-		// still pop inside it. Fills the wrapper but keeps the fields as one centred
-		// group with an even rhythm — leftover height sits as balanced top/bottom
-		// margins rather than stretched-apart voids between sections.
+		// still pop inside it. Sized to its content — the stacked filter sections with
+		// an even rhythm between them — so the card's height is set by the fields, the
+		// same way the swipe card's height is set by its photo panel + info section.
 		form: {
-			flex: 1,
-			justifyContent: 'center',
 			gap: 30,
 			padding: 22,
 			backgroundColor: c.ground,
