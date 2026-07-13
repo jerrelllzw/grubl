@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { metaLine, type Restaurant } from '../data/restaurants';
+import { descriptorLine, formatCount, metaLine, type Restaurant } from '../data/restaurants';
 import { useColors, useThemedStyles } from '../theme/theme';
 import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 import StripePhoto from './StripePhoto';
@@ -60,8 +60,27 @@ export default function CardFace({
 							{restaurant.name}
 						</Text>
 						<Text style={[styles.meta, { fontSize: metaSize }]} numberOfLines={1}>
-							{metaLine(restaurant)}
+							{descriptorLine(restaurant)}
 						</Text>
+						<View style={styles.ratingRow}>
+							{typeof restaurant.rating === 'number' ? (
+								<>
+									<Text style={[styles.ratingStar, { fontSize: metaSize }]}>★</Text>
+									<Text style={[styles.ratingValue, { fontSize: metaSize }]}>
+										{restaurant.rating.toFixed(1)}
+									</Text>
+									{restaurant.ratingCount ? (
+										<Text style={[styles.ratingCount, { fontSize: metaSize - 1 }]}>
+											{formatCount(restaurant.ratingCount)} reviews
+										</Text>
+									) : null}
+								</>
+							) : (
+								<Text style={[styles.ratingEmpty, { fontSize: metaSize - 1 }]}>
+									No reviews yet
+								</Text>
+							)}
+						</View>
 					</View>
 				</View>
 
@@ -80,7 +99,7 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 		// bias upward so the emoji sits above the bottom info sticker
-		paddingBottom: 64,
+		paddingBottom: 96,
 	},
 	emoji: {
 		textAlign: 'center',
@@ -102,16 +121,40 @@ const makeStyles = (c: Palette) => StyleSheet.create({
 		borderWidth: BORDER,
 		borderColor: c.ink,
 		borderRadius: RADII.sticker,
-		paddingVertical: 14,
-		paddingHorizontal: 16,
+		paddingVertical: 16,
+		paddingHorizontal: 18,
 	},
 	name: {
 		fontFamily: FONTS.display,
 		color: c.ink,
 	},
 	meta: {
-		marginTop: 5,
+		marginTop: 7,
 		fontFamily: FONTS.semibold,
+		color: c.muted,
+	},
+	ratingRow: {
+		marginTop: 8,
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	ratingStar: {
+		fontFamily: FONTS.semibold,
+		color: c.brass,
+	},
+	ratingValue: {
+		marginLeft: 4,
+		fontFamily: FONTS.bold,
+		color: c.ink,
+	},
+	ratingCount: {
+		marginLeft: 8,
+		fontFamily: FONTS.medium,
+		color: c.muted,
+	},
+	ratingEmpty: {
+		fontFamily: FONTS.medium,
+		fontStyle: 'italic',
 		color: c.muted,
 	},
 });

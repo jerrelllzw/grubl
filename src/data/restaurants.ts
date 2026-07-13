@@ -129,8 +129,13 @@ export async function searchRestaurants(query: SearchQuery): Promise<SearchOutco
 }
 
 /** Compacts a review count: 1240 → "1.2k". */
-function formatCount(n: number): string {
+export function formatCount(n: number): string {
 	return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+}
+
+/** The descriptor row under a card name: "Mexican · $$ · 0.6 km". */
+export function descriptorLine(r: Restaurant): string {
+	return [r.cuisine, r.price, r.distance].filter(Boolean).join(' · ');
 }
 
 /** Formats the meta line under a card: "Mexican · $$ · 0.6 km · ★ 4.6 (812)". */
