@@ -52,7 +52,7 @@ export default function CardFace({
 				{/* 4:3 photo panel */}
 				<View style={styles.band}>
 					{restaurant.photo ? (
-						<Image source={restaurant.photo} style={styles.photo} resizeMode="cover" />
+						<Image source={restaurant.photo} style={styles.photo} resizeMode="cover" fadeDuration={0} />
 					) : (
 						<>
 							<StripePhoto hue={restaurant.hue} radius={0} />

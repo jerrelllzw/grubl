@@ -11,6 +11,7 @@ import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
 	withTiming,
+	type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CardFace from '../components/CardFace';
@@ -76,18 +77,24 @@ export default function SwipeScreen({
 		markSwipeTutorialSeen();
 	}, []);
 
-	// Drag offset of the *current* top card. Only ever holds a live finger drag — a
-	// committed card doesn't fly off using this (see `commit`/flyaways below), so it
-	// resets straight to 0 with no visible snap.
-	const tx = useSharedValue(0);
-	const ty = useSharedValue(0);
+	// The drag offset lives inside `TopCard`, not here — see that component. This is
+	// only the button lock: it stops NO/YES/undo/shortlist double-firing between a
+	// commit and the render that acts on it, and clears once `index` has moved.
 	const locked = useSharedValue(false);
+	useEffect(() => {
+		locked.value = false;
+	}, [index, locked]);
+
+	// How the incoming top card arrives: 0 = already at rest (a normal advance),
+	// ±FLY_DISTANCE = slide in from that side (undo, replaying the card's exit
+	// backwards). Read once, when the card mounts.
+	const [entryFrom, setEntryFrom] = useState(0);
 
 	// Cards mid-flight off the screen. A committed card doesn't fly off using the
 	// top card's own view — that would force us to reset that view's position while
 	// it's still visible (the old flash). Instead each departing card is handed to a
-	// throwaway overlay with its OWN animation, so the top card just swaps its
-	// content to the next card at rest (tx already 0) — no reset, no fade, no flash.
+	// throwaway overlay with its OWN animation, and the card it was covering simply
+	// unmounts, so nothing on screen ever has to be moved back.
 	const [flyaways, setFlyaways] = useState<Flyaway[]>([]);
 	const flyId = useRef(0);
 	const removeFlyaway = useCallback((id: number) => {
@@ -116,11 +123,9 @@ export default function SwipeScreen({
 			historyRef.current.push(move);
 			setMoveCount((c) => c + 1);
 			Haptics.selectionAsync().catch(() => {});
-			// The next card becomes the top card at rest — clear any drag so it sits
-			// dead centre, opaque, from the first frame.
-			tx.value = 0;
-			ty.value = 0;
-			locked.value = false;
+			// The next card is a brand-new `TopCard`, so it mounts at rest already —
+			// there are no offsets left over from this drag to undo.
+			setEntryFrom(0);
 			// Always advance — even off the end of the deck. Landing on `deck.length`
 			// clears the top card so the exhausted deck shows the "all done" state
 			// instead of leaving the just-swiped last card sitting there (which you'd
@@ -134,7 +139,7 @@ export default function SwipeScreen({
 				onComplete(shortlistRef.current, next);
 			}
 		},
-		[deck, index, onComplete, tx, ty, locked]
+		[deck, index, onComplete]
 	);
 
 	// Rewind the last committed move: step back a card and drop it from the
@@ -148,13 +153,10 @@ export default function SwipeScreen({
 			setShortlistCount(shortlistRef.current.length);
 		}
 		Haptics.selectionAsync().catch(() => {});
-		setIndex(index - 1);
 		// Slide the returning card back in from the side it flew off toward.
-		tx.value = last === 'shortlist' ? FLY_DISTANCE : -FLY_DISTANCE;
-		ty.value = 0;
-		tx.value = withTiming(0, { duration: 300 });
-		ty.value = withTiming(0, { duration: 300 });
-	}, [index, moveCount, tx, ty, locked]);
+		setEntryFrom(last === 'shortlist' ? FLY_DISTANCE : -FLY_DISTANCE);
+		setIndex(index - 1);
+	}, [index, moveCount, locked]);
 
 	// Button-triggered swipe: the card flies off from centre via the overlay.
 	const fling = useCallback(
@@ -173,59 +175,29 @@ export default function SwipeScreen({
 
 	// Deal the same deck again from the top — the escape hatch from the "all done"
 	// state when nothing was shortlisted and you want another pass. Only React state
-	// needs wiping: reaching "done" goes through `commit`, which already left the
-	// drag offsets and lock at rest, so the deck reopens clean at card 0.
+	// needs wiping: card 0 mounts as a fresh `TopCard` at rest, so there's no stray
+	// drag offset to clear.
 	const restart = useCallback(() => {
 		shortlistRef.current = [];
 		historyRef.current = [];
 		setShortlistCount(0);
 		setMoveCount(0);
+		setEntryFrom(0);
 		setIndex(0);
 	}, []);
-
-	const pan = Gesture.Pan()
-		.onUpdate((e) => {
-			if (locked.value) return;
-			tx.value = e.translationX;
-			ty.value = e.translationY;
-		})
-		.onEnd((e) => {
-			if (locked.value) return;
-			const dx = e.translationX;
-			if (Math.abs(dx) > SWIPE_THRESHOLD) {
-				locked.value = true;
-				// Right → yes (shortlist); left → no (skip). Hand the card off to the
-				// overlay from its current dragged position so it flies on seamlessly.
-				const dir: Move = dx > 0 ? 'shortlist' : 'no';
-				runOnJS(commit)(dir, tx.value, ty.value);
-			} else {
-				// Not far enough either way — spring back.
-				tx.value = withTiming(0, { duration: 300 });
-				ty.value = withTiming(0, { duration: 300 });
-			}
-		});
-
-	const topCardStyle = useAnimatedStyle(() => ({
-		transform: [
-			{ translateX: tx.value },
-			{ translateY: ty.value },
-			{ rotate: `${tx.value * 0.06}deg` },
-		],
-	}));
-	const yesStampStyle = useAnimatedStyle(() => ({
-		opacity: interpolate(tx.value, [0, SWIPE_THRESHOLD], [0, 1], 'clamp'),
-	}));
-	const noStampStyle = useAnimatedStyle(() => ({
-		opacity: interpolate(tx.value, [-SWIPE_THRESHOLD, 0], [1, 0], 'clamp'),
-	}));
 
 	// Every card has been swiped: the index has run off the end of the deck. Shows
 	// the "all done" state rather than a stale last card.
 	const done = index >= deck.length;
 
-	// Up to two cards sit *behind* the top card; the top card is rendered
-	// separately with a stable key (see below) so it never remounts on advance.
-	const bgOffsets = [2, 1].filter((o) => index + o < deck.length);
+	// Cards behind the top one. The NEXT card (offset 1) is drawn at the top card's
+	// exact resting transform, not stepped back with the rest of the stack: dragging
+	// the top card aside uncovers it for the whole gesture, so if it sat smaller and
+	// lower it would visibly grow and jump up the instant it got promoted. Sitting at
+	// rest already, the promotion changes nothing on screen. The visible stack (two
+	// edges peeking below) is unchanged — it's just drawn by offsets 2 and 3 now, so
+	// there's one more card to render.
+	const bgOffsets = [3, 2, 1].filter((o) => index + o < deck.length);
 
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 }]}>
@@ -275,35 +247,40 @@ export default function SwipeScreen({
 			<View style={styles.deck}>
 				{/* Cards behind the top one, deepest first. Keyed by their card index so a
 				    newly revealed deeper card fades in, while a card sliding forward one
-				    slot just updates in place. */}
+				    slot just updates in place. Offset 1 lands at translateY 0 / scale 1 —
+				    squarely under the top card, ready to be promoted without moving (see
+				    `bgOffsets`); each deeper card steps back from there. */}
 				{bgOffsets.map((o) => (
 					<Animated.View
 						key={index + o}
 						entering={FadeIn.duration(260)}
-						style={[styles.cardPos, { transform: [{ translateY: o * 11 }, { scale: 1 - o * 0.045 }], zIndex: 10 - o }]}
+						style={[
+							styles.cardPos,
+							{
+								transform: [{ translateY: (o - 1) * 11 }, { scale: 1 - (o - 1) * 0.045 }],
+								zIndex: 10 - o,
+							},
+						]}
 					>
 						<CardFace restaurant={deck[index + o]} />
 					</Animated.View>
 				))}
 
-				{/* The top (interactive) card. A CONSTANT key keeps it as one persistent
-				    view across the whole deck: advancing `index` just swaps its content
-				    at rest (tx already 0), so it's opaque and centred from the first
-				    frame — the departing card leaves via the overlay below, so this view
-				    never has to reset its own position while visible. */}
+				{/* The top (interactive) card, keyed by `index` so each card gets its OWN
+				    view and its own drag offsets. Advancing simply unmounts this one and
+				    mounts the next — already at rest, full size, in the same React commit
+				    that mounts the departing card's overlay. Nothing has to be moved back
+				    afterwards, so there's no frame where the deck is caught mid-reset. */}
 				{index < deck.length && (
-					<GestureDetector key="top" gesture={pan}>
-						<Animated.View style={[styles.cardPos, { zIndex: 10 }, topCardStyle]}>
-							<CardFace restaurant={deck[index]}>
-								<Animated.View style={[styles.stamp, styles.stampLeft, yesStampStyle]}>
-									<Text style={[styles.stampText, { color: c.green }]}>YES</Text>
-								</Animated.View>
-								<Animated.View style={[styles.stamp, styles.stampRight, noStampStyle]}>
-									<Text style={[styles.stampText, { color: c.rose }]}>NO</Text>
-								</Animated.View>
-							</CardFace>
-						</Animated.View>
-					</GestureDetector>
+					<TopCard
+						key={index}
+						restaurant={deck[index]}
+						entryFrom={entryFrom}
+						locked={locked}
+						onSwipe={commit}
+						styles={styles}
+						colors={c}
+					/>
 				)}
 
 				{/* Deck exhausted — every card has been sorted. Sits where the cards were
@@ -392,6 +369,102 @@ export default function SwipeScreen({
 
 			{showTutorial && <SwipeTutorial onDismiss={dismissTutorial} />}
 		</View>
+	);
+}
+
+// The live top card. Its drag offsets are created HERE rather than on the screen,
+// so they belong to this card and die with it: advancing the deck unmounts this
+// component and mounts the next one already at rest, in the same React commit that
+// mounts the departing card's overlay. That's the whole point — a screen-level
+// offset would have to be zeroed through Reanimated, on a different schedule from
+// the React render that swaps the content, so the reset always landed either a frame
+// early (the swiped card snapping back to centre before its overlay covered it) or a
+// frame late (the smaller card behind showing through, then popping to full size).
+function TopCard({
+	restaurant,
+	entryFrom,
+	locked,
+	onSwipe,
+	styles,
+	colors,
+}: {
+	restaurant: Restaurant;
+	/** X to slide in from on mount: 0 for a normal advance, ±FLY_DISTANCE for undo. */
+	entryFrom: number;
+	/** The screen's button lock — a NO/YES press mustn't also land as a drag. */
+	locked: SharedValue<boolean>;
+	onSwipe: (move: Move, fromX: number, fromY: number) => void;
+	styles: ReturnType<typeof makeStyles>;
+	colors: Palette;
+}) {
+	const tx = useSharedValue(entryFrom);
+	const ty = useSharedValue(0);
+	// This card has been committed — it's the overlay's problem now, so stop taking
+	// drags. Per-card, so the next card is live the instant it mounts.
+	const gone = useSharedValue(false);
+
+	useEffect(() => {
+		// Undo only: glide in from the side this card originally flew off toward. A
+		// normal advance mounts at 0 and needs no entry animation at all.
+		if (entryFrom !== 0) tx.value = withTiming(0, { duration: 300 });
+		// Mount-only — `entryFrom` is this card's starting position, not a live input.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	const pan = Gesture.Pan()
+		.onUpdate((e) => {
+			if (gone.value || locked.value) return;
+			tx.value = e.translationX;
+			ty.value = e.translationY;
+		})
+		.onEnd((e) => {
+			// `locked` covers the case where a NO/YES press already committed this card
+			// out from under the gesture — without it this would commit the same index
+			// twice, once from the button and once from the drag ending on a card that
+			// is already on its way out.
+			if (gone.value || locked.value) return;
+			const dx = e.translationX;
+			if (Math.abs(dx) > SWIPE_THRESHOLD) {
+				gone.value = true;
+				locked.value = true;
+				// Right → yes (shortlist); left → no (skip). Hand the card off to the
+				// overlay at its current dragged position so it flies on seamlessly.
+				const dir: Move = dx > 0 ? 'shortlist' : 'no';
+				runOnJS(onSwipe)(dir, tx.value, ty.value);
+			} else {
+				// Not far enough either way — spring back.
+				tx.value = withTiming(0, { duration: 300 });
+				ty.value = withTiming(0, { duration: 300 });
+			}
+		});
+
+	const cardStyle = useAnimatedStyle(() => ({
+		transform: [
+			{ translateX: tx.value },
+			{ translateY: ty.value },
+			{ rotate: `${tx.value * 0.06}deg` },
+		],
+	}));
+	const yesStampStyle = useAnimatedStyle(() => ({
+		opacity: interpolate(tx.value, [0, SWIPE_THRESHOLD], [0, 1], 'clamp'),
+	}));
+	const noStampStyle = useAnimatedStyle(() => ({
+		opacity: interpolate(tx.value, [-SWIPE_THRESHOLD, 0], [1, 0], 'clamp'),
+	}));
+
+	return (
+		<GestureDetector gesture={pan}>
+			<Animated.View style={[styles.cardPos, { zIndex: 10 }, cardStyle]}>
+				<CardFace restaurant={restaurant}>
+					<Animated.View style={[styles.stamp, styles.stampLeft, yesStampStyle]}>
+						<Text style={[styles.stampText, { color: colors.green }]}>YES</Text>
+					</Animated.View>
+					<Animated.View style={[styles.stamp, styles.stampRight, noStampStyle]}>
+						<Text style={[styles.stampText, { color: colors.rose }]}>NO</Text>
+					</Animated.View>
+				</CardFace>
+			</Animated.View>
+		</GestureDetector>
 	);
 }
 
