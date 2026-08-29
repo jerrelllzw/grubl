@@ -23,6 +23,10 @@ import { BORDER, FONTS, RADII, type Palette } from '../theme/tokens';
 import { hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../utils/onboarding';
 
 const SWIPE_THRESHOLD = 90;
+// How many cards are drawn behind the top one. Only the back slot ever reveals a
+// card that wasn't already on screen, so only it animates in (see `bgOffsets`).
+const BG_SLOTS = [3, 2, 1];
+const BACK_SLOT = BG_SLOTS[0];
 const FLY_DISTANCE = 640;
 const EASE = Easing.in(Easing.ease);
 
@@ -197,7 +201,7 @@ export default function SwipeScreen({
 	// rest already, the promotion changes nothing on screen. The visible stack (two
 	// edges peeking below) is unchanged — it's just drawn by offsets 2 and 3 now, so
 	// there's one more card to render.
-	const bgOffsets = [3, 2, 1].filter((o) => index + o < deck.length);
+	const bgOffsets = BG_SLOTS.filter((o) => index + o < deck.length);
 
 	return (
 		<View style={[styles.container, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 }]}>
@@ -246,14 +250,25 @@ export default function SwipeScreen({
 
 			<View style={styles.deck}>
 				{/* Cards behind the top one, deepest first. Keyed by their card index so a
-				    newly revealed deeper card fades in, while a card sliding forward one
-				    slot just updates in place. Offset 1 lands at translateY 0 / scale 1 —
-				    squarely under the top card, ready to be promoted without moving (see
-				    `bgOffsets`); each deeper card steps back from there. */}
+				    card sliding forward a slot just updates in place. Offset 1 lands at
+				    translateY 0 / scale 1 — squarely under the top card, ready to be
+				    promoted without moving (see `bgOffsets`); each deeper card steps back
+				    from there.
+
+				    Only the BACK slot fades in, and only because a forward swipe genuinely
+				    uncovers a card there that wasn't on screen before. The nearer slots
+				    must not: undo steps `index` back, which mounts the card being returned
+				    to into slot 1 (the top card it used to be is unmounting in the same
+				    commit), and fading that in would blink it out for the whole entry
+				    animation — showing the cards behind it through the gap. It has to
+				    appear at rest, exactly where it already was. Pinned to a fixed slot
+				    number, not the deepest one PRESENT: near the end of the deck the stack
+				    shrinks to [1], and "deepest present" would put the fade right back on
+				    the slot undo mounts into. */}
 				{bgOffsets.map((o) => (
 					<Animated.View
 						key={index + o}
-						entering={FadeIn.duration(260)}
+						entering={o === BACK_SLOT ? FadeIn.duration(260) : undefined}
 						style={[
 							styles.cardPos,
 							{
