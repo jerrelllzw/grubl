@@ -6,6 +6,7 @@ import {
 	fetchAutoComplete,
 	fetchPlaceDetails,
 	newSessionToken,
+	useMockData,
 	type Coordinates,
 	type Suggestion,
 } from '../api/googlePlaces';
@@ -49,6 +50,13 @@ export default function SearchScreen({
 	const insets = useSafeAreaInsets();
 	const c = useColors();
 	const styles = useThemedStyles(makeStyles);
+
+	// Serving the bundled deck? Then the form has nothing to constrain — see
+	// `handleFind`. Read at render rather than on press: despite the name it's a
+	// plain module getter, not a hook, and calling it from an event handler would
+	// trip rules-of-hooks. The switch only flips on the intro screen, which this
+	// one is pushed on top of, so a fresh mount always sees the current value.
+	const mockMode = useMockData();
 
 	// Seed from the last search so tweaking one filter doesn't mean re-entering all.
 	const [location, setLocation] = useState(initial?.location ?? '');
@@ -145,7 +153,12 @@ export default function SearchScreen({
 
 	const handleFind = () => {
 		if (loading) return; // a fetch is already in flight
-		if (!location.trim()) {
+		// Location is the form's one required field — but only when it's going to be
+		// geocoded. The mock deck is returned before `searchRestaurants` looks at the
+		// query at all, so requiring it there would gate a search on a value nothing
+		// reads; press SEARCH on an untouched form and the deck just deals. Every
+		// other field already carries a default (radius, "any" price, open now).
+		if (!mockMode && !location.trim()) {
 			setError('Enter a location to search.');
 			return;
 		}
